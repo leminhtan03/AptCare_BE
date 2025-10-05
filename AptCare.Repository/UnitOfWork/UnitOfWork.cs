@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using AptCare.Repository.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
