@@ -2,7 +2,7 @@
 using AptCare.Repository.Paginate;
 using Microsoft.EntityFrameworkCore.Query;
 
-namespace AptCare.Repository;
+namespace AptCare.Repository.Repositories;
 public interface IGenericRepository<T> : IDisposable where T : class
 {
     #region Get Async

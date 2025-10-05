@@ -1,8 +1,9 @@
 ﻿using System.Linq.Expressions;
+using AptCare.Repository.Paginate;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 
-namespace AptCare.Repository;
+namespace AptCare.Repository.Repositories;
 
 public class GenericRepository<T> : IGenericRepository<T> where T : class
 {
@@ -22,7 +23,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
 
     #region Gett Async
 
-    public virtual async Task<T> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
+    public async Task<T> SingleOrDefaultAsync(Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
     {
         IQueryable<T> query = _dbSet;
         if (include != null) query = include(query);
@@ -34,7 +35,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         return await query.AsNoTracking().FirstOrDefaultAsync();
     }
 
-    public virtual async Task<TResult> SingleOrDefaultAsync<TResult>(Expression<Func<T, TResult>> selector, Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+    public async Task<TResult> SingleOrDefaultAsync<TResult>(Expression<Func<T, TResult>> selector, Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
         Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
     {
         IQueryable<T> query = _dbSet;
@@ -47,7 +48,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         return await query.AsNoTracking().Select(selector).FirstOrDefaultAsync();
     }
 
-    public virtual async Task<ICollection<T>> GetListAsync(Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
+    public async Task<ICollection<T>> GetListAsync(Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
     {
         IQueryable<T> query = _dbSet;
 
@@ -60,7 +61,7 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         return await query.AsNoTracking().ToListAsync();
     }
 
-    public virtual async Task<ICollection<TResult>> GetListAsync<TResult>(Expression<Func<T, TResult>> selector, Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
+    public async Task<ICollection<TResult>> GetListAsync<TResult>(Expression<Func<T, TResult>> selector, Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
     {
         IQueryable<T> query = _dbSet;
 

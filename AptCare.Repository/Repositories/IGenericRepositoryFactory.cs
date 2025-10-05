@@ -1,4 +1,4 @@
-﻿namespace AptCare.Repository;
+﻿namespace AptCare.Repository.Repositories;
 
 public interface IGenericRepositoryFactory
 {
