@@ -12,13 +12,11 @@ namespace AptCare.Repository.Entities
 {
     public class UserApartment
     {
-        [Key]
-        public int UserApartmentId { get; set; }
-
+        [Required]
         [ForeignKey("User")]
         public int UserId { get; set; }
         public User User { get; set; }
-
+        [Required]
         [ForeignKey("Apartment")]
         public int ApartmentId { get; set; }
         public Apartment Apartment { get; set; }

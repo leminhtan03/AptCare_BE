@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 
 namespace AptCare.Repository.Enum
 {
-    public enum ActiveStatus
+    public enum MessageStatus
     {
-        Active = 1,
-        Inactive = 2,
+        Sent = 1,
+        Delivered = 2,
+        Read = 3
     }
 }

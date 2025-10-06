@@ -4,11 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AptCare.Repository.Enum
+namespace AptCare.Service.Dtos.BuildingDtos
 {
-    public enum ActiveStatus
+    public class ApartmentDto
     {
-        Active = 1,
-        Inactive = 2,
     }
 }

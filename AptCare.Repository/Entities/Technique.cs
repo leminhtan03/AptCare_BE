@@ -19,6 +19,6 @@ namespace AptCare.Repository.Entities
         [MaxLength(500)]
         public string Description { get; set; }
 
-        public ICollection<TechnicianTechnique> TechnicianTechniques { get; set; }
+        public ICollection<TechnicianTechnique>? TechnicianTechniques { get; set; }
     }
 }

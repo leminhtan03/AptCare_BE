@@ -28,6 +28,6 @@ namespace AptCare.Repository.Entities
         public string Description { get; set; }
 
         // Navigation properties
-        public ICollection<UserApartment> UserApartments { get; set; }
+        public ICollection<UserApartment>? UserApartments { get; set; }
     }
 }

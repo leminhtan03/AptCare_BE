@@ -4,7 +4,7 @@ namespace AptCare.Repository.Enum.OTPEnum
 {
     public enum OTPType
     {
-        EmailVerification,
-        PasswordReset
+        EmailVerification = 1,
+        PasswordReset = 2
     }
 }

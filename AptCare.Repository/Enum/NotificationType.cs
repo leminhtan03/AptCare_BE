@@ -8,8 +8,8 @@ namespace AptCare.Repository.Enum
 {
     public enum NotificationType
     {
-        Internal,
-        General,
-        Individual
+        Internal = 1,
+        General = 2,
+        Individual = 3
     }
 }

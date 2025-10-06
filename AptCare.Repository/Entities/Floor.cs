@@ -26,7 +26,7 @@ namespace AptCare.Repository.Entities
         public string Description { get; set; }
 
         // Navigation properties
-        public ICollection<Apartment> Apartments { get; set; }
-        public ICollection<CommonArea> CommonAreas { get; set; }
+        public ICollection<Apartment>? Apartments { get; set; }
+        public ICollection<CommonArea>? CommonAreas { get; set; }
     }
 }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using AptCare.Service.Dtos.Account;
+using AptCare.Service.Dtos.BuildingDtos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +17,10 @@ namespace AptCare.Service.Dtos.UserDtos
         public string Email { get; set; }
         public string CitizenshipIdentity { get; set; }
         public DateTime? Birthday { get; set; }
+        public ApartmentDto UserApartment { get; set; } // < RoomNumber , roleinApartment>
+        public AccountDto? Account { get; set; }
         public string Status { get; set; } // Hiển thị dưới dạng chuỗi
     }
+
+
 }

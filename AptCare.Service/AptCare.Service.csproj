@@ -10,8 +10,4 @@
 		<ProjectReference Include="..\AptCare.Repository\AptCare.Repository.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Folder Include="Dtos\BuildingDtos\" />
-	</ItemGroup>
-
 </Project>
