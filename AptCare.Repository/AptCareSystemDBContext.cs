@@ -40,10 +40,12 @@ namespace AptCare.Repository
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasIndex(u => u.PhoneNumber).IsUnique();
+                entity.HasIndex(u => u.CitizenshipIdentity).IsUnique();
                 entity.HasIndex(u => u.Email).IsUnique();
                 entity.HasOne(u => u.Account)
                       .WithOne(a => a.User)
                       .HasForeignKey<Account>(a => a.AccountId);
+
             });
 
             // Cấu hình mối quan hệ 1-n giữa Account và AccountToken
