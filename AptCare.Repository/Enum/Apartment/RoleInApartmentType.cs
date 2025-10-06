@@ -11,13 +11,6 @@ namespace AptCare.Repository.Enum.Apartment
         Member = 1,
         Owner = 2
     }
-    public enum RelationshipToOwnerType
-    {
-        Self = 1,
-        Family = 2,
-        Tenant = 3,
-        Guest = 4
-    }
     public enum ApartmentStatus
     {
         Active = 1,
