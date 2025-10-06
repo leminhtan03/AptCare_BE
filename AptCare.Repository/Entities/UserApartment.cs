@@ -23,7 +23,7 @@ namespace AptCare.Repository.Entities
 
         public RoleInApartmentType RoleInApartment { get; set; }
 
-        public RelationshipToOwnerType RelationshipToOwner { get; set; }
+        public string RelationshipToOwner { get; set; }
 
         public ActiveStatus Status { get; set; }
     }

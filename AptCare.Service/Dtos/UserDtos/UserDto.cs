@@ -17,8 +17,8 @@ namespace AptCare.Service.Dtos.UserDtos
         public string Email { get; set; }
         public string CitizenshipIdentity { get; set; }
         public DateTime? Birthday { get; set; }
-        public ApartmentDto UserApartment { get; set; } // < RoomNumber , roleinApartment>
-        public AccountDto? Account { get; set; }
+        public List<ApartmentForUserDto>? Apartments { get; set; }
+        public AccountForAdminDto AccountInfo { get; set; }
         public string Status { get; set; } // Hiển thị dưới dạng chuỗi
     }
 
