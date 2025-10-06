@@ -1,4 +1,5 @@
 ﻿using AptCare.Repository.Entities;
+using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.UserDtos;
 using AutoMapper;
 namespace AptCare.Api.MapperProfile
@@ -11,8 +12,9 @@ namespace AptCare.Api.MapperProfile
                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
             CreateMap<CreateUserDto, User>();
             CreateMap<UpdateUserDto, User>()
-                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-
+               .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Account, AccountDto>()
+               .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
         }
     }
 }

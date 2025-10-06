@@ -4,9 +4,9 @@ namespace AptCare.Repository.Enum.TokenEnum
 {
     public enum TokenType
     {
-        AccessToken,
-        RefreshToken,
-        PasswordResetToken
+        AccessToken = 1,
+        RefreshToken = 2,
+        PasswordResetToken = 3
 
     }
 }

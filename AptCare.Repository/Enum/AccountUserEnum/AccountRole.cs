@@ -4,10 +4,10 @@ namespace AptCare.Repository.Enum.AccountUserEnum
 {
     public enum AccountRole
     {
-        Resident,
-        Receptionist,
-        Technician,
-        TechnicianLead,
-        Manager
+        Resident = 1,
+        Receptionist = 2,
+        Technician = 3,
+        TechnicianLead = 4,
+        Manager = 5,
     }
 }

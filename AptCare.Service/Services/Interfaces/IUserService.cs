@@ -10,10 +10,13 @@ namespace AptCare.Service.Services.Interfaces
 {
     public interface IUserService
     {
-        Task<Paginate<UserDto>> GetPageUsersAsync();
+        Task<UserDto> GetUserByIdAsync(int userId);
         Task<UserDto> CreateUserAsync(CreateUserDto createUserDto);
         Task<UserDto?> UpdateUserAsync(UpdateUserDto updateUserDto);
-        //Task<Paginate<UserDto>> GetPageUsersAsync();
-        //Task<bool> DeleteUserAsync(int userId);
+        Task<IPaginate<UserDto>> GetReSidentDataPageAsync(string searchQuery, string status, int page, int pageSize);
+
+        //Task<bool> SetLockoutStatusAsync(int userId, bool isLocked);
+        //Task<bool> VerifyResidentAccountAsync(int userId);
+
     }
 }

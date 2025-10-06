@@ -23,5 +23,6 @@ namespace AptCare.Repository.Entities
         public int TechnicianId { get; set; }
 
         public User Technician { get; set; }
+        public ICollection<WorkSlotStatusTracking>? WorkSlotStatusTrackings { get; set; }
     }
 }

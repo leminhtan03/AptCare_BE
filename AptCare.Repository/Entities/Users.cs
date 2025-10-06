@@ -42,6 +42,9 @@ namespace AptCare.Repository.Entities
         public ICollection<Report>? Reports { get; set; }
         public ICollection<Notification>? Notifications { get; set; }
         public ICollection<TechnicianTechnique>? TechnicianTechniques { get; set; }
+        public ICollection<WorkSlot>? WorkSlots { get; set; }
+        public ICollection<Message>? Messages { get; set; }
+        public ICollection<ConversationParticipant>? ConversationParticipants { get; set; }
 
     }
 }

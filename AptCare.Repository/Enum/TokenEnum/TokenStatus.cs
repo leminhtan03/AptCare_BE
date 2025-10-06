@@ -8,8 +8,8 @@ namespace AptCare.Repository.Enum.TokenEnum
 {
     public enum TokenStatus
     {
-        Active,
-        Revoked,
-        Expired
+        Active = 1,
+        Revoked = 2,
+        Expired = 3
     }
 }

@@ -1,5 +1,6 @@
 ﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
+using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.UserDtos;
@@ -23,44 +24,9 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<UserDto> CreateUserAsync(CreateUserDto createUserDto)
         {
-            if (await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.Email == createUserDto.Email) != null)
-            {
-                throw new InvalidOperationException("Email đã tồn tại.");
-            }
-            if (await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.PhoneNumber == createUserDto.PhoneNumber) != null)
-            {
-                throw new InvalidOperationException("Số điện thoại đã tồn tại.");
-            }
-            var user = _mapper.Map<User>(createUserDto);
-            await _unitOfWork.GetRepository<User>().InsertAsync(user);
-            await _unitOfWork.CommitAsync();
-            return _mapper.Map<UserDto>(user);
-        }
-
-        public async Task<bool> DeleteUserAsync(int userId)
-        {
-            var userExist = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.UserId == userId, include: u => u.Include(u => u.Account));
-            if (userExist == null)
-            {
-                throw new KeyNotFoundException("Người dùng không tồn tại.");
-            }
-            if (userExist.Account != null)
-            {
-                throw new InvalidOperationException("Không thể xóa người dùng có tài khoản liên kết.");
-            }
-            if (userExist.Reports != null)
-            {
-                throw new InvalidOperationException("Không thể xóa người dùng đã có đơn hàng");
-            }
-
-            _unitOfWork.GetRepository<User>().DeleteAsync(userExist);
-            await _unitOfWork.CommitAsync();
-            return true;
-        }
-
-        public Task<Paginate<UserDto>> GetPageUsersAsync()
-        {
             throw new NotImplementedException();
+
+
         }
 
         public async Task<UserDto?> GetUserByIdAsync(int userId)
@@ -73,42 +39,48 @@ namespace AptCare.Service.Services.Implements
             return _mapper.Map<UserDto>(user);
         }
 
+        public async Task<IPaginate<UserDto>> GetReSidentDataPageAsync(string searchQuery, string status, int page, int pageSize)
+        {
+            var users = await _unitOfWork.GetRepository<User>().GetPagingListAsync(
+                selector: u => _mapper.Map<UserDto>(u),
+                predicate: u =>
+                    (string.IsNullOrEmpty(searchQuery) ||
+                        ((u.FirstName + " " + u.LastName).ToLower().Contains(searchQuery) ||
+                        u.Email.ToLower().Contains(searchQuery) ||
+                        u.PhoneNumber.ToLower().Contains(searchQuery) ||
+                        u.CitizenshipIdentity.ToLower().Contains(searchQuery))) &&
+                        (u.Account == null || u.Account.Role == AccountRole.Resident) &&
+                    (string.IsNullOrEmpty(status) || u.Status.ToString() == status),
+                include: source => source
+                    .Include(u => u.Account)
+                    .Include(u => u.UserApartments)
+                    .ThenInclude(ua => ua.Apartment),
+                orderBy: users => users.OrderBy(u => u.UserId),
+                page: page,
+                size: pageSize
+            );
+            return users;
+        }
+
+        private Func<IQueryable<User>, IOrderedQueryable<User>> BuildOrderBy(string sortBy)
+        {
+            if (string.IsNullOrEmpty(sortBy)) return null;
+
+            return sortBy.ToLower() switch
+            {
+                "email" => q => q.OrderBy(p => p.Email),
+                "birthday" => q => q.OrderBy(p => p.Birthday),
+                "email_desc" => q => q.OrderByDescending(p => p.Email),
+                "birthday_desc" => q => q.OrderByDescending(p => p.Birthday),
+                "id" => q => q.OrderBy(p => p.UserId),
+                "id_desc" => q => q.OrderByDescending(p => p.UserId),
+                _ => q => q.OrderByDescending(p => p.UserId)
+            };
+        }
+
         public async Task<UserDto?> UpdateUserAsync(UpdateUserDto updateUserDto)
         {
-            var userExist = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.UserId == updateUserDto.UserId);
-            if (userExist == null)
-            {
-                throw new KeyNotFoundException("Người dùng không tồn tại.");
-            }
-            if (!string.IsNullOrEmpty(updateUserDto.Email) && updateUserDto.Email != userExist.Email)
-            {
-                if (await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.Email == updateUserDto.Email) != null)
-                {
-                    throw new InvalidOperationException("Email đã tồn tại.");
-                }
-            }
-            if (!string.IsNullOrEmpty(updateUserDto.Phone) && updateUserDto.Phone != userExist.PhoneNumber)
-            {
-                if (await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.PhoneNumber == updateUserDto.Phone) != null)
-                {
-                    throw new InvalidOperationException("Số điện thoại đã tồn tại.");
-                }
-            }
-            _mapper.Map(updateUserDto, userExist);
-            if (!string.IsNullOrEmpty(updateUserDto.Status))
-            {
-                if (Enum.TryParse(updateUserDto.Status, true, out Repository.Enum.ActiveStatus newStatus))
-                {
-                    userExist.Status = newStatus;
-                }
-                else
-                {
-                    throw new ArgumentException($"Trạng thái '{updateUserDto.Status}' không hợp lệ.");
-                }
-            }
-            _unitOfWork.GetRepository<User>().UpdateAsync(userExist);
-            await _unitOfWork.CommitAsync();
-            return _mapper.Map<UserDto>(userExist);
+            throw new NotImplementedException();
         }
 
     }

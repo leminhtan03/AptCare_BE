@@ -33,6 +33,6 @@ namespace AptCare.Repository.Entities
         public string Location { get; set; }
 
         public ActiveStatus Status { get; set; }
-        public ICollection<Report> Reports { get; set; }
+        public ICollection<Report>? Reports { get; set; }
     }
 }
