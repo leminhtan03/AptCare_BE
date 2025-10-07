@@ -96,6 +96,18 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
 
     #endregion
 
+    #region Any Async
+    public virtual async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
+    {
+        IQueryable<T> query = _dbSet;
+        if (include != null) query = include(query);
+
+        if (predicate != null) query = query.Where(predicate);
+
+        return await query.AnyAsync();
+    }
+    #endregion
+
     #region Insert
 
     public async Task InsertAsync(T entity)

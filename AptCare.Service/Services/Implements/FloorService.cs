@@ -27,7 +27,17 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                var isDupFloor = await _unitOfWork.GetRepository<Floor>().AnyAsync(
+                    predicate: x => x.FloorNumber == dto.FloorNumber
+                    );
+
+                if (isDupFloor)
+                {
+                    throw new Exception("Tầng đã tồn tại.");
+                }
+
                 var floor = _mapper.Map<Floor>(dto);
+
                 await _unitOfWork.GetRepository<Floor>().InsertAsync(floor);
                 await _unitOfWork.CommitAsync();
                 return "Taọ tầng mới thành công";
@@ -42,6 +52,15 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                var isDupFloor = await _unitOfWork.GetRepository<Floor>().AnyAsync(
+                    predicate: x => x.FloorNumber == dto.FloorNumber
+                    );
+
+                if (isDupFloor)
+                {
+                    throw new Exception("Tầng đã tồn tại.");
+                }
+
                 var floor = await _unitOfWork.GetRepository<Floor>().SingleOrDefaultAsync(
                     predicate: x => x.FloorId == id
                     );
