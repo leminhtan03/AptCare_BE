@@ -11,9 +11,9 @@ namespace AptCare.Service.Dtos.BuildingDtos
     {
         public int ApartmentId { get; set; }
         public int FloorId { get; set; }
-        public string RoomNumber { get; set; }
-        public string Description { get; set; }
-        public string Status { get; set; }
-        public string Floor { get; set; }
+        public string RoomNumber { get; set; } = null!;
+        public string Description { get; set; } = null!;
+        public string Status { get; set; } = null!;
+        public string Floor { get; set; } = null!;
     }
 }
