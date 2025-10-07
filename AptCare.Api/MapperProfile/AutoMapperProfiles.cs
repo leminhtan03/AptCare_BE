@@ -76,6 +76,15 @@ namespace AptCare.Api.MapperProfile
             CreateMap<ApartmentUpdateDto, Apartment>()
                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
+            //COMMON AREA
+            CreateMap<CommonArea, CommonAreaDto>()
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+               .ForMember(dest => dest.Floor, opt => opt.MapFrom(src => src.Floor.FloorNumber.ToString()));           
+            CreateMap<CommonAreaCreateDto, CommonArea>()
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => nameof(ActiveStatus.Active)));
+            CreateMap<CommonAreaUpdateDto, CommonArea>()
+               .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
             CreateMap<Account, AccountForAdminDto>()
                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => nameof(src.Role)));
         }

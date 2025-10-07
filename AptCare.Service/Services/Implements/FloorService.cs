@@ -111,6 +111,7 @@ namespace AptCare.Service.Services.Implements
                 selector: x => _mapper.Map<FloorDto>(x),
                 predicate: p => p.FloorId == id,
                 include: i => i.Include(x => x.Apartments)
+                               .Include(x => x.CommonAreas)
                 );
 
             if (floor == null)
@@ -137,7 +138,8 @@ namespace AptCare.Service.Services.Implements
             var result = await _unitOfWork.GetRepository<Floor>().GetPagingListAsync(
                 selector: x => _mapper.Map<FloorDto>(x),
                 predicate: predicate,
-                include: i => i.Include(x => x.Apartments),
+                include: i => i.Include(x => x.Apartments)
+                               .Include(x => x.CommonAreas),
                 orderBy: BuildOrderBy(dto.sortBy),
                     page: page,
                     size: size
