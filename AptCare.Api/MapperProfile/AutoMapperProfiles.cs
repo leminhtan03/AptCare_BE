@@ -31,8 +31,8 @@ namespace AptCare.Api.MapperProfile
             CreateMap<CreateUserDto, User>();
             CreateMap<UpdateUserDto, User>()
                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-            CreateMap<Account, AccountDto>()
-               .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
+            //CreateMap<Account, AccountDto>()
+            //   .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
 
             //FLOOR
             CreateMap<Floor, FloorDto>()
