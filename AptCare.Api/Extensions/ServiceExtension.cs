@@ -25,6 +25,7 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IApartmentService, ApartmentService>();
             service.AddTransient<IUserService, UserService>();
             service.AddTransient<ICommonAreaService, CommonAreaService>();
+            service.AddTransient<IWorkSlotService, WorkSlotService>();
             service.AddTransient<IMailSenderService, MailSenderService>();
             return service;
         }

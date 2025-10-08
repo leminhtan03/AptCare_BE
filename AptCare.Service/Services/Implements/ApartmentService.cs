@@ -128,7 +128,7 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<ApartmentDto> GetApartmentByIdAsync(int id)
         {
-            var Apartment = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(
+            var apartment = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(
                 selector: x => _mapper.Map<ApartmentDto>(x),
                 predicate: p => p.ApartmentId == id,
                 include: i => i.Include(x => x.UserApartments)
@@ -136,12 +136,12 @@ namespace AptCare.Service.Services.Implements
                                         .ThenInclude(x => x.Account)
                 );
 
-            if (Apartment == null)
+            if (apartment == null)
             {
                 throw new KeyNotFoundException("Căn hộ không tồn tại");
             }
 
-            return Apartment;
+            return apartment;
         }
 
         public async Task<IPaginate<ApartmentDto>> GetPaginateApartmentAsync(PaginateDto dto)

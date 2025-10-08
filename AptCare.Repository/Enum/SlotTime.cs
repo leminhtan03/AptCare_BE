@@ -14,8 +14,8 @@ namespace AptCare.Repository.Enum
     }
     public enum WorkSlotStatus
     {
-        Available = 1,
-        Absent = 2,
-
+        NotStarted = 1, // Chưa làm
+        Completed = 2,  // Đã làm
+        Off = 3         // Nghỉ
     }
 }
