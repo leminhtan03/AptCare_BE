@@ -22,7 +22,7 @@ namespace AptCare.Service.Dtos.UserDtos
         public DateTime? Birthday { get; set; }
 
         public string? Status { get; set; }
-        public List<ApartmentForUserDto>? Apartments { get; set; }
+        public List<ApartmentForUserDto>? UserApartments { get; set; }
 
     }
 }
