@@ -5,12 +5,14 @@ using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.Apartment;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
+using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -111,9 +113,9 @@ namespace AptCare.Service.Services.Implements
                 {
                     user.Status = statusEnum;
                 }
-                if (updateUserDto.Apartments != null)
+                if (updateUserDto.UserApartments != null)
                 {
-                    await SyncUserApartments(user, updateUserDto.Apartments);
+                    await SyncUserApartments(user, updateUserDto.UserApartments);
                 }
                 _unitOfWork.GetRepository<User>().UpdateAsync(user);
                 await _unitOfWork.CommitTransactionAsync();
@@ -250,5 +252,134 @@ namespace AptCare.Service.Services.Implements
                 _ => q => q.OrderByDescending(p => p.UserId)
             };
         }
+
+        public async Task<ImportResultDto> ImportResidentsFromExcelAsync(Stream fileStream)
+        {
+            var result = new ImportResultDto();
+            var usersToCreate = new Dictionary<string, User>();
+            var relationsToAdd = new List<UserApartment>();
+
+            using (var package = new ExcelPackage(fileStream))
+            {
+                var worksheet = package.Workbook.Worksheets.FirstOrDefault();
+                if (worksheet == null)
+                {
+                    result.Errors.Add("File Excel không có worksheet nào.");
+                    throw new Exception("File Excel không có worksheet nào.");
+                }
+                result.TotalRows = worksheet.Dimension.Rows - 1;
+                var rowCount = worksheet.Dimension.Rows;
+
+                for (int row = 2; row <= rowCount; row++)
+                {
+                    try
+                    {
+                        // Đọc dữ liệu từ các cột
+                        var firstName = worksheet.Cells[row, 1].Value?.ToString()?.Trim();
+                        var lastName = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
+                        var phoneNumber = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
+                        var email = worksheet.Cells[row, 4].Value?.ToString()?.Trim();
+                        var citizenshipIdentity = worksheet.Cells[row, 5].Value?.ToString()?.Trim();
+                        var apartmentCode = worksheet.Cells[row, 6].Value?.ToString()?.Trim();
+                        var roleInApartmentStr = worksheet.Cells[row, 7].Value?.ToString()?.Trim();
+
+
+                        if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(phoneNumber) || string.IsNullOrEmpty(apartmentCode) || string.IsNullOrEmpty(roleInApartmentStr) || (string.IsNullOrEmpty(email)) || (string.IsNullOrEmpty(lastName)))
+                        {
+                            throw new Exception("Các cột Họ Tên, SĐT, Mã Căn Hộ, Vai Trò không được để trống.");
+                        }
+
+                        if (!Enum.TryParse<RoleInApartmentType>(roleInApartmentStr, true, out var roleEnum))
+                        {
+                            throw new Exception($"Vai trò '{roleInApartmentStr}' không hợp lệ. Chỉ chấp nhận 'Owner' hoặc 'Member'.");
+                        }
+
+                        User userEntity = new User();
+                        if (usersToCreate.ContainsKey(phoneNumber))
+                        {
+                            userEntity = usersToCreate[phoneNumber];
+                        }
+                        else
+                        {
+                            userEntity = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.PhoneNumber == phoneNumber);
+                            if (userEntity == null)
+                            {
+                                userEntity = new User
+                                {
+                                    FirstName = firstName,
+                                    LastName = lastName,
+                                    PhoneNumber = phoneNumber,
+                                    Email = email,
+                                    Status = ActiveStatus.Active
+                                };
+                                usersToCreate.Add(phoneNumber, userEntity);
+                            }
+                        }
+                        var apartment = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(predicate: a => a.RoomNumber == apartmentCode);
+                        if (apartment == null)
+                        {
+                            throw new Exception($"Mã căn hộ '{apartmentCode}' không tồn tại trong hệ thống.");
+                        }
+
+                        // Thêm mối quan hệ vào danh sách chờ
+                        relationsToAdd.Add(new UserApartment
+                        {
+                            User = userEntity,
+                            Apartment = apartment,
+                            RoleInApartment = roleEnum
+                        });
+
+                        result.SuccessfulRows++;
+                    }
+                    catch (Exception ex)
+                    {
+                        result.Errors.Add($"Dòng {row}: {ex.Message}");
+                    }
+                }
+            }
+
+            if (result.IsSuccess && (usersToCreate.Any() || relationsToAdd.Any()))
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                try
+                {
+                    // Thêm các user mới
+                    if (usersToCreate.Any())
+                    {
+                        await _unitOfWork.GetRepository<User>().InsertRangeAsync(usersToCreate.Values);
+                        await _unitOfWork.CommitAsync();
+                    }
+
+                    foreach (var relation in relationsToAdd)
+                    {
+                        var exists = await _unitOfWork.GetRepository<UserApartment>().SingleOrDefaultAsync(predicate: u => u.UserId == relation.User.UserId && u.ApartmentId == relation.Apartment.ApartmentId);
+                        if (exists == null)
+                        {
+                            relation.UserId = relation.User.UserId;
+                            relation.ApartmentId = relation.Apartment.ApartmentId;
+                            await _unitOfWork.GetRepository<UserApartment>().InsertAsync(relation);
+                        }
+                        else if (exists.Status == ActiveStatus.Inactive)
+                        {
+                            exists.Status = ActiveStatus.Active;
+                            exists.RoleInApartment = relation.RoleInApartment;
+                            _unitOfWork.GetRepository<UserApartment>().UpdateAsync(exists);
+                        }
+                    }
+
+                    await _unitOfWork.CommitAsync();
+                    await _unitOfWork.CommitTransactionAsync();
+
+                }
+                catch (Exception dbEx)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    result.Errors.Add($"Lỗi khi lưu vào cơ sở dữ liệu: {dbEx.Message}");
+                }
+            }
+            return result;
+        }
     }
+
 }

@@ -14,4 +14,8 @@
 	  <Folder Include="Dtos\NewFolder\" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <PackageReference Include="EPPlus" Version="8.2.0" />
+	</ItemGroup>
+
 </Project>
