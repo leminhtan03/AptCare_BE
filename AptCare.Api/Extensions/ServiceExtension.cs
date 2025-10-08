@@ -13,6 +13,7 @@ namespace AptCare.Api.Extensions
     {
         public static IServiceCollection AddService(this IServiceCollection service)
         {
+
             service.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
             service.AddTransient<IUnitOfWork, UnitOfWork<AptCareSystemDBContext>>();
             service.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
@@ -25,6 +26,7 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IUserService, UserService>();
             service.AddTransient<ICommonAreaService, CommonAreaService>();
             service.AddTransient<IWorkSlotService, WorkSlotService>();
+            service.AddTransient<IMailSenderService, MailSenderService>();
             return service;
         }
     }

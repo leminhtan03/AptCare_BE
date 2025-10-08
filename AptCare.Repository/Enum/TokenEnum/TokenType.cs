@@ -7,6 +7,5 @@ namespace AptCare.Repository.Enum.TokenEnum
         AccessToken = 1,
         RefreshToken = 2,
         PasswordResetToken = 3
-
     }
 }

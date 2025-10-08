@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AptCare.Service.Dtos.BuildingDtos;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -20,7 +21,7 @@ namespace AptCare.Service.Dtos.UserDtos
         [Required(ErrorMessage = "Số điện thoại không được để trống.")]
         [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]
         [MaxLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự.")]
-        public string PhoneNumber { get; set; } // Đã đổi từ Phone
+        public string PhoneNumber { get; set; }
 
         [Required(ErrorMessage = "Email không được để trống.")]
         [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
@@ -29,7 +30,7 @@ namespace AptCare.Service.Dtos.UserDtos
 
         [MaxLength(50, ErrorMessage = "CCCD không được vượt quá 50 ký tự.")]
         public string? CitizenshipIdentity { get; set; }
-
+        public List<ApartmentForUserDto>? Apartments { get; set; }
         public DateTime? Birthday { get; set; }
     }
 }

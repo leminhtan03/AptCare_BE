@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AptCare.Service.Dtos.Account
 {
-    public class AccountDto
+    public class AccountForAdminDto
     {
         public int AccountId { get; set; }
         public string Username { get; set; }

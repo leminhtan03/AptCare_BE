@@ -24,4 +24,10 @@
 		<ProjectReference Include="..\AptCare.Service\AptCare.Service.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="MailTemplate\AccountCredentials.html">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>
