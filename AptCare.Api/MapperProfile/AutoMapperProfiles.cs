@@ -12,28 +12,28 @@ namespace AptCare.Api.MapperProfile
         public AutoMapperProfiles()
         {
             CreateMap<User, UserDto>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => nameof(src.Status)))
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
                .ForMember(
                 dest => dest.Apartments,
                 opt => opt.MapFrom(src =>
                     src.UserApartments.Select(ua => new ApartmentForUserDto
                     {
                         RoomNumber = ua.Apartment.RoomNumber,
-                        RoleInApartment = nameof(ua.RoleInApartment),
+                        RoleInApartment = ua.RoleInApartment.ToString(),
                         RelationshipToOwner = ua.RelationshipToOwner
                     })
                 ))
                .ForMember(dest => dest.AccountInfo, opt => opt.MapFrom(src => src.Account));
             CreateMap<Account, AccountForAdminDto>()
-            .ForMember(dest => dest.Role, opt => opt.MapFrom(src => nameof(src.Role)))
+            .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()))
             .ForMember(dest => dest.LockoutEnabled, opt => opt.MapFrom(src => src.LockoutEnabled))
             .ForMember(dest => dest.LockoutEnd, opt => opt.MapFrom(src => src.LockoutEnd));
 
             CreateMap<CreateUserDto, User>();
             CreateMap<UpdateUserDto, User>()
                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-            //CreateMap<Account, AccountDto>()
-            //   .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
+            CreateMap<Account, AccountDto>()
+               .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
 
             //FLOOR
             CreateMap<Floor, FloorDto>()
@@ -56,7 +56,7 @@ namespace AptCare.Api.MapperProfile
                    FirstName = src.User.FirstName,
                    LastName = src.User.LastName,
                    Email = src.User.Email,
-                   Phone = src.User.PhoneNumber,
+                   PhoneNumber = src.User.PhoneNumber,
                    CitizenshipIdentity = src.User.CitizenshipIdentity,
                    Birthday = src.User.Birthday,
                    Apartments = null,
@@ -79,7 +79,7 @@ namespace AptCare.Api.MapperProfile
             //COMMON AREA
             CreateMap<CommonArea, CommonAreaDto>()
                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-               .ForMember(dest => dest.Floor, opt => opt.MapFrom(src => src.Floor.FloorNumber.ToString()));           
+               .ForMember(dest => dest.Floor, opt => opt.MapFrom(src => src.Floor.FloorNumber.ToString()));
             CreateMap<CommonAreaCreateDto, CommonArea>()
                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => nameof(ActiveStatus.Active)));
             CreateMap<CommonAreaUpdateDto, CommonArea>()

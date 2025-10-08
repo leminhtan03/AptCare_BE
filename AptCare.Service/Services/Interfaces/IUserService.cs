@@ -17,9 +17,7 @@ namespace AptCare.Service.Services.Interfaces
         Task<IPaginate<UserDto>> GetReSidentDataPageAsync(string searchQuery, string status, int page, int pageSize);
         Task<IPaginate<UserDto>> GetSystemUserPageAsync(string searchQuery, string role, string status, int page, int pageSize);
         Task<ImportResultDto> ImportResidentsFromExcelAsync(Stream fileStream);
-
-        //Task<bool> SetLockoutStatusAsync(int userId, bool isLocked);
-        //Task<bool> VerifyResidentAccountAsync(int userId);
+        Task<UserDto> CreateAccountForNewUserAsync(CreateAccountForNewUserDto createAccountDto);
 
     }
 }

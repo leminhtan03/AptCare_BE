@@ -22,7 +22,16 @@ namespace AptCare.Service.Dtos.UserDtos
         public DateTime? Birthday { get; set; }
 
         public string? Status { get; set; }
-        public List<ApartmentForUserDto>? UserApartments { get; set; }
 
+        [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]
+        [MaxLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự.")]
+        public string? PhoneNumber { get; set; }
+
+        [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
+        [MaxLength(256, ErrorMessage = "Email không được vượt quá 256 ký tự.")]
+        public string? Email { get; set; }
+        public List<ApartmentForUserDto>? Apartments { get; set; }
+
+        public string? AccountRole { get; set; }
     }
 }

@@ -1,10 +1,14 @@
 ﻿using AptCare.Repository.Entities;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.UserDtos;
+using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OfficeOpenXml;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace AptCare.Api.Controllers
@@ -55,22 +59,6 @@ namespace AptCare.Api.Controllers
         /// <para>Endpoint này cho phép cập nhật thông tin người dùng bao gồm dữ liệu cá nhân, phân công căn hộ và trạng thái.</para>
         /// <para>Chỉ những thuộc tính không null trong UpdateUserDto mới được cập nhật (partial update).</para>
         /// <para><strong>Lưu ý:</strong> Endpoint này yêu cầu quyền Manager .</para>
-        /// 
-        /// <para><strong>Ví dụ request body:</strong></para>
-        /// <code>
-        /// {
-        ///   "firstName": "Nguyen Van",
-        ///   "lastName": "A", 
-        ///   "citizenshipIdentity": "123456789012",
-        ///   "birthday": "1990-01-01",
-        ///   "status": "Active",
-        ///   "userApartments": [{
-        ///     "roomNumber": "A-101",
-        ///     "roleInApartment": "Owner",
-        ///     "relationshipToOwner": "Self"
-        ///   }]
-        /// }
-        /// </code>
         /// </remarks>
         /// <param name="id">ID duy nhất của người dùng cần cập nhật (phải là số nguyên dương).</param>
         /// <param name="updateUserDto">Đối tượng chứa thông tin cần cập nhật.
@@ -80,8 +68,12 @@ namespace AptCare.Api.Controllers
         /// <item><description><strong>LastName:</strong> Họ (tối đa 256 ký tự, có validation)</description></item>
         /// <item><description><strong>CitizenshipIdentity:</strong> Số CCCD/CMND (tối đa 50 ký tự)</description></item>
         /// <item><description><strong>Birthday:</strong> Ngày sinh (định dạng DateTime)</description></item>
+        /// <item><description><strong>PhoneNumber:</strong> Số điện thoại (tối đa 20 ký tự, có validation)</description></item>
         /// <item><description><strong>Status:</strong> Trạng thái người dùng</description></item>
-        /// <item><description><strong>UserApartments:</strong> Danh sách căn hộ được phân công:
+        /// <item><description><strong>Email:</strong> Địa chỉ email (tối đa 256 ký tự, có validation)</description></item>
+        /// <item><description><strong>AccountRole:</strong> Vai trò tài khoản (Enum: "Manager", "Resident", "Receptionist", "Technician","TechnicianLead")</description></item>
+        /// <item><description><strong>UserApartments:</strong> Danh sách căn hộ được phân công: <br/>
+        /// <strong>CHỈ Có Role RESIDENT mới có list này </strong>
         ///   <list type="bullet">
         ///   <item><description><strong>RoomNumber:</strong> Số căn hộ (VD: "A-101")</description></item>
         ///   <item><description><strong>RoleInApartment:</strong> Vai trò - "Owner" (chủ hộ) hoặc "Member" (thành viên)</description></item>
@@ -123,14 +115,9 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách dữ liệu cư dân theo trang với khả năng lọc và tìm kiếm. Nó sẽ lấy tất cả thông tin của cư dân bao gồm dữ liệu cá nhân, căn hộ được phân công và trạng thái tài khoản. (Ko có các thông tin của nhân viên)
         /// </summary>
         /// <remarks>
-        /// <para>Endpoint này trả về danh sách cư dân được phân trang với các tùy chọn lọc và tìm kiếm.</para>
-        /// <para>Hỗ trợ tìm kiếm theo tên, email, số điện thoại và lọc theo trạng thái người dùng.</para>
         /// <para><strong>Lưu ý:</strong> Endpoint này yêu cầu quyền Manager.</para>
         /// 
         /// <para><strong>Ví dụ query parameters:</strong></para>
-        /// <code>
-        /// GET /api/usermanagement/residents_data?searchQuery=Nguyen&status=Active&page=1&pageSize=10
-        /// </code>
         /// </remarks>
         /// <param name="getResidentDataFilterDto">Đối tượng chứa các tham số lọc và phân trang.
         /// <para><strong>Các thuộc tính bao gồm:</strong></para>
@@ -229,54 +216,38 @@ namespace AptCare.Api.Controllers
             }
         }
         /// <summary>
-        /// Nhập danh sách cư dân từ file Excel với validation và xử lý lỗi chi tiết.
+        /// Nhập dữ liệu cư dân từ file Excel với xác thực và xử lý lỗi chi tiết.
         /// </summary>
         /// <remarks>
-        /// <para>Endpoint này cho phép nhập hàng loạt thông tin cư dân từ file Excel (.xlsx).</para>
-        /// <para>Hệ thống sẽ validate từng dòng dữ liệu và báo cáo chi tiết kết quả import bao gồm số dòng thành công, thất bại và lỗi cụ thể.</para>
+        /// <para>Endpoint này cho phép nhập hàng loạt thông tin cư dân từ file Excel (.xlsx) với xác thực dữ liệu đầy đủ.</para>
+        /// <para>Hệ thống sẽ validate từng dòng dữ liệu và cung cấp báo cáo chi tiết về các lỗi nếu có.</para>
         /// <para><strong>Lưu ý:</strong> Endpoint này yêu cầu quyền Manager.</para>
-        /// <para><strong>Yêu cầu định dạng file Excel:</strong></para>
+        /// 
+        /// <para><strong>Định dạng file Excel yêu cầu:</strong></para>
         /// <list type="bullet">
-        /// <item><description>Định dạng: .xlsx (Excel 2007 trở lên)</description></item>
-        /// <item><description>Kích thước tối đa: Theo cấu hình server</description></item>
-        /// </list>
-        /// <para><strong>Quy trình xử lý:</strong></para>
-        /// <list type="number">
-        /// <item><description>Kiểm tra định dạng file (.xlsx)</description></item>
-        /// <item><description>Đọc và parse dữ liệu từ Excel</description></item>
-        /// <item><description>Validate từng dòng dữ liệu theo business rules</description></item>
-        /// <item><description>Tạo user và phân công căn hộ cho các dòng hợp lệ</description></item>
-        /// <item><description>Trả về báo cáo chi tiết kết quả import</description></item>
+        /// <item><description><strong>Định dạng:</strong> .xlsx (Excel 2007 trở lên)</description></item>
         /// </list>
         /// </remarks>
-        /// <param name="file">File Excel chứa danh sách cư dân cần import.
-        /// </param>
         /// <returns>
         /// <para><strong>Các trường hợp trả về:</strong></para>
         /// <list type="table">
-        /// <item><term>200 OK</term><description>Import thành công, trả về ImportResultDto với thông tin chi tiết:
+        /// <item><term>200 OK</term><description>Nhập thành công, trả về ImportResultDto với:
         ///   <list type="bullet">
         ///   <item><description><strong>TotalRows:</strong> Tổng số dòng đã xử lý</description></item>
-        ///   <item><description><strong>SuccessfulRows:</strong> Số dòng import thành công</description></item>
+        ///   <item><description><strong>SuccessfulRows:</strong> Số dòng nhập thành công</description></item>
         ///   <item><description><strong>FailedRows:</strong> Số dòng thất bại</description></item>
-        ///   <item><description><strong>IsSuccess:</strong> true nếu có ít nhất 1 dòng thành công</description></item>
-        ///   <item><description><strong>Errors:</strong> Danh sách lỗi chi tiết cho từng dòng thất bại</description></item>
+        ///   <item><description><strong>IsSuccess:</strong> Trạng thái tổng quát của quá trình nhập</description></item>
+        ///   <item><description><strong>Errors:</strong> Danh sách lỗi chi tiết (nếu có)</description></item>
         ///   </list>
         /// </description></item>
-        /// <item><term>400 Bad Request</term><description>
-        ///   <list type="bullet">
-        ///   <item><description>File không được chọn hoặc rỗng</description></item>
-        ///   <item><description>File không đúng định dạng .xlsx</description></item>
-        ///   <item><description>ImportResultDto.IsSuccess = false (tất cả dòng thất bại)</description></item>
-        ///   </list>
-        /// </description></item>
-        /// <item><term>500 Internal Server Error</term><description>Lỗi hệ thống trong quá trình xử lý file hoặc database</description></item>
+        /// <item><term>400 Bad Request</term><description>File không hợp lệ (null, empty, hoặc không phải .xlsx)</description></item>
+        /// <item><term>500 Internal Server Error</term><description>Lỗi hệ thống trong quá trình xử lý file</description></item>
         /// </list>
         /// </returns>
-        /// <exception cref="ArgumentNullException">Ném khi file parameter là null</exception>
-        /// <exception cref="InvalidDataException">Ném khi file Excel có cấu trúc không hợp lệ</exception>
-        /// <exception cref="ValidationException">Ném khi dữ liệu trong file vi phạm validation rules</exception>
+        /// <exception cref="ArgumentException">Ném khi file không hợp lệ hoặc định dạng sai</exception>
+        /// <exception cref="InvalidDataException">Ném khi cấu trúc dữ liệu trong Excel không đúng</exception>
         /// <exception cref="IOException">Ném khi có lỗi đọc file</exception>
+        //[Authorize(Roles = nameof(AccountRole.Manager))]
         [HttpPost("import-residents")]
         public async Task<IActionResult> ImportResidents(IFormFile file)
         {
@@ -292,6 +263,7 @@ namespace AptCare.Api.Controllers
             try
             {
                 await using var stream = file.OpenReadStream();
+
                 var result = await _userService.ImportResidentsFromExcelAsync(stream);
 
                 if (!result.IsSuccess)
@@ -306,6 +278,76 @@ namespace AptCare.Api.Controllers
                 return StatusCode(500, $"Lỗi hệ thống: {ex.Message}");
             }
         }
+        /// <summary>
+        /// Tạo mới một người dùng trong hệ thống với thông tin được cung cấp.
+        /// </summary>
+        /// <remarks>
+        /// <para>Endpoint này cho phép tạo mới người dùng với đầy đủ thông tin cá nhân và phân công căn hộ (nếu có).(Ko có tạo acc ở đây)</para>
+        /// <para>Hỗ trợ tạo tất cả các loại người dùng: cư dân, nhân viên, quản lý.</para>
+        /// <para><strong>Lưu ý:</strong> Endpoint này yêu cầu quyền Manager.</para>
+        /// <para><strong>Validation rules:</strong></para>
+        /// <list type="bullet">
+        /// <item><description>FirstName và LastName là bắt buộc, tối đa 256 ký tự</description></item>
+        /// <item><description>Email phải hợp lệ và duy nhất trong hệ thống</description></item>
+        /// <item><description>PhoneNumber phải có định dạng hợp lệ</description></item>
+        /// <item><description>CitizenshipIdentity tối đa 50 ký tự (tùy chọn)</description></item>
+        /// </list>
+        /// </remarks>
+        /// <param name="createUserDto">Đối tượng chứa thông tin người dùng cần tạo.
+        /// <para><strong>Các thuộc tính bao gồm:</strong></para>
+        /// <list type="bullet">
+        /// <item><description><strong>FirstName:</strong> Tên (bắt buộc, tối đa 256 ký tự)</description></item>
+        /// <item><description><strong>LastName:</strong> Họ (bắt buộc, tối đa 256 ký tự)</description></item>
+        /// <item><description><strong>PhoneNumber:</strong> Số điện thoại (bắt buộc, tối đa 20 ký tự, có validation)</description></item>
+        /// <item><description><strong>Email:</strong> Địa chỉ email (bắt buộc, tối đa 256 ký tự, có validation)</description></item>
+        /// <item><description><strong>CitizenshipIdentity:</strong> Số CCCD/CMND (tùy chọn, tối đa 50 ký tự)</description></item>
+        /// <item><description><strong>Birthday:</strong> Ngày sinh (tùy chọn, định dạng DateTime)</description></item>
+        /// <item><description><strong>Apartments:</strong> Danh sách căn hộ được phân công (chỉ áp dụng cho cư dân):
+        ///   <list type="bullet">
+        ///   <item><description><strong>RoomNumber:</strong> Số căn hộ (VD: "A-101")</description></item>
+        ///   <item><description><strong>RoleInApartment:</strong> Vai trò - "Owner" (chủ hộ) hoặc "Member" (thành viên)</description></item>
+        ///   <item><description><strong>RelationshipToOwner:</strong> Mối quan hệ với chủ hộ (VD: "Spouse", "Child", "Parent", "Self")</description></item>
+        ///   </list>
+        /// </description></item>
+        /// </list>
+        /// </param>
+        /// <returns>
+        /// <para><strong>Các trường hợp trả về:</strong></para>
+        /// <list type="table">
+        /// <item><term>200 OK</term><description>Tạo thành công, trả về UserDto của người dùng mới được tạo</description></item>
+        /// <item><term>400 Bad Request</term><description>Dữ liệu đầu vào không hợp lệ (model validation failed, email đã tồn tại)</description></item>
+        /// <item><term>500 Internal Server Error</term><description>Lỗi hệ thống trong quá trình tạo người dùng</description></item>
+        /// </list>
+        /// </returns>
+        /// <exception cref="ValidationException">Ném khi dữ liệu đầu vào vi phạm validation rules</exception>
+        /// <exception cref="InvalidOperationException">Ném khi email đã tồn tại trong hệ thống</exception>
+        /// <exception cref="ArgumentException">Ném khi dữ liệu căn hộ không hợp lệ</exception>
+        [HttpPost("create-user-data")]
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
+        {
+            try
+            {
+                var result = await _userService.CreateUserAsync(createUserDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred while processing your request." + ex.Message);
+            }
+        }
 
+        [HttpPost("create-account-for-new-user")]
+        public async Task<IActionResult> CreateAccountForNewUser([FromBody] CreateAccountForNewUserDto createAccountDto)
+        {
+            try
+            {
+                var result = await _userService.CreateAccountForNewUserAsync(createAccountDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred while processing your request." + ex.Message);
+            }
+        }
     }
 }

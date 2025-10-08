@@ -2,11 +2,13 @@
 using AptCare.Api.Extensions;
 using AptCare.Api.MapperProfile;
 using AptCare.Repository;
+using AptCare.Repository.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
+using OfficeOpenXml;
 using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -24,9 +26,8 @@ namespace AptCare.Api
                 .AddAuthenticationConfig(builder.Configuration)
                 .AddCustomController()
                 .AddSwaggerConfig();
-
+            builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
             builder.Services.AddEndpointsApiExplorer();
-      
 
             builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 
