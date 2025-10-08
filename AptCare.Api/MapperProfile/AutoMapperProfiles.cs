@@ -4,6 +4,7 @@ using AptCare.Repository.Enum.Apartment;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.UserDtos;
+using AptCare.Service.Dtos.WorkSlotDtos;
 using AutoMapper;
 namespace AptCare.Api.MapperProfile
 {
@@ -84,6 +85,12 @@ namespace AptCare.Api.MapperProfile
                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => nameof(ActiveStatus.Active)));
             CreateMap<CommonAreaUpdateDto, CommonArea>()
                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            //WORK SLOT
+            CreateMap<WorkSlotUpdateDto, WorkSlot>()
+               .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<WorkSlot, TechnicianWorkSlotDto>()
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
 
             CreateMap<Account, AccountForAdminDto>()
                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => nameof(src.Role)));
