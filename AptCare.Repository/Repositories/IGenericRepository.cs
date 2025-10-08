@@ -45,6 +45,10 @@ public interface IGenericRepository<T> : IDisposable where T : class
 
     #endregion
 
+    #region Any Async
+    Task<bool> AnyAsync(Expression<Func<T, bool>> predicate = null, Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null);
+    #endregion
+
     #region Insert
 
     Task InsertAsync(T entity);

@@ -27,7 +27,17 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                var isDupFloor = await _unitOfWork.GetRepository<Floor>().AnyAsync(
+                    predicate: x => x.FloorNumber == dto.FloorNumber
+                    );
+
+                if (isDupFloor)
+                {
+                    throw new Exception("Số tầng đã tồn tại.");
+                }
+
                 var floor = _mapper.Map<Floor>(dto);
+
                 await _unitOfWork.GetRepository<Floor>().InsertAsync(floor);
                 await _unitOfWork.CommitAsync();
                 return "Taọ tầng mới thành công";
@@ -41,7 +51,7 @@ namespace AptCare.Service.Services.Implements
         public async Task<string> UpdateFloorAsync(int id, FloorUpdateDto dto)
         {
             try
-            {
+            {                
                 var floor = await _unitOfWork.GetRepository<Floor>().SingleOrDefaultAsync(
                     predicate: x => x.FloorId == id
                     );
@@ -50,6 +60,16 @@ namespace AptCare.Service.Services.Implements
                 {
                     throw new KeyNotFoundException("Tầng không tồn tại.");
                 }
+
+                var isDupFloor = await _unitOfWork.GetRepository<Floor>().AnyAsync(
+                    predicate: x => x.FloorNumber == dto.FloorNumber
+                    );
+
+                if (isDupFloor)
+                {
+                    throw new Exception("Số tầng đã tồn tại.");
+                }
+
 
                 _mapper.Map(dto, floor);
                 _unitOfWork.GetRepository<Floor>().UpdateAsync(floor);
@@ -89,7 +109,9 @@ namespace AptCare.Service.Services.Implements
         {
             var floor = await _unitOfWork.GetRepository<Floor>().SingleOrDefaultAsync(
                 selector: x => _mapper.Map<FloorDto>(x),
-                predicate: p => p.FloorId == id
+                predicate: p => p.FloorId == id,
+                include: i => i.Include(x => x.Apartments)
+                               .Include(x => x.CommonAreas)
                 );
 
             if (floor == null)
@@ -111,12 +133,13 @@ namespace AptCare.Service.Services.Implements
                 (string.IsNullOrEmpty(search) || p.FloorNumber.ToString().Contains(search) ||
                                                  p.Description.Contains(search)) &&
                 (string.IsNullOrEmpty(filter) ||
-                filter.Equals(p.Status.ToString()));
+                filter.Equals(p.Status.ToString().ToLower()));
 
             var result = await _unitOfWork.GetRepository<Floor>().GetPagingListAsync(
                 selector: x => _mapper.Map<FloorDto>(x),
                 predicate: predicate,
-                include: i => i.Include(x => x.Apartments),
+                include: i => i.Include(x => x.Apartments)
+                               .Include(x => x.CommonAreas),
                 orderBy: BuildOrderBy(dto.sortBy),
                     page: page,
                     size: size

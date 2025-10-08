@@ -66,7 +66,7 @@ namespace AptCare.Api.Controllers
         /// <remarks>
         /// **Chỉ role:** Manager  
         ///  
-        /// Dữ liệu yêu cầu gồm: số tầng, mô tả, trạng thái, ID tòa nhà, v.v.
+        /// Dữ liệu yêu cầu gồm: số tầng, mô tả, Mã tòa nhà, v.v.
         /// </remarks>
         /// <param name="dto">Thông tin tầng cần tạo.</param>
         /// <returns>Thông báo tạo tầng thành công.</returns>
@@ -85,7 +85,7 @@ namespace AptCare.Api.Controllers
         /// <remarks>
         /// **Chỉ role:** Manager  
         ///  
-        /// Cập nhật thông tin như: mô tả, trạng thái, hoặc số tầng.
+        /// Cập nhật thông tin như: mô tả, trạng thái, Mã tòa nhà, hoặc số tầng.
         /// </remarks>
         /// <param name="id">ID của tầng cần cập nhật.</param>
         /// <param name="dto">Thông tin tầng cập nhật.</param>
