@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using AptCare.Repository.Paginate;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 
 namespace AptCare.Repository.Repositories;
@@ -37,6 +38,28 @@ public interface IGenericRepository<T> : IDisposable where T : class
 
     Task<IPaginate<TResult>> GetPagingListAsync<TResult>(
         Expression<Func<T, TResult>> selector,
+        Expression<Func<T, bool>> predicate = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null,
+        int page = 1,
+        int size = 10);
+
+    Task<TResult> ProjectToSingleOrDefaultAsync<TResult>(
+        IConfigurationProvider configuration,
+        object parameters = null,
+        Expression<Func<T, bool>> predicate = null,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null);
+
+    Task<ICollection<TResult>> ProjectToListAsync<TResult>(
+        IConfigurationProvider configuration,
+        object parameters = null,
+        Expression<Func<T, bool>> predicate = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null);
+
+    Task<IPaginate<TResult>> ProjectToPagingListAsync<TResult>(
+        IConfigurationProvider configuration,
+        object parameters = null,
         Expression<Func<T, bool>> predicate = null,
         Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
         Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null,

@@ -19,15 +19,17 @@ namespace AptCare.Repository.Entities
         public int SenderId { get; set; }
         public User Sender { get; set; }
         [ForeignKey("RellyMessage")]
-        public int? RellyMessageId { get; set; }
+        public int? ReplyMessageId { get; set; }
         public string Content { get; set; }
-        public string type { get; set; }
+        public MessageType Type { get; set; }
         public DateTime CreatedAt { get; set; }
         public MessageStatus Status { get; set; }
 
-        public Message? RellyMessage { get; set; }
+        public Message? ReplyMessage { get; set; }
 
         public Conversation Conversation { get; set; }
-        public ICollection<Message>? RellyMessages { get; set; }
+        public ICollection<Message>? ReplyMessages { get; set; }
+
+        public Notification? Notification { get; set; }
     }
 }
