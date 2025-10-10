@@ -1,5 +1,7 @@
 ﻿using System.Linq.Expressions;
 using AptCare.Repository.Paginate;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 
@@ -93,6 +95,72 @@ public class GenericRepository<T> : IGenericRepository<T> where T : class
         if (orderBy != null) return orderBy(query).Select(selector).ToPaginateAsync(page, size, 1);
         return query.AsNoTracking().Select(selector).ToPaginateAsync(page, size, 1);
     }
+
+    public async Task<TResult> ProjectToSingleOrDefaultAsync<TResult>(
+        IConfigurationProvider configuration,
+        object parameters = null,
+        Expression<Func<T, bool>> predicate = null,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
+    {
+        IQueryable<T> query = _dbSet;
+
+        if (include != null)
+            query = include(query);
+
+        if (predicate != null)
+            query = query.Where(predicate);
+
+        var projectedQuery = query.ProjectTo<TResult>(configuration, parameters);
+        return await projectedQuery.FirstOrDefaultAsync();
+    }
+
+    public async Task<ICollection<TResult>> ProjectToListAsync<TResult>(
+        IConfigurationProvider configuration,
+        object parameters = null,
+        Expression<Func<T, bool>> predicate = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null)
+    {
+        IQueryable<T> query = _dbSet;
+
+        if (include != null)
+            query = include(query);
+
+        if (predicate != null)
+            query = query.Where(predicate);       
+
+        if (orderBy != null)
+            query = orderBy(query);
+
+        var projectedQuery = query.ProjectTo<TResult>(configuration, parameters);
+        return await projectedQuery.ToListAsync();
+    }
+
+    public Task<IPaginate<TResult>> ProjectToPagingListAsync<TResult>(
+        IConfigurationProvider configuration,
+        object parameters = null,
+        Expression<Func<T, bool>> predicate = null,
+        Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+        Func<IQueryable<T>, IIncludableQueryable<T, object>> include = null,
+        int page = 1,
+        int size = 10)
+    {
+        IQueryable<T> query = _dbSet;
+
+        if (include != null)
+            query = include(query);
+
+        if (predicate != null)
+            query = query.Where(predicate);
+
+        if (orderBy != null)
+            query = orderBy(query);
+
+        var projectedQuery = query.ProjectTo<TResult>(configuration, parameters);
+        return projectedQuery.ToPaginateAsync(page, size, 1);
+    }
+
+
 
     #endregion
 

@@ -73,7 +73,7 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.GetRepository<WorkSlot>().InsertRangeAsync(workSlots);
                 await _unitOfWork.CommitAsync();
 
-                return "Taọ lịch làm việc mới thành công";
+                return "Taọ lịch làm việc mới thành công.";
             }
             catch (Exception e)
             {
@@ -118,7 +118,7 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.GetRepository<WorkSlot>().InsertRangeAsync(workSlots);
                 await _unitOfWork.CommitAsync();
 
-                return "Taọ lịch làm việc mới thành công";
+                return "Taọ lịch làm việc mới thành công.";
             }
             catch (Exception e)
             {
@@ -157,7 +157,7 @@ namespace AptCare.Service.Services.Implements
                 _mapper.Map(dto, workSlot);
                 _unitOfWork.GetRepository<WorkSlot>().UpdateAsync(workSlot);
                 await _unitOfWork.CommitAsync();
-                return "Cập nhật lịch làm việc thành công";
+                return "Cập nhật lịch làm việc thành công.";
             }
             catch (Exception e)
             {
@@ -180,7 +180,7 @@ namespace AptCare.Service.Services.Implements
 
                 _unitOfWork.GetRepository<WorkSlot>().DeleteAsync(workSlot);
                 await _unitOfWork.CommitAsync();
-                return "Xóa lịch làm việc thành công";
+                return "Xóa lịch làm việc thành công.";
             }
             catch (Exception e)
             {
@@ -204,7 +204,7 @@ namespace AptCare.Service.Services.Implements
 
             if (fromDate > toDate)
             {
-                throw new Exception("'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'");
+                throw new Exception("'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.");
             }
 
             var workSlots = await _unitOfWork.GetRepository<WorkSlot>().GetListAsync(
@@ -253,7 +253,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception("Login Before USE!!!!");
+                throw new Exception("Vui lòng đăng nhập.");
             }
         }
     }

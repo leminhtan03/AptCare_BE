@@ -3,6 +3,7 @@ using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.Apartment;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Dtos.ChatDtos;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Dtos.WorkSlotDtos;
 using AutoMapper;
@@ -91,6 +92,29 @@ namespace AptCare.Api.MapperProfile
                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<WorkSlot, TechnicianWorkSlotDto>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+
+            //CONVERSATION
+            //CreateMap<Us, Conversation>()
+            //   .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            //MESSAGE
+            CreateMap<TextMessageCreateDto, Message>()
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => MessageStatus.Sent))
+               .ForMember(dest => dest.Type, opt => opt.MapFrom(src => MessageType.Text))
+               .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow.AddHours(7)));
+            CreateMap<Message, MessageDto>()
+               .ForMember(dest => dest.SenderName, opt => opt.MapFrom(src => src.Sender.FirstName + " " + src.Sender.LastName))
+               //.ForMember(dest => dest.SenderAvatar, opt => opt.MapFrom(src => src.Sender.AvatarUrl))
+               .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+               .ForMember(dest => dest.ReplyType, opt => opt.MapFrom(src => src.ReplyMessage != null ? src.ReplyMessage.Type.ToString() : null))
+               .ForMember(dest => dest.ReplyContent, opt => opt.MapFrom(src => src.ReplyMessage != null ? src.ReplyMessage.Content : null))
+               .ForMember(dest => dest.ReplySenderName, opt => opt.MapFrom(src => src.ReplyMessage != null
+                                                                                ? src.ReplyMessage.Sender.FirstName + " " + src.ReplyMessage.Sender.LastName
+                                                                                : null))
+               .ForMember(dest => dest.IsMine,
+                    opt => opt.MapFrom((src, dest, destMember, context) =>
+                        src.SenderId == (int)context.Items["CurrentUserId"]));
 
             CreateMap<Account, AccountForAdminDto>()
                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => nameof(src.Role)));

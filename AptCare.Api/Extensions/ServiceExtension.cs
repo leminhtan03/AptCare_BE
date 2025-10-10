@@ -27,6 +27,10 @@ namespace AptCare.Api.Extensions
             service.AddTransient<ICommonAreaService, CommonAreaService>();
             service.AddTransient<IWorkSlotService, WorkSlotService>();
             service.AddTransient<IMailSenderService, MailSenderService>();
+            service.AddTransient<IConversationService, ConversationService>();
+            service.AddTransient<IMessageService, MessageService>();
+            service.AddTransient<ICloudinaryService, CloudinaryService>();
+
             return service;
         }
     }
