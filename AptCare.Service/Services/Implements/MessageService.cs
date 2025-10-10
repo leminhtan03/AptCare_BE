@@ -1,0 +1,267 @@
+﻿using AptCare.Repository.Entities;
+using AptCare.Repository.UnitOfWork;
+using AptCare.Repository;
+using AptCare.Service.Dtos.ChatDtos;
+using AptCare.Service.Services.Interfaces;
+using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.VisualBasic;
+using AptCare.Repository.Enum;
+using AptCare.Repository.Paginate;
+using Microsoft.EntityFrameworkCore;
+
+namespace AptCare.Service.Services.Implements
+{
+    public class MessageService : BaseService<Message>, IMessageService
+    {
+        private IHttpContextAccessor _httpContextAccessor;
+        private readonly ICloudinaryService _cloudinaryService;
+
+        public MessageService(
+            IUnitOfWork<AptCareSystemDBContext> unitOfWork, 
+            ILogger<Message> logger, 
+            IMapper mapper, 
+            IHttpContextAccessor httpContextAccessor,
+            ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
+        {
+            _httpContextAccessor = httpContextAccessor;
+            _cloudinaryService = cloudinaryService;
+        }
+
+        public async Task<string> CreateTextMessageAsync(TextMessageCreateDto dto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var userId = GetUserId();
+
+                var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(
+                                    predicate: p => p.ConversationId == dto.ConversationId
+                                    );
+                if (!isExistingConversation)
+                {
+                    throw new Exception($"Cuộc trò chuyện không tồn tại.");
+                }
+
+                if (dto.RellyMessageId != null)
+                {
+                    var isExistingMessage = await _unitOfWork.GetRepository<Message>().AnyAsync(
+                                    predicate: p => p.MessageId == dto.RellyMessageId
+                                    );
+                    if (!isExistingMessage)
+                    {
+                        throw new Exception($"Tin nhắn không tồn tại.");
+                    }
+                }
+
+                var message = _mapper.Map<Message>(dto);
+                message.SenderId = userId;
+                
+                await _unitOfWork.GetRepository<Message>().InsertAsync(message);
+
+                await PushMessageNotificationAsync(message);
+
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return "Đã gửi tin nhắn.";
+            }
+            catch (Exception e)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new Exception($"Lỗi hệ thống: {e.Message}");
+            }            
+        }
+
+        public async Task<string> CreateFileMessageAsync(int conversationId, IFormFile file)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var userId = GetUserId();
+
+                var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(
+                                    predicate: p => p.ConversationId == conversationId
+                                    );
+                if (!isExistingConversation)
+                {
+                    throw new Exception($"Cuộc trò chuyện không tồn tại.");
+                }
+
+                if (file == null || file.Length == 0)
+                    throw new Exception("File không hợp lệ.");
+
+                MessageType messageType;
+                if (file.ContentType.StartsWith("image/"))
+                    messageType = MessageType.Image;
+                else if (file.ContentType.StartsWith("video/"))
+                    messageType = MessageType.Video;
+                else if (file.ContentType.StartsWith("audio/"))
+                    messageType = MessageType.Audio;
+                else
+                    messageType = MessageType.File;
+
+                var content = await _cloudinaryService.UploadImageAsync(file);
+                if (content == null)
+                {
+                    throw new Exception("Có lỗi xảy ra khi gửi file.");
+                }
+               
+                var message = new Message
+                {
+                    ConversationId = conversationId,
+                    SenderId = userId,
+                    Content = content,
+                    Status = MessageStatus.Sent,
+                    CreatedAt = DateTime.UtcNow.AddHours(7),
+                    Type = messageType                  
+                };
+                
+                await _unitOfWork.GetRepository<Message>().InsertAsync(message);
+
+                await PushMessageNotificationAsync(message);
+
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return "Đã gửi tin nhắn.";
+            }
+            catch (Exception e)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new Exception($"Lỗi hệ thống: {e.Message}");
+            }
+        }
+
+        private async Task PushMessageNotificationAsync(Message message)
+        {
+            var receiverIds = await _unitOfWork.GetRepository<ConversationParticipant>().GetListAsync(
+                selector: s => s.ParticipantId,
+                predicate: p => p.ConversationId == message.ConversationId && p.ParticipantId != message.SenderId
+                );
+
+            var senderName = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
+                selector: s => string.Concat(s.FirstName, " ", s.LastName),
+                predicate: p => p.UserId == message.SenderId
+                );
+
+            var descrption = $"{senderName}: ";
+
+            switch (message.Type)
+            {
+                case MessageType.Text:
+                    descrption = message.Content;
+                    break;
+
+                case MessageType.Image:
+                    descrption = "Đã gửi một hình ảnh";
+                    break;
+
+                case MessageType.File:
+                    descrption = "Đã gửi một tệp tin";
+                    break;
+
+                case MessageType.Video:
+                    descrption = "Đã gửi một video";
+                    break;
+
+                case MessageType.Audio:
+                    descrption = "Đã gửi một tin nhắn thoại";
+                    break;
+
+                case MessageType.System:
+                    descrption = "[Thông báo hệ thống]";
+                    break;
+
+                case MessageType.Emoji:
+                    descrption = "Đã gửi một biểu tượng cảm xúc";
+                    break;
+
+                case MessageType.Location:
+                    descrption = "Đã chia sẻ vị trí";
+                    break;
+
+                default:
+                    descrption = "Tin nhắn không xác định";
+                    break;
+            }
+
+            var notifications = new List<Notification>();
+
+            foreach (var receiverId in receiverIds)
+            {
+                notifications.Add(new Notification
+                {
+                    MessageId = message.MessageId,
+                    ReceiverId = message.SenderId,
+                    Description = descrption,
+                    Type = NotificationType.Message,
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow.AddHours(7)
+                });
+            }
+
+            await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
+        }
+
+        public async Task<IPaginate<MessageDto>> GetPaginateMessagesAsync(int conversationId,DateTime? before, int pageSize)
+        {
+            var userId = GetUserId();
+            var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(p => p.ConversationId == conversationId);
+
+            if (!isExistingConversation)
+                throw new Exception("Cuộc trò chuyện không tồn tại.");
+
+            var messages = await _unitOfWork.GetRepository<Message>().ProjectToPagingListAsync<MessageDto>(
+                    configuration: _mapper.ConfigurationProvider,
+                    parameters: new { CurrentUserId = userId },
+                    predicate: m => m.ConversationId == conversationId && (before == null || m.CreatedAt < before),
+                    include: i => i.Include(x => x.Sender).Include(x => x.ReplyMessage),
+                    orderBy: q => q.OrderByDescending(m => m.CreatedAt),
+                    page: 1,
+                    size: pageSize
+                );
+
+            return messages;
+        }
+
+        public async Task<MessageDto> GetMessageByIdAsync(int id)
+        {
+            var userId = GetUserId();
+            var messages = await _unitOfWork.GetRepository<Message>().ProjectToSingleOrDefaultAsync<MessageDto>(
+                    configuration: _mapper.ConfigurationProvider,
+                    parameters: new { CurrentUserId = userId },
+                    predicate: m => m.MessageId == id,
+                    include: i => i.Include(x => x.Sender)
+                                   .Include(x => x.ReplyMessage)
+                                       .ThenInclude(x => x.Sender)
+                );
+            if (messages == null)
+            {
+                throw new Exception("Tin nhắn không tồn tại.");
+            }
+            return messages;
+        }
+
+
+        public int GetUserId()
+        {
+            try
+            {
+                return int.Parse(_httpContextAccessor.HttpContext.User.FindFirst("userID")?.Value);
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Vui lòng đăng nhập.");
+            }
+        }
+    }
+}

@@ -285,7 +285,7 @@ namespace AptCare.Repository.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("RellyMessageId")
+                    b.Property<int?>("ReplyMessageId")
                         .HasColumnType("integer");
 
                     b.Property<int>("SenderId")
@@ -294,15 +294,14 @@ namespace AptCare.Repository.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<string>("type")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
 
                     b.HasKey("MessageId");
 
                     b.HasIndex("ConversationId");
 
-                    b.HasIndex("RellyMessageId");
+                    b.HasIndex("ReplyMessageId");
 
                     b.HasIndex("SenderId");
 
@@ -327,6 +326,9 @@ namespace AptCare.Repository.Migrations
                     b.Property<bool>("IsRead")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("MessageId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("ReceiverId")
                         .HasColumnType("integer");
 
@@ -337,6 +339,9 @@ namespace AptCare.Repository.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("NotificationId");
+
+                    b.HasIndex("MessageId")
+                        .IsUnique();
 
                     b.HasIndex("ReceiverId");
 
@@ -633,9 +638,9 @@ namespace AptCare.Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AptCare.Repository.Entities.Message", "RellyMessage")
-                        .WithMany("RellyMessages")
-                        .HasForeignKey("RellyMessageId");
+                    b.HasOne("AptCare.Repository.Entities.Message", "ReplyMessage")
+                        .WithMany("ReplyMessages")
+                        .HasForeignKey("ReplyMessageId");
 
                     b.HasOne("AptCare.Repository.Entities.User", "Sender")
                         .WithMany("Messages")
@@ -645,13 +650,18 @@ namespace AptCare.Repository.Migrations
 
                     b.Navigation("Conversation");
 
-                    b.Navigation("RellyMessage");
+                    b.Navigation("ReplyMessage");
 
                     b.Navigation("Sender");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.Notification", b =>
                 {
+                    b.HasOne("AptCare.Repository.Entities.Message", "Message")
+                        .WithOne("Notification")
+                        .HasForeignKey("AptCare.Repository.Entities.Notification", "MessageId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("AptCare.Repository.Entities.Account", "Receiver")
                         .WithMany("Notifications")
                         .HasForeignKey("ReceiverId")
@@ -661,6 +671,8 @@ namespace AptCare.Repository.Migrations
                     b.HasOne("AptCare.Repository.Entities.User", null)
                         .WithMany("Notifications")
                         .HasForeignKey("UserId");
+
+                    b.Navigation("Message");
 
                     b.Navigation("Receiver");
                 });
@@ -779,7 +791,9 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.Message", b =>
                 {
-                    b.Navigation("RellyMessages");
+                    b.Navigation("Notification");
+
+                    b.Navigation("ReplyMessages");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.Technique", b =>

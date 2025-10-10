@@ -26,7 +26,7 @@ namespace AptCare.Api
                 .AddAuthenticationConfig(builder.Configuration)
                 .AddCustomController()
                 .AddSwaggerConfig();
-            builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+            
             builder.Services.AddEndpointsApiExplorer();
 
             builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));

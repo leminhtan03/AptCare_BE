@@ -11,9 +11,10 @@ namespace AptCare.Repository.Entities
 {
     public class Notification
     {
-        [Required]
+        [Key]
         public int NotificationId { get; set; }
 
+        public int? MessageId { get; set; }
         public int ReceiverId { get; set; }
         public string Description { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -21,5 +22,7 @@ namespace AptCare.Repository.Entities
         public NotificationType Type { get; set; }
         [ForeignKey("ReceiverId")]
         public Account Receiver { get; set; }
+        [ForeignKey("MessageId")]
+        public Message? Message { get; set; }
     }
 }

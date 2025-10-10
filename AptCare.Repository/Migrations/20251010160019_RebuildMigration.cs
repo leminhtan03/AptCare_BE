@@ -7,11 +7,24 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     /// <inheritdoc />
-    public partial class AuthenCodeFirstDb : Migration
+    public partial class RebuildMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "conversations",
+                columns: table => new
+                {
+                    ConversationId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Title = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_conversations", x => x.ConversationId);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Floors",
                 columns: table => new
@@ -26,6 +39,20 @@ namespace AptCare.Repository.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Floors", x => x.FloorId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Techniques",
+                columns: table => new
+                {
+                    TechniqueId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Techniques", x => x.TechniqueId);
                 });
 
             migrationBuilder.CreateTable(
@@ -117,20 +144,126 @@ namespace AptCare.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserApartments",
+                name: "conversationParticipants",
                 columns: table => new
                 {
-                    UserApartmentId = table.Column<int>(type: "integer", nullable: false)
+                    ConversationId = table.Column<int>(type: "integer", nullable: false),
+                    ParticipantId = table.Column<int>(type: "integer", nullable: false),
+                    JoinedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsMuted = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_conversationParticipants", x => new { x.ParticipantId, x.ConversationId });
+                    table.ForeignKey(
+                        name: "FK_conversationParticipants_Users_ParticipantId",
+                        column: x => x.ParticipantId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_conversationParticipants_conversations_ConversationId",
+                        column: x => x.ConversationId,
+                        principalTable: "conversations",
+                        principalColumn: "ConversationId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "messages",
+                columns: table => new
+                {
+                    MessageId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
-                    ApartmentId = table.Column<int>(type: "integer", nullable: false),
-                    RoleInApartment = table.Column<int>(type: "integer", nullable: false),
-                    RelationshipToOwner = table.Column<int>(type: "integer", nullable: false),
+                    ConversationId = table.Column<int>(type: "integer", nullable: false),
+                    SenderId = table.Column<int>(type: "integer", nullable: false),
+                    ReplyMessageId = table.Column<int>(type: "integer", nullable: true),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserApartments", x => x.UserApartmentId);
+                    table.PrimaryKey("PK_messages", x => x.MessageId);
+                    table.ForeignKey(
+                        name: "FK_messages_Users_SenderId",
+                        column: x => x.SenderId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_messages_conversations_ConversationId",
+                        column: x => x.ConversationId,
+                        principalTable: "conversations",
+                        principalColumn: "ConversationId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_messages_messages_ReplyMessageId",
+                        column: x => x.ReplyMessageId,
+                        principalTable: "messages",
+                        principalColumn: "MessageId");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TechnicianTechniques",
+                columns: table => new
+                {
+                    TechnicianId = table.Column<int>(type: "integer", nullable: false),
+                    TechniqueId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TechnicianTechniques", x => new { x.TechnicianId, x.TechniqueId });
+                    table.ForeignKey(
+                        name: "FK_TechnicianTechniques_Techniques_TechniqueId",
+                        column: x => x.TechniqueId,
+                        principalTable: "Techniques",
+                        principalColumn: "TechniqueId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TechnicianTechniques_Users_TechnicianId",
+                        column: x => x.TechnicianId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkSlots",
+                columns: table => new
+                {
+                    WorkSlotId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Date = table.Column<DateOnly>(type: "date", nullable: false),
+                    Slot = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    TechnicianId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkSlots", x => x.WorkSlotId);
+                    table.ForeignKey(
+                        name: "FK_WorkSlots_Users_TechnicianId",
+                        column: x => x.TechnicianId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserApartments",
+                columns: table => new
+                {
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    ApartmentId = table.Column<int>(type: "integer", nullable: false),
+                    RoleInApartment = table.Column<int>(type: "integer", nullable: false),
+                    RelationshipToOwner = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserApartments", x => new { x.UserId, x.ApartmentId });
                     table.ForeignKey(
                         name: "FK_UserApartments_Apartments_ApartmentId",
                         column: x => x.ApartmentId,
@@ -230,11 +363,13 @@ namespace AptCare.Repository.Migrations
                 {
                     NotificationId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    MessageId = table.Column<int>(type: "integer", nullable: true),
                     ReceiverId = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     IsRead = table.Column<bool>(type: "boolean", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false)
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -244,6 +379,39 @@ namespace AptCare.Repository.Migrations
                         column: x => x.ReceiverId,
                         principalTable: "Accounts",
                         principalColumn: "AccountId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId");
+                    table.ForeignKey(
+                        name: "FK_Notifications_messages_MessageId",
+                        column: x => x.MessageId,
+                        principalTable: "messages",
+                        principalColumn: "MessageId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WorkSlotStatusTrackings",
+                columns: table => new
+                {
+                    WorkSlotStatusTrackingId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    WorkSlotId = table.Column<int>(type: "integer", nullable: false),
+                    StatusChangeTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    PreviousStatus = table.Column<int>(type: "integer", nullable: false),
+                    NewStatus = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkSlotStatusTrackings", x => x.WorkSlotStatusTrackingId);
+                    table.ForeignKey(
+                        name: "FK_WorkSlotStatusTrackings_WorkSlots_WorkSlotId",
+                        column: x => x.WorkSlotId,
+                        principalTable: "WorkSlots",
+                        principalColumn: "WorkSlotId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -268,9 +436,40 @@ namespace AptCare.Repository.Migrations
                 column: "FloorId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_conversationParticipants_ConversationId",
+                table: "conversationParticipants",
+                column: "ConversationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_messages_ConversationId",
+                table: "messages",
+                column: "ConversationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_messages_ReplyMessageId",
+                table: "messages",
+                column: "ReplyMessageId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_messages_SenderId",
+                table: "messages",
+                column: "SenderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_MessageId",
+                table: "Notifications",
+                column: "MessageId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Notifications_ReceiverId",
                 table: "Notifications",
                 column: "ReceiverId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_UserId",
+                table: "Notifications",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Reports_CommonAreaId",
@@ -283,14 +482,20 @@ namespace AptCare.Repository.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TechnicianTechniques_TechniqueId",
+                table: "TechnicianTechniques",
+                column: "TechniqueId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_UserApartments_ApartmentId",
                 table: "UserApartments",
                 column: "ApartmentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserApartments_UserId",
-                table: "UserApartments",
-                column: "UserId");
+                name: "IX_Users_CitizenshipIdentity",
+                table: "Users",
+                column: "CitizenshipIdentity",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",
@@ -303,6 +508,16 @@ namespace AptCare.Repository.Migrations
                 table: "Users",
                 column: "PhoneNumber",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkSlots_TechnicianId",
+                table: "WorkSlots",
+                column: "TechnicianId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WorkSlotStatusTrackings_WorkSlotId",
+                table: "WorkSlotStatusTrackings",
+                column: "WorkSlotId");
         }
 
         /// <inheritdoc />
@@ -315,28 +530,49 @@ namespace AptCare.Repository.Migrations
                 name: "AccountTokens");
 
             migrationBuilder.DropTable(
+                name: "conversationParticipants");
+
+            migrationBuilder.DropTable(
                 name: "Notifications");
 
             migrationBuilder.DropTable(
                 name: "Reports");
 
             migrationBuilder.DropTable(
+                name: "TechnicianTechniques");
+
+            migrationBuilder.DropTable(
                 name: "UserApartments");
+
+            migrationBuilder.DropTable(
+                name: "WorkSlotStatusTrackings");
 
             migrationBuilder.DropTable(
                 name: "Accounts");
 
             migrationBuilder.DropTable(
+                name: "messages");
+
+            migrationBuilder.DropTable(
                 name: "CommonAreas");
+
+            migrationBuilder.DropTable(
+                name: "Techniques");
 
             migrationBuilder.DropTable(
                 name: "Apartments");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "WorkSlots");
+
+            migrationBuilder.DropTable(
+                name: "conversations");
 
             migrationBuilder.DropTable(
                 name: "Floors");
+
+            migrationBuilder.DropTable(
+                name: "Users");
         }
     }
 }

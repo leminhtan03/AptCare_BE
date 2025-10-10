@@ -68,6 +68,12 @@ namespace AptCare.Repository
                 .WithMany(a => a.Notifications)
                 .HasForeignKey(n => n.ReceiverId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // Cấu hình mối quan hệ 1-1 giữa Notification và Message (MessageId)
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Message)
+                .WithOne(m => m.Notification)
+                .HasForeignKey<Notification>(n => n.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
             // Cấu hình mối quan hệ 1-n giữa Floor và Apartment
             modelBuilder.Entity<Apartment>()
                 .HasOne(a => a.Floor)
@@ -157,6 +163,8 @@ namespace AptCare.Repository
                       .HasForeignKey(m => m.ConversationId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+            
+
 
         }
     }
