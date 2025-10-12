@@ -34,5 +34,7 @@ namespace AptCare.Repository.Entities
 
         public ActiveStatus Status { get; set; }
         public ICollection<Report>? Reports { get; set; }
+        public ICollection<RepairRequest>? RepairRequests { get; set; }
+        public ICollection<MaintenanceRequest>? MaintenanceRequests { get; set; }
     }
 }
