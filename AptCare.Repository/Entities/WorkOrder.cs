@@ -10,7 +10,7 @@ namespace AptCare.Repository.Entities
         [Key]
         public int WorkOrderId { get; set; }
 
-        public int WorkSlotId { get; set; }
+        public int AppointmentId { get; set; }
         public int TechnicianId { get; set; }
         public DateTime EstimatedStartTime { get; set; }
         public DateTime EstimatedEndTime { get; set; }
@@ -18,8 +18,8 @@ namespace AptCare.Repository.Entities
         public DateTime? ActualEndTime { get; set; }
         public WorkOrderStatus Status { get; set; }
 
-        [ForeignKey(nameof(WorkSlotId))]
-        public WorkSlot WorkSlot { get; set; }
+        [ForeignKey(nameof(AppointmentId))]
+        public Appointment Appointment { get; set; }
 
         [ForeignKey(nameof(TechnicianId))]
         public User Technician { get; set; }

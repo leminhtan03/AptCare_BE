@@ -11,14 +11,14 @@ namespace AptCare.Repository.Entities
         [Key]
         public int RepairReportId { get; set; }
 
-        public int RepairRequestId { get; set; }
+        public int AppointmentId { get; set; }
         public int UserId { get; set; }
         public string Description { get; set; }
         public ReportStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
 
-        [ForeignKey(nameof(RepairRequestId))]
-        public RepairRequest RepairRequest { get; set; }
+        [ForeignKey(nameof(AppointmentId))]
+        public Appointment Appointment { get; set; }
 
         [ForeignKey(nameof(UserId))]
         public User User { get; set; }

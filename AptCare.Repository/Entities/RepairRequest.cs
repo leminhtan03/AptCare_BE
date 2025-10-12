@@ -41,9 +41,10 @@ namespace AptCare.Repository.Entities
         [ForeignKey(nameof(MaintenanceRequestId))]
         public MaintenanceRequest MaintenanceRequest { get; set; }
 
-        public ICollection<RepairReport> RepairReports { get; set; }
+        public ICollection<Appointment> Appointments { get; set; }
         public ICollection<RequestTracking> RequestTrackings { get; set; }
         public ICollection<Feedback> Feedbacks { get; set; }
         public ICollection<Invoice> Invoices { get; set; }
+        public ICollection<Contract> Contracts { get; set; }
     }
 }

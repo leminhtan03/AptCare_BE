@@ -25,5 +25,6 @@ namespace AptCare.Repository.Entities
         public CommonArea CommonArea { get; set; }     
 
         public ICollection<MaintenanceTrackingHistory> MaintenanceTrackingHistories { get; set; }
+        public ICollection<RepairRequest> RepairRequests { get; set; }
     }
 }

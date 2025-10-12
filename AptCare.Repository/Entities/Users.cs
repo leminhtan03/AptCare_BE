@@ -45,6 +45,7 @@ namespace AptCare.Repository.Entities
         public ICollection<WorkSlot>? WorkSlots { get; set; }
         public ICollection<Message>? Messages { get; set; }
         public ICollection<ConversationParticipant>? ConversationParticipants { get; set; }
+        public ICollection<RepairRequest>? RepairRequests { get; set; }
 
     }
 }

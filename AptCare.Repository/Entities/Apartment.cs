@@ -29,5 +29,6 @@ namespace AptCare.Repository.Entities
 
         // Navigation properties
         public ICollection<UserApartment>? UserApartments { get; set; }
+        public ICollection<RepairRequest>? RepairRequests { get; set; }
     }
 }
