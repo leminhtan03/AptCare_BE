@@ -10,6 +10,7 @@ namespace AptCare.Repository.Enum.TokenEnum
     {
         Active = 1,
         Revoked = 2,
-        Expired = 3
+        Expired = 3,
+        Consumed = 4
     }
 }

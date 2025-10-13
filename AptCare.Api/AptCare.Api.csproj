@@ -10,6 +10,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="EPPlus" Version="8.2.0" />
+		<PackageReference Include="DotNetEnv" Version="3.1.1" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.20" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.19.0" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
@@ -25,9 +26,24 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="MailTemplate\AccountCredentials.html">
-	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  </None>
+		<None Update=".env">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="MailTemplate\AccountCredentials.html">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="MailTemplate\EmailVerification.html">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="MailTemplate\PasswordReset.html">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="MailTemplate\PasswordResetOtp.html">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="MailTemplate\SecurityNotice.html">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 </Project>

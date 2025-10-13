@@ -5,13 +5,7 @@ using AptCare.Repository;
 using AptCare.Repository.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
-using OfficeOpenXml;
-using System.Reflection;
-using System.Text;
-using System.Text.Json.Serialization;
+using DotNetEnv;
 
 namespace AptCare.Api
 {
@@ -21,12 +15,14 @@ namespace AptCare.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            Env.Load();
+            builder.Configuration.AddEnvironmentVariables();
             builder.Services.AddConfiguration(builder.Configuration)
                 .AddService()
                 .AddAuthenticationConfig(builder.Configuration)
                 .AddCustomController()
                 .AddSwaggerConfig();
-            
+
             builder.Services.AddEndpointsApiExplorer();
 
             builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));

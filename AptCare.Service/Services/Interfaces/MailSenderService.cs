@@ -65,7 +65,17 @@ namespace AptCare.Service.Services.Interfaces
 
         private async Task SendMimeMessageAsync(MimeMessage message)
         {
-            using var smtpClient = new SmtpClient();
+            if (string.IsNullOrWhiteSpace(_mailSettings.Host))
+                throw new InvalidOperationException("MailSettings.Host is empty.");
+            if (_mailSettings.Port <= 0)
+                throw new InvalidOperationException("MailSettings.Port is invalid.");
+            if (string.IsNullOrWhiteSpace(_mailSettings.Sender))
+                throw new InvalidOperationException("MailSettings.Sender is empty.");
+
+            using var smtpClient = new SmtpClient
+            {
+                Timeout = 15000 // 15s
+            };
 
             try
             {
@@ -79,7 +89,8 @@ namespace AptCare.Service.Services.Interfaces
             }
             finally
             {
-                await smtpClient.DisconnectAsync(true);
+                if (smtpClient.IsConnected)
+                    await smtpClient.DisconnectAsync(true);
             }
         }
     }
