@@ -13,6 +13,7 @@ namespace AptCare.Api.Extensions
             service.AddDbContext<AptCareSystemDBContext>(options =>
                  options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
+
             service.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
             service.Configure<MailSettings>(configuration.GetSection("MailSettings"));
 
