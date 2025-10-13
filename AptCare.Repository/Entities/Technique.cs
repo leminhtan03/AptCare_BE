@@ -20,5 +20,6 @@ namespace AptCare.Repository.Entities
         public string Description { get; set; }
 
         public ICollection<TechnicianTechnique>? TechnicianTechniques { get; set; }
+        public ICollection<RepairRequest>? RepairRequests { get; set; }
     }
 }
