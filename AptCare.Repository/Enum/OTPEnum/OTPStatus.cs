@@ -5,7 +5,9 @@ namespace AptCare.Repository.Enum.OTPEnum
     {
         Pending = 1,
         Verified = 2,
-        Expired = 3
+        Expired = 3,
+        Active = 4,
+        Revoked = 5
     }
 
 }

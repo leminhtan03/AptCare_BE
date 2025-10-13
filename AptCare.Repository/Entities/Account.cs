@@ -25,7 +25,6 @@ namespace AptCare.Repository.Entities
 
         public User User { get; set; }
 
-        // Navigation properties
         public ICollection<AccountToken>? AccountTokens { get; set; }
         public ICollection<AccountOTPHistory>? AccountOTPHistories { get; set; }
         public ICollection<Notification>? Notifications { get; set; }

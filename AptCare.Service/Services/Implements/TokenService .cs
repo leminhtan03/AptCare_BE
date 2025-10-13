@@ -1,56 +1,100 @@
-﻿using AptCare.Repository;
+﻿using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
+using AutoMapper;
+using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum.TokenEnum;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.AuthenDto;
 using AptCare.Service.Services.Interfaces;
-using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AptCare.Service.Services.Implements
 {
     public class TokenService : BaseService<TokenService>, ITokenService
     {
         private readonly IConfiguration _configuration;
-        public TokenService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<TokenService> logger, IMapper mapper, IConfiguration configuration) : base(unitOfWork, logger, mapper)
+
+        // Bật = true để lưu HASH cho RefreshToken (khuyến nghị sản xuất)
+        // Nếu bật, cần migrate dữ liệu hoặc hỗ trợ song song.
+        private const bool HASH_REFRESH_TOKENS = false;
+
+        public TokenService(
+            IUnitOfWork<AptCareSystemDBContext> unitOfWork,
+            ILogger<TokenService> logger,
+            IMapper mapper,
+            IConfiguration configuration
+        ) : base(unitOfWork, logger, mapper)
         {
             _configuration = configuration;
         }
 
+        #region Helpers
+
+        private static string GenerateSecureToken(int bytes = 64)
+            => Convert.ToBase64String(RandomNumberGenerator.GetBytes(bytes));
+
+        private static string HashToken(string token)
+        {
+            using var sha = SHA256.Create();
+            var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(token));
+            return Convert.ToHexString(hash); // HEX uppercase
+        }
+
+        private SymmetricSecurityKey GetJwtKey()
+        {
+            var key = _configuration["Jwt:Key"];
+            if (string.IsNullOrWhiteSpace(key))
+                throw new InvalidOperationException("Missing Jwt:Key configuration.");
+            return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+        }
+
+        private string GetIssuerOrDefault() => _configuration["Jwt:Issuer"] ?? string.Empty;
+        private string GetAudienceOrDefault() => _configuration["Jwt:Audience"] ?? string.Empty;
+
+        #endregion
+
+        #region Access / Refresh
+
         public async Task<TokenResponseDto> GenerateTokensAsync(User user, string deviceId)
         {
-            var jwtTokenHandler = new JwtSecurityTokenHandler();
-            var secretKey = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            var jwtHandler = new JwtSecurityTokenHandler();
+            var signingKey = GetJwtKey();
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Email ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("UserId", user.UserId.ToString()),
+                new Claim(ClaimTypes.Role, user.Account.Role.ToString())
+            };
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim("UserId", user.UserId.ToString()),
-                new Claim(ClaimTypes.Role, nameof(user.Account.Role))
-            }),
-                Expires = DateTime.UtcNow.AddMinutes(15),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(secretKey), SecurityAlgorithms.HmacSha256Signature)
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(15),                 // AccessToken TTL
+                Issuer = GetIssuerOrDefault(),                            // optional
+                Audience = GetAudienceOrDefault(),                        // optional
+                SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256Signature)
             };
-            var accessToken = jwtTokenHandler.CreateToken(tokenDescriptor);
-            var accessTokenString = jwtTokenHandler.WriteToken(accessToken);
 
-            var refreshToken = new AccountToken
+            var accessToken = jwtHandler.CreateToken(tokenDescriptor);
+            var accessTokenString = jwtHandler.WriteToken(accessToken);
+            var refreshPlain = GenerateSecureToken(64);
+            var tokenToStore = HASH_REFRESH_TOKENS ? HashToken(refreshPlain) : refreshPlain;
+            var refreshEntity = new AccountToken
             {
-                Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+                Token = tokenToStore,
                 ExpiresAt = DateTime.UtcNow.AddDays(7),
                 CreatedAt = DateTime.UtcNow,
                 AccountId = user.UserId,
@@ -58,53 +102,173 @@ namespace AptCare.Service.Services.Implements
                 TokenType = TokenType.RefreshToken,
                 Status = TokenStatus.Active
             };
-            await _unitOfWork.GetRepository<AccountToken>().InsertAsync(refreshToken);
+            await _unitOfWork.GetRepository<AccountToken>().InsertAsync(refreshEntity);
             await _unitOfWork.CommitAsync();
-
             return new TokenResponseDto
             {
                 AccessToken = accessTokenString,
-                RefreshToken = refreshToken.Token
+                RefreshToken = refreshPlain
             };
         }
 
         public async Task<TokenResponseDto> RefreshTokensAsync(string refreshToken)
         {
-            var existingToken = await _unitOfWork.GetRepository<AccountToken>()
-                .SingleOrDefaultAsync(predicate: urt => urt.Token == refreshToken);
+            if (string.IsNullOrWhiteSpace(refreshToken))
+                throw new SecurityTokenException("Thiếu refresh token.");
+
+            var repo = _unitOfWork.GetRepository<AccountToken>();
+            var lookup = HASH_REFRESH_TOKENS ? HashToken(refreshToken) : refreshToken;
+
+            var existingToken = await repo.SingleOrDefaultAsync(predicate: t =>
+                t.Token == lookup &&
+                t.TokenType == TokenType.RefreshToken);
+
             if (existingToken == null)
-            {
                 throw new SecurityTokenException("Refresh token không tồn tại.");
-            }
             if (existingToken.Status == TokenStatus.Revoked)
-            {
                 throw new SecurityTokenException("Refresh token đã bị thu hồi.");
-            }
             if (existingToken.ExpiresAt < DateTime.UtcNow)
-            {
                 throw new SecurityTokenException("Refresh token đã hết hạn.");
-            }
+
+            // Rotation: vô hiệu hoá token cũ
             existingToken.Status = TokenStatus.Expired;
-            _unitOfWork.GetRepository<AccountToken>().UpdateAsync(existingToken);
+            repo.UpdateAsync(existingToken);
             await _unitOfWork.CommitAsync();
-            var user = await _unitOfWork.GetRepository<User>()
-                .SingleOrDefaultAsync(predicate: u => u.UserId == existingToken.AccountId, include: ex => ex.Include(ex1 => ex1.Account));
+
+            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
+                predicate: u => u.UserId == existingToken.AccountId,
+                include: q => q.Include(x => x.Account));
+
             if (user == null)
                 throw new SecurityTokenException("Người dùng liên quan đến token này không còn tồn tại.");
+
             return await GenerateTokensAsync(user, existingToken.DeviceInfo);
         }
 
         public async Task RevokeRefreshTokenAsync(string refreshToken)
         {
-            var storedToken = await _unitOfWork.GetRepository<AccountToken>()
-                .SingleOrDefaultAsync(predicate: urt => urt.Token == refreshToken);
-            if (storedToken != null && !(storedToken.Status == TokenStatus.Revoked))
+            if (string.IsNullOrWhiteSpace(refreshToken)) return;
+
+            var repo = _unitOfWork.GetRepository<AccountToken>();
+            var lookup = HASH_REFRESH_TOKENS ? HashToken(refreshToken) : refreshToken;
+
+            var storedToken = await repo.SingleOrDefaultAsync(predicate: t =>
+                t.Token == lookup &&
+                t.TokenType == TokenType.RefreshToken);
+
+            if (storedToken != null && storedToken.Status != TokenStatus.Revoked)
             {
                 storedToken.Status = TokenStatus.Revoked;
-                _unitOfWork.GetRepository<AccountToken>().UpdateAsync(storedToken);
+                repo.UpdateAsync(storedToken);
                 await _unitOfWork.CommitAsync();
             }
         }
-    }
+        #endregion
 
+        #region Password Reset (OTP → PasswordResetToken → Confirm)
+
+        /// <summary>
+        /// Tạo PasswordResetToken (one-time, TTL ngắn) cho accountId.
+        /// Lưu HASH trong DB. Revoke token reset còn hiệu lực trước đó.
+        /// </summary>
+        public async Task<string> CreatePasswordResetTokenAsync(int accountId, TimeSpan? ttl = null)
+        {
+            var repo = _unitOfWork.GetRepository<AccountToken>();
+            var oldTokens = await repo.GetListAsync(predicate: t =>
+                t.AccountId == accountId &&
+                t.TokenType == TokenType.PasswordResetToken &&
+                t.Status == TokenStatus.Active &&
+                t.ExpiresAt > DateTime.UtcNow);
+
+            foreach (var t in oldTokens)
+            {
+                t.Status = TokenStatus.Revoked;
+                repo.UpdateAsync(t);
+            }
+
+            var lifetime = ttl ?? TimeSpan.FromMinutes(10);
+            var plain = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+            var entity = new AccountToken
+            {
+                Token = HashToken(plain), // LƯU HASH
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.Add(lifetime),
+                Status = TokenStatus.Active,
+                TokenType = TokenType.PasswordResetToken,
+                AccountId = accountId
+            };
+            await repo.InsertAsync(entity);
+            await _unitOfWork.CommitAsync();
+
+            // Trả plaintext cho client để dùng ở bước confirm
+            return plain;
+        }
+
+        /// <summary>
+        /// Kiểm tra reset token còn hiệu lực (không consume).
+        /// </summary>
+        public async Task<bool> VerifyPasswordResetTokenAsync(int accountId, string token)
+        {
+            if (string.IsNullOrWhiteSpace(token)) return false;
+
+            var repo = _unitOfWork.GetRepository<AccountToken>();
+            var hashed = HashToken(token);
+
+            var rec = await repo.SingleOrDefaultAsync(predicate: t =>
+                t.AccountId == accountId &&
+                t.TokenType == TokenType.PasswordResetToken &&
+                t.Token == hashed &&
+                t.Status == TokenStatus.Active);
+
+            if (rec == null) return false;
+            if (rec.ExpiresAt <= DateTime.UtcNow) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Consume reset token (one-time) nếu hợp lệ & còn hạn.
+        /// </summary>
+        public async Task<bool> ConsumePasswordResetTokenAsync(int accountId, string resetToken)
+        {
+            if (string.IsNullOrWhiteSpace(resetToken)) return false;
+
+            var repo = _unitOfWork.GetRepository<AccountToken>();
+            var hashed = HashToken(resetToken);
+
+            var rec = await repo.SingleOrDefaultAsync(predicate: t =>
+                t.AccountId == accountId &&
+                t.TokenType == TokenType.PasswordResetToken &&
+                t.Status == TokenStatus.Active &&
+                t.ExpiresAt > DateTime.UtcNow &&
+                t.Token == hashed);
+
+            if (rec == null) return false;
+
+            rec.Status = TokenStatus.Consumed;
+            repo.UpdateAsync(rec);
+            await _unitOfWork.CommitAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// Thu hồi toàn bộ RefreshToken của account (buộc đăng nhập lại sau khi đổi mật khẩu).
+        /// </summary>
+        public async Task RevokeAllRefreshTokensAsync(int accountId)
+        {
+            var repo = _unitOfWork.GetRepository<AccountToken>();
+            var list = await repo.GetListAsync(predicate: t =>
+                t.AccountId == accountId &&
+                t.TokenType == TokenType.RefreshToken &&
+                (t.Status == TokenStatus.Active || t.ExpiresAt > DateTime.UtcNow));
+
+            foreach (var t in list)
+            {
+                t.Status = TokenStatus.Revoked;
+                repo.UpdateAsync(t);
+            }
+            await _unitOfWork.CommitAsync();
+        }
+
+        #endregion
+    }
 }

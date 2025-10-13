@@ -1,8 +1,10 @@
 ﻿using AptCare.Repository;
+using AptCare.Repository.Entities;
 using AptCare.Repository.Repositories;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using System.Net.Mail;
@@ -17,10 +19,10 @@ namespace AptCare.Api.Extensions
             service.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
             service.AddTransient<IUnitOfWork, UnitOfWork<AptCareSystemDBContext>>();
             service.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-
+            service.AddScoped<IPasswordHasher<Account>, PasswordHasher<Account>>();
             service.AddTransient<IAccountService, AccountService>();
             service.AddTransient<IUserService, UserService>();
-            //service.AddTransient<ITokenService, TokenService>();
+            service.AddTransient<ITokenService, TokenService>();
             service.AddTransient<IFloorService, FloorService>();
             service.AddTransient<IApartmentService, ApartmentService>();
             service.AddTransient<IUserService, UserService>();
@@ -30,6 +32,10 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IConversationService, ConversationService>();
             service.AddTransient<IMessageService, MessageService>();
             service.AddTransient<ICloudinaryService, CloudinaryService>();
+            service.AddTransient<IAuthenticationService, AuthenticationService>();
+            service.AddTransient<IOtpService, OtpService>();
+
+
 
             return service;
         }
