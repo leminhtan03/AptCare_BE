@@ -26,6 +26,22 @@ namespace AptCare.Api.MapperProfile
                     })
                 ))
                .ForMember(dest => dest.AccountInfo, opt => opt.MapFrom(src => src.Account));
+            CreateMap<User, GetOwnProfileDto>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.Role , opt => opt.MapFrom(src => src.Account.Role.ToString()))
+                .ForMember(
+                dest => dest.Apartments,
+                    opt => opt.MapFrom(
+                        src => src.UserApartments.Select(
+                            ua => new ApartmentForUserProfileDto
+                            {
+                                RoomNumber = ua.Apartment.RoomNumber,
+                                RoleInApartment = ua.RoleInApartment.ToString(),
+                                RelationshipToOwner = ua.RelationshipToOwner,
+                                Floor = ua.Apartment.Floor.FloorNumber,
+                            })
+                ));
+
             CreateMap<Account, AccountForAdminDto>()
             .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()))
             .ForMember(dest => dest.LockoutEnabled, opt => opt.MapFrom(src => src.LockoutEnabled))
@@ -52,6 +68,7 @@ namespace AptCare.Api.MapperProfile
                .ForMember(dest => dest.Users, opt => opt.MapFrom(src => src.UserApartments));
             CreateMap<UserApartment, UserInApartmentDto>()
                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+
                .ForMember(dest => dest.User, opt => opt.MapFrom(src => new UserDto
                {
                    UserId = src.User.UserId,
@@ -117,7 +134,7 @@ namespace AptCare.Api.MapperProfile
                         src.SenderId == (int)context.Items["CurrentUserId"]));
 
             CreateMap<Account, AccountForAdminDto>()
-               .ForMember(dest => dest.Role, opt => opt.MapFrom(src => nameof(src.Role)));
+               .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
         }
     }
 }

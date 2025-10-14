@@ -23,8 +23,6 @@ namespace AptCare.Service.Services.Implements
     {
         private readonly IConfiguration _configuration;
 
-        // Bật = true để lưu HASH cho RefreshToken (khuyến nghị sản xuất)
-        // Nếu bật, cần migrate dữ liệu hoặc hỗ trợ song song.
         private const bool HASH_REFRESH_TOKENS = false;
 
         public TokenService(
@@ -46,7 +44,7 @@ namespace AptCare.Service.Services.Implements
         {
             using var sha = SHA256.Create();
             var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(token));
-            return Convert.ToHexString(hash); // HEX uppercase
+            return Convert.ToHexString(hash);
         }
 
         private SymmetricSecurityKey GetJwtKey()
@@ -73,10 +71,10 @@ namespace AptCare.Service.Services.Implements
 
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Email ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim("UserId", user.UserId.ToString()),
-                new Claim(ClaimTypes.Role, user.Account.Role.ToString())
+                new Claim(ClaimTypes.Role, user.Account?.Role.ToString() ?? string.Empty),
+                new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor
@@ -130,7 +128,6 @@ namespace AptCare.Service.Services.Implements
             if (existingToken.ExpiresAt < DateTime.UtcNow)
                 throw new SecurityTokenException("Refresh token đã hết hạn.");
 
-            // Rotation: vô hiệu hoá token cũ
             existingToken.Status = TokenStatus.Expired;
             repo.UpdateAsync(existingToken);
             await _unitOfWork.CommitAsync();
@@ -199,8 +196,6 @@ namespace AptCare.Service.Services.Implements
             };
             await repo.InsertAsync(entity);
             await _unitOfWork.CommitAsync();
-
-            // Trả plaintext cho client để dùng ở bước confirm
             return plain;
         }
 

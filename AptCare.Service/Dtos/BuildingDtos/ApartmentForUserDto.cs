@@ -20,4 +20,8 @@ namespace AptCare.Service.Dtos.BuildingDtos
 
         public string RelationshipToOwner { get; set; }
     }
+    public class ApartmentForUserProfileDto : ApartmentForUserDto
+    {
+        public int? Floor { get; set; }
+    }
 }

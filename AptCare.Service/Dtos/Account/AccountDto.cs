@@ -13,6 +13,7 @@ namespace AptCare.Service.Dtos.Account
         public string Role { get; set; }
         public bool EmailConfirmed { get; set; }
         public bool LockoutEnabled { get; set; }
+        public bool MustChangePassword { get; set; }
         public DateTime? LockoutEnd { get; set; }
     }
 }

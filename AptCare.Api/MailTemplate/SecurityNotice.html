@@ -146,19 +146,21 @@
     <div style="display:none;max-height:0;overflow:hidden;opacity:0">
         Mật khẩu tài khoản {{SystemName}} của bạn đã được thay đổi.
     </div>
+
     <div class="wrapper">
         <div class="container">
             <div class="header"><h1>{{SystemName}} – Thông báo bảo mật</h1></div>
+
             <div class="content">
                 <p class="hi">Xin chào {{FullName}},</p>
                 <p>Mật khẩu tài khoản của bạn trên <strong>{{SystemName}}</strong> đã được thay đổi vào {{ChangedAt}}.</p>
-                <div class="box">
-                    <div class="kv"><span class="k">Địa chỉ IP (nếu có):</span><span class="v">{{ClientIp}}</span></div>
-                    <div class="kv"><span class="k">Thiết bị/Trình duyệt:</span><span class="v">{{UserAgent}}</span></div>
-                </div>
-                <p>Nếu không phải bạn thực hiện, vui lòng <a href="{{SupportUrl}}">liên hệ hỗ trợ</a> ngay hoặc đổi mật khẩu lại.</p>
-                <p class="muted">Hỗ trợ: <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>{{SupportPhoneSuffix}}</p>
+
+                <p>Nếu không phải bạn thực hiện, vui lòng liên hệ <a href="mailto:{{SupportEmail}}">hỗ trợ</a> ngay hoặc đổi lại mật khẩu.</p>
+                <p class="muted">
+                    Hỗ trợ: <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>{{SupportPhoneSuffix}}
+                </p>
             </div>
+
             <div class="footer">© {{Year}} {{SystemName}}. Mọi quyền được bảo lưu.</div>
         </div>
     </div>

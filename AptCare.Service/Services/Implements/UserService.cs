@@ -10,11 +10,12 @@ using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
+using BCrypt.Net;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OfficeOpenXml;
 using Org.BouncyCastle.Crypto.Generators;
-using BCrypt.Net;
 using System.Text;
 
 namespace AptCare.Service.Services.Implements
@@ -22,9 +23,11 @@ namespace AptCare.Service.Services.Implements
     public class UserService : BaseService<UserService>, IUserService
     {
         private readonly IMailSenderService _mailSender;
-        public UserService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IMailSenderService mailSenderService, ILogger<UserService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
+        private readonly IPasswordHasher<Account> _pwdHasher;
+        public UserService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IPasswordHasher<Account> pwdHasher, IMailSenderService mailSenderService, ILogger<UserService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
         {
             _mailSender = mailSenderService;
+            _pwdHasher = pwdHasher;
         }
 
 
@@ -544,11 +547,13 @@ namespace AptCare.Service.Services.Implements
                 {
                     AccountId = user.UserId,
                     Username = createAccountDto.UserData.Email,
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(createAccountDto.Password),
+                    PasswordHash = string.Empty,
                     Role = roleEnum,
                     LockoutEnabled = false,
-                    EmailConfirmed = false
+                    EmailConfirmed = false,
+                    MustChangePassword = true
                 };
+                user.Account.PasswordHash = _pwdHasher.HashPassword(user.Account, createAccountDto.Password);
 
                 await _unitOfWork.GetRepository<Account>().InsertAsync(user.Account);
                 await _unitOfWork.CommitAsync();
@@ -557,11 +562,11 @@ namespace AptCare.Service.Services.Implements
                 var replacements = new Dictionary<string, string>
                 {
                     ["SystemName"] = "AptCare",
-                    ["FullName"] = "Nguyễn Đức A",
+                    ["FullName"] = user.FirstName + " " + user.LastName,
                     ["Username"] = user.Email,
-                    ["TemporaryPassword"] = "X7!a9pQ2",
+                    ["TemporaryPassword"] = createAccountDto.Password,
                     ["LoginUrl"] = "https://app.aptcare.vn/login",
-                    ["ExpireAt"] = "23:59 15/10/2025",
+                    ["ExpireAt"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
                     ["SupportEmail"] = "support@aptcare.vn",
                     ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
                     ["Year"] = DateTime.UtcNow.Year.ToString()

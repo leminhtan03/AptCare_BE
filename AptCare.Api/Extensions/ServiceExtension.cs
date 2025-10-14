@@ -19,7 +19,8 @@ namespace AptCare.Api.Extensions
             service.AddScoped(typeof(IUnitOfWork<>), typeof(UnitOfWork<>));
             service.AddTransient<IUnitOfWork, UnitOfWork<AptCareSystemDBContext>>();
             service.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
-            service.AddScoped<IPasswordHasher<Account>, PasswordHasher<Account>>();
+            service.AddTransient<IPasswordHasher<Account>, PasswordHasher<Account>>();
+            service.AddTransient<IProviderContext, ProviderContext>();
             service.AddTransient<IAccountService, AccountService>();
             service.AddTransient<IUserService, UserService>();
             service.AddTransient<ITokenService, TokenService>();

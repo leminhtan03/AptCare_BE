@@ -1,5 +1,7 @@
 ﻿using AptCare.Service.Dtos.AuthenDto;
+using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.Mvc;
 
@@ -109,31 +111,54 @@ namespace AptCare.Api.Controllers
             return Ok(tokens);
         }
         /// <summary>
-        /// Đăng nhập người dùng vào hệ thống.
+        /// Đăng nhập vào hệ thống với tài khoản người dùng.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:** Xác thực thông tin đăng nhập và cấp token truy cập cho người dùng.
+        /// **Chức năng:** Xác thực người dùng và cấp token truy cập hệ thống.
         ///  
         /// **Thông tin đăng nhập (LoginRequestDto):**
         /// - <b>UsernameOrEmail</b>: Tên đăng nhập hoặc địa chỉ email (bắt buộc).
-        /// - <b>Password</b>: Mật khẩu của tài khoản (bắt buộc).
-        /// - <b>DeviceId</b>: ID thiết bị để quản lý phiên đăng nhập (bắt buộc).
+        /// - <b>Password</b>: Mật khẩu tài khoản (bắt buộc).
+        /// - <b>DeviceId</b>: ID thiết bị đăng nhập để quản lý phiên (bắt buộc).
         ///  
         /// **Lưu ý:**
-        /// - Tài khoản phải đã được xác thực email trước khi có thể đăng nhập.
-        /// - Thông tin đăng nhập phải chính xác và tài khoản phải ở trạng thái hoạt động.
+        /// - Tài khoản phải tồn tại và đã được kích hoạt.
+        /// - Đối với tài khoản đăng nhập lần đầu, hệ thống sẽ yêu cầu đổi mật khẩu mặc định.
         /// - Trả về access token và refresh token để sử dụng cho các API yêu cầu xác thực.
+        /// 
+        /// **Xử lý PasswordChangeRequiredException:**
+        /// - Exception này được ném ra khi người dùng đăng nhập lần đầu hoặc tài khoản bị yêu cầu thay đổi mật khẩu.
+        /// - API sẽ trả về mã 403 (Forbidden) với code "PASSWORD_CHANGE_REQUIRED" và accountId.
+        /// - Client cần chuyển hướng người dùng đến trang đổi mật khẩu và gọi API "password/first-change" để đặt mật khẩu mới.
+        /// - Chỉ sau khi đổi mật khẩu thành công, người dùng mới có thể đăng nhập vào hệ thống.
         /// </remarks>
-        /// <param name="dto">Thông tin đăng nhập bao gồm username/email, mật khẩu và device ID.</param>
+        /// <param name="dto">Thông tin đăng nhập bao gồm UsernameOrEmail, Password và DeviceId.</param>
         /// <returns>Cặp token (AccessToken và RefreshToken) để xác thực các request tiếp theo.</returns>
         /// <response code="200">Đăng nhập thành công, trả về token.</response>
-        /// <response code="400">Thông tin đăng nhập không chính xác hoặc tài khoản chưa được xác thực.</response>
-        /// <response code="401">Tài khoản bị khóa hoặc không có quyền truy cập.</response>
+        /// <response code="400">Thông tin đăng nhập không chính xác hoặc không hợp lệ.</response>
+        /// <response code="403">Tài khoản yêu cầu đổi mật khẩu trước khi đăng nhập. Trả về object chứa accountId và code "PASSWORD_CHANGE_REQUIRED".</response>
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
         {
-            var tokens = await _authenService.LoginAsync(dto);
-            return Ok(tokens);
+            try
+            {
+                var tokens = await _authenService.LoginAsync(dto);
+                return Ok(tokens);
+            }
+            catch (PasswordChangeRequiredException ex)
+            {
+                // 403 Forbidden với code riêng và AccountId để FE biết tài khoản nào
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    code = "PASSWORD_CHANGE_REQUIRED",
+                    accountId = ex.AccountId,
+                    message = "Bạn cần đổi mật khẩu trước khi đăng nhập."
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
         }
         /// <summary>
         /// Yêu cầu đặt lại mật khẩu cho tài khoản người dùng.
@@ -208,6 +233,54 @@ namespace AptCare.Api.Controllers
         {
             await _authenService.PasswordResetConfirmAsync(dto);
             return NoContent();
+        }
+        /// <summary>
+        /// Lấy thông tin hồ sơ của người dùng đã đăng nhập.
+        /// </summary>
+        /// <remarks>
+        /// **Chức năng:** Truy xuất thông tin hồ sơ đầy đủ của người dùng hiện đang đăng nhập.
+        ///  
+        /// **Lưu ý:**
+        /// - API này yêu cầu người dùng đã được xác thực (đăng nhập).
+        /// - Thông tin trả về bao gồm các thông tin cá nhân, danh sách căn hộ, và vai trò của người dùng.
+        /// - Access token phải được đính kèm trong header của request.
+        /// </remarks>
+        /// <returns>Thông tin chi tiết hồ sơ của người dùng đang đăng nhập.</returns>
+        /// <response code="200">Trả về thông tin hồ sơ người dùng thành công.</response>
+        /// <response code="401">Người dùng chưa đăng nhập hoặc token không hợp lệ.</response>
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetOwnProfile()
+        {
+            var profile = await _authenService.GetOwnProfile();
+            return Ok(profile);
+        }
+        /// <summary>
+        /// Đổi mật khẩu cho người dùng đăng nhập lần đầu.
+        /// </summary>
+        /// <remarks>
+        /// **Chức năng:** Cho phép người dùng đổi mật khẩu mặc định khi đăng nhập lần đầu vào hệ thống.
+        ///  
+        /// **Thông tin đổi mật khẩu (FirstLoginChangePasswordDto):**
+        /// - <b>AccountId</b>: ID của tài khoản cần đổi mật khẩu (bắt buộc).
+        /// - <b>CurrentPassword</b>: Mật khẩu hiện tại/mặc định của tài khoản (bắt buộc).
+        /// - <b>NewPassword</b>: Mật khẩu mới tối thiểu 6 ký tự (bắt buộc).
+        /// - <b>DeviceInfo</b>: Thông tin thiết bị đăng nhập (bắt buộc).
+        ///  
+        /// **Lưu ý:**
+        /// - Người dùng phải xác thực thành công với mật khẩu hiện tại.
+        /// - Sau khi đổi mật khẩu thành công, người dùng được cấp token đăng nhập mới.
+        /// - Mật khẩu mới không được trùng với mật khẩu cũ.
+        /// </remarks>
+        /// <param name="dto">Thông tin đổi mật khẩu bao gồm AccountId, mật khẩu hiện tại, mật khẩu mới và thông tin thiết bị.</param>
+        /// <returns>Cặp token (AccessToken và RefreshToken) để xác thực các request tiếp theo.</returns>
+        /// <response code="200">Đổi mật khẩu thành công, trả về token đăng nhập mới.</response>
+        /// <response code="400">Mật khẩu hiện tại không chính xác hoặc mật khẩu mới không đáp ứng yêu cầu.</response>
+        [HttpPost("password/first-change")]
+        public async Task<IActionResult> FirstLoginChangePassword([FromBody] FirstLoginChangePasswordDto dto)
+        {
+            var tokens = await _authenService.FirstLoginChangePasswordAsync(dto);
+            return Ok(tokens);
         }
     }
 }

@@ -21,12 +21,8 @@ namespace AptCare.Repository
                 .AddEnvironmentVariables()
                 .Build();
             var connectionString = configuration.GetConnectionString("DefaultConnection");
-            if (string.IsNullOrWhiteSpace(connectionString))
-                connectionString = "Host=localhost;Database=AptCareSystemDB;Username=postgres;Password=12345";
-
             var optionsBuilder = new DbContextOptionsBuilder<AptCareSystemDBContext>();
             optionsBuilder.UseNpgsql(connectionString);
-
             return new AptCareSystemDBContext(optionsBuilder.Options);
         }
 

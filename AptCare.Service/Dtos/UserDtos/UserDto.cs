@@ -19,7 +19,7 @@ namespace AptCare.Service.Dtos.UserDtos
         public DateTime? Birthday { get; set; }
         public List<ApartmentForUserDto>? Apartments { get; set; }
         public AccountForAdminDto AccountInfo { get; set; }
-        public string Status { get; set; } // Hiển thị dưới dạng chuỗi
+        public string Status { get; set; }
     }
 
 
