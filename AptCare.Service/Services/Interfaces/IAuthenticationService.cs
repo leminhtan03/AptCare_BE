@@ -1,4 +1,5 @@
 ﻿using AptCare.Repository.Entities;
+using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.AuthenDto;
 using System;
 using System.Collections.Generic;
@@ -19,5 +20,7 @@ namespace AptCare.Service.Services.Interfaces
         Task PasswordResetRequestAsync(PasswordResetRequestDto dto);
         Task<string> PasswordResetVerifyOtpAsync(PasswordResetVerifyOtpDto dto);
         Task PasswordResetConfirmAsync(PasswordResetConfirmDto dto);
+        Task<GetOwnProfileDto> GetOwnProfile();
+        Task<TokenResponseDto> FirstLoginChangePasswordAsync(FirstLoginChangePasswordDto dto);
     }
 }

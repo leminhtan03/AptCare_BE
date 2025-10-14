@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 
 namespace AptCare.Service.Dtos.AuthenDto
 {
-    public class LoginRequestDto
+    public sealed class FirstLoginChangePasswordDto
     {
-        public string UsernameOrEmail { get; set; }
-        public string Password { get; set; }
+        public int AccountId { get; set; }
+        public string CurrentPassword { get; set; }
+        public string NewPassword { get; set; }
         public string DeviceInfo { get; set; }
     }
-
 }

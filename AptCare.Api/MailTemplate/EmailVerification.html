@@ -156,25 +156,31 @@
     <div style="display:none;max-height:0;overflow:hidden;opacity:0">
         Mã xác minh email cho tài khoản {{SystemName}} của bạn.
     </div>
+
     <div class="wrapper">
         <div class="container">
-            <div class="header">
-                <h1>{{SystemName}} – Xác minh email</h1>
-            </div>
+            <div class="header"><h1>{{SystemName}} – Xác minh email</h1></div>
+
             <div class="content">
                 <p class="hi">Xin chào {{FullName}},</p>
-                <p>Để kích hoạt tài khoản của bạn trên <strong>{{SystemName}}</strong>, vui lòng dùng mã xác minh bên dưới trong vòng {{ExpiredMinutes}} phút.</p>
+                <p>Vui lòng sử dụng mã OTP bên dưới trong vòng {{ExpiredMinutes}} phút để xác minh email tài khoản <strong>{{SystemName}}</strong>.</p>
+
                 <div class="box">
                     <div class="kv"><span class="k">Mã OTP:</span><span class="v">{{OtpCode}}</span></div>
+                    <!-- ExpireAt có thể trống nếu không truyền -->
                     <div class="kv"><span class="k">Hết hạn:</span><span class="v">{{ExpireAt}}</span></div>
                 </div>
-                <p>Bạn cũng có thể xác minh nhanh qua liên kết sau:</p>
+
                 <p><a class="btn" href="{{VerifyUrl}}" target="_blank" rel="noopener">Xác minh email</a></p>
-                <p class="muted">Liên kết: <a href="{{VerifyUrl}}" target="_blank" rel="noopener">{{VerifyUrl}}</a></p>
+
                 <hr style="border:none;border-top:1px solid #e6eaf2;margin:20px 0" />
                 <p>Nếu bạn không yêu cầu, vui lòng bỏ qua email này.</p>
-                <p class="muted">Hỗ trợ: <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>{{SupportPhoneSuffix}}</p>
+
+                <p class="muted">
+                    Hỗ trợ: <a href="mailto:{{SupportEmail}}">{{SupportEmail}}</a>{{SupportPhoneSuffix}}
+                </p>
             </div>
+
             <div class="footer">© {{Year}} {{SystemName}}. Mọi quyền được bảo lưu.</div>
         </div>
     </div>
