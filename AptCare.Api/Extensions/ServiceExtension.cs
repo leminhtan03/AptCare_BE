@@ -20,7 +20,7 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IUnitOfWork, UnitOfWork<AptCareSystemDBContext>>();
             service.AddTransient(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             service.AddTransient<IPasswordHasher<Account>, PasswordHasher<Account>>();
-            service.AddTransient<IProviderContext, ProviderContext>();
+            service.AddTransient<IUserContext, UserContext>();
             service.AddTransient<IAccountService, AccountService>();
             service.AddTransient<IUserService, UserService>();
             service.AddTransient<ITokenService, TokenService>();

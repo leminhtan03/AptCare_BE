@@ -1,4 +1,5 @@
 ﻿using AptCare.Repository.Enum.AccountUserEnum;
+using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Services.Interfaces;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AptCare.Api.Controllers
 {
-    //[Authorize(Roles = nameof(AccountRole.Manager))] // Áp dụng cho toàn bộ controller
+    [Authorize(Roles = nameof(AccountRole.Manager))]
     public class ApartmentController : BaseApiController
     {
         private readonly IApartmentService _apartmentService;
@@ -37,6 +38,9 @@ namespace AptCare.Api.Controllers
         /// <response code="200">Trả về danh sách căn hộ.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet]
+        [ProducesResponseType(typeof(IPaginate<ApartmentDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetPaginateApartment([FromQuery] PaginateDto dto)
         {
             var result = await _apartmentService.GetPaginateApartmentAsync(dto);
@@ -53,7 +57,11 @@ namespace AptCare.Api.Controllers
         /// <returns>Thông tin chi tiết của căn hộ.</returns>
         /// <response code="200">Trả về thông tin căn hộ.</response>
         /// <response code="404">Không tìm thấy căn hộ.</response>
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
+        [ProducesResponseType(typeof(ApartmentDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetApartmentById(int id)
         {
             var result = await _apartmentService.GetApartmentByIdAsync(id);
@@ -73,10 +81,14 @@ namespace AptCare.Api.Controllers
         /// <response code="200">Căn hộ được tạo thành công.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
         [HttpPost]
+        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> CreateApartment(ApartmentCreateDto dto)
         {
             var result = await _apartmentService.CreateApartmentAsync(dto);
-            return Ok(result);
+            return Created(string.Empty, result);
         }
 
         /// <summary>
@@ -92,7 +104,13 @@ namespace AptCare.Api.Controllers
         /// <returns>Thông báo cập nhật thành công.</returns>
         /// <response code="200">Cập nhật căn hộ thành công.</response>
         /// <response code="404">Không tìm thấy căn hộ.</response>
-        [HttpPut("{id}")]
+        [HttpPut("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> UpdateApartment(int id, ApartmentUpdateDto dto)
         {
             var result = await _apartmentService.UpdateApartmentAsync(id, dto);
@@ -111,7 +129,11 @@ namespace AptCare.Api.Controllers
         /// <returns>Thông báo xóa thành công.</returns>
         /// <response code="200">Căn hộ được xóa thành công.</response>
         /// <response code="404">Không tìm thấy căn hộ.</response>
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> DeleteApartment(int id)
         {
             var result = await _apartmentService.DeleteApartmentAsync(id);

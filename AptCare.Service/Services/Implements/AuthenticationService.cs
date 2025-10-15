@@ -6,6 +6,7 @@ using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.AuthenDto;
 using AptCare.Service.Exceptions;
+using AptCare.Service.Extensions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
@@ -21,8 +22,8 @@ namespace AptCare.Service.Services.Implements
         private readonly IOtpService _otpService;
         private readonly ITokenService _tokenService;
         private readonly IMailSenderService _mailSenderService;
-        private readonly IProviderContext _providerContext;
-        public AuthenticationService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IMailSenderService mailSenderService, IPasswordHasher<Account> pwdHasher, IOtpService otpService, IProviderContext providerContext, ITokenService tokenService, ILogger<AuthenticationService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
+        private readonly IUserContext _providerContext;
+        public AuthenticationService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IMailSenderService mailSenderService, IPasswordHasher<Account> pwdHasher, IOtpService otpService, IUserContext providerContext, ITokenService tokenService, ILogger<AuthenticationService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
         {
             _pwdHasher = pwdHasher;
             _otpService = otpService;
@@ -35,9 +36,9 @@ namespace AptCare.Service.Services.Implements
             var accountRepo = _unitOfWork.GetRepository<Account>();
             var userRepo = _unitOfWork.GetRepository<User>();
             var existed = await accountRepo.SingleOrDefaultAsync(predicate: a => a.Username == dto.Email);
-            if (existed != null) throw new InvalidOperationException("Email của bạn đã đăng kí");
+            if (existed != null) throw new AppValidationException("Email của bạn đã đăng kí");
             var existedEmail = await userRepo.SingleOrDefaultAsync(predicate: u => u.Email == dto.Email);
-            if (existedEmail == null) throw new InvalidOperationException("Email hồ sơ của bạn không có trong hệ thống, vui lòng liên hệ ban quản lí!");
+            if (existedEmail == null) throw new AppValidationException("Email hồ sơ của bạn không có trong hệ thống, vui lòng liên hệ ban quản lí!");
             var account = new Account
             {
                 AccountId = existedEmail.UserId,
@@ -122,11 +123,11 @@ namespace AptCare.Service.Services.Implements
         public async Task<TokenResponseDto> VerifyEmailAndLoginAsync(int accountId, string otp, string deviceId)
         {
             var ok = await VerifyEmailAsync(accountId, otp);
-            if (!ok) throw new InvalidOperationException("OTP không hợp lệ hoặc đã hết hạn.");
+            if (!ok) throw new AppValidationException("OTP không hợp lệ hoặc đã hết hạn.");
             var userRepo = _unitOfWork.GetRepository<User>();
             var user = await userRepo.SingleOrDefaultAsync(predicate: u => u.UserId == accountId,
                             include: q => q.Include(x => x.Account));
-            if (user == null) throw new InvalidOperationException("Không tìm thấy người dùng.");
+            if (user == null) throw new AppValidationException("Không tìm thấy người dùng.");
 
             return await _tokenService.GenerateTokensAsync(user, deviceId);
         }
@@ -134,18 +135,18 @@ namespace AptCare.Service.Services.Implements
         public async Task<TokenResponseDto> LoginAsync(LoginRequestDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.UsernameOrEmail) || string.IsNullOrWhiteSpace(dto.Password))
-                throw new InvalidOperationException("Thiếu thông tin đăng nhập.");
+                throw new AppValidationException("Thiếu thông tin đăng nhập.");
             var accRepo = _unitOfWork.GetRepository<Account>();
             var userRepo = _unitOfWork.GetRepository<User>();
             Account account = await accRepo.SingleOrDefaultAsync(predicate: a => a.Username == dto.UsernameOrEmail,
                                 include: q => q.Include(x => x.User));
             if (account == null)
-                throw new InvalidOperationException("Tài khoản hoặc mật khẩu không đúng.");
+                throw new AppValidationException("Tài khoản hoặc mật khẩu không đúng.");
             if (!account.EmailConfirmed)
-                throw new InvalidOperationException("Email chưa xác minh. Vui lòng xác minh trước khi đăng nhập.");
+                throw new AppValidationException("Email chưa xác minh. Vui lòng xác minh trước khi đăng nhập.");
             var pwdResult = _pwdHasher.VerifyHashedPassword(account, account.PasswordHash, dto.Password);
             if (pwdResult == PasswordVerificationResult.Failed)
-                throw new InvalidOperationException("Tài khoản hoặc mật khẩu không đúng.");
+                throw new AppValidationException("Tài khoản hoặc mật khẩu không đúng.");
             if (account.MustChangePassword)
                 throw new PasswordChangeRequiredException(account.AccountId);
             if (pwdResult == PasswordVerificationResult.SuccessRehashNeeded)
@@ -156,7 +157,7 @@ namespace AptCare.Service.Services.Implements
             }
             var user = await _unitOfWork.GetRepository<User>()
                 .SingleOrDefaultAsync(predicate: u => u.UserId == account.AccountId, include: q => q.Include(x => x.Account));
-            if (user == null) throw new InvalidOperationException("Không tìm thấy người dùng.");
+            if (user == null) throw new AppValidationException("Không tìm thấy người dùng.");
 
             return await _tokenService.GenerateTokensAsync(user, dto.DeviceInfo);
         }
@@ -166,7 +167,7 @@ namespace AptCare.Service.Services.Implements
             if (string.IsNullOrWhiteSpace(dto.Email)) return;
             var userRepo = _unitOfWork.GetRepository<User>();
             var user = await userRepo.SingleOrDefaultAsync(predicate: u => u.Email == dto.Email, include: q => q.Include(x => x.Account));
-            if (user == null || user.Account == null) return;
+            if (user == null || user.Account == null) throw new AppValidationException("Tài khoản không tồn tại.");
             var otp = await _otpService.CreateOtpAsync(user.Account.AccountId, OTPType.PasswordReset, TimeSpan.FromMinutes(5), 6);
 
             await _mailSenderService.SendEmailWithTemplateAsync(
@@ -188,7 +189,7 @@ namespace AptCare.Service.Services.Implements
         public async Task<string> PasswordResetVerifyOtpAsync(PasswordResetVerifyOtpDto dto)
         {
             var ok = await _otpService.VerifyOtpAsync(dto.AccountId, dto.Otp, OTPType.PasswordReset);
-            if (!ok) throw new InvalidOperationException("OTP không hợp lệ hoặc đã hết hạn.");
+            if (!ok) throw new AppValidationException("OTP không hợp lệ hoặc đã hết hạn.");
             var userexist = await _unitOfWork.GetRepository<User>()
                 .SingleOrDefaultAsync(predicate: u => u.UserId == dto.AccountId, include: q => q.Include(x => x.Account));
             var resetToken = await _tokenService.CreatePasswordResetTokenAsync(userexist.UserId, TimeSpan.FromMinutes(10));
@@ -198,12 +199,12 @@ namespace AptCare.Service.Services.Implements
         public async Task PasswordResetConfirmAsync(PasswordResetConfirmDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.NewPassword))
-                throw new InvalidOperationException("Mật khẩu mới không hợp lệ.");
+                throw new AppValidationException("Mật khẩu mới không hợp lệ.");
             var ok = await _tokenService.ConsumePasswordResetTokenAsync(dto.AccountId, dto.ResetToken);
-            if (!ok) throw new InvalidOperationException("Token đặt lại không hợp lệ hoặc đã hết hạn.");
+            if (!ok) throw new AppValidationException("Token đặt lại không hợp lệ hoặc đã hết hạn.");
             var accRepo = _unitOfWork.GetRepository<Account>();
             var account = await accRepo.SingleOrDefaultAsync(predicate: a => a.AccountId == dto.AccountId, include: q => q.Include(x => x.User));
-            if (account == null) throw new InvalidOperationException("Không tìm thấy tài khoản.");
+            if (account == null) throw new AppValidationException("Không tìm thấy tài khoản.");
 
             account.PasswordHash = _pwdHasher.HashPassword(account, dto.NewPassword);
             accRepo.UpdateAsync(account);
@@ -242,14 +243,14 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception ex)
             {
-                throw new Exception("Xảy ra lỗi ở GetOwnProfile :" + ex.Message);
+                throw new AppValidationException("Xảy ra lỗi ở GetOwnProfile :" + ex.Message);
             }
 
         }
         public async Task<TokenResponseDto> FirstLoginChangePasswordAsync(FirstLoginChangePasswordDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.NewPassword))
-                throw new InvalidOperationException("Mật khẩu mới không hợp lệ.");
+                throw new AppValidationException("Mật khẩu mới không hợp lệ.");
 
             var accRepo = _unitOfWork.GetRepository<Account>();
             var account = await accRepo.SingleOrDefaultAsync(
@@ -258,10 +259,10 @@ namespace AptCare.Service.Services.Implements
                 include: q => q.Include(x => x.User));
 
             if (account == null)
-                throw new InvalidOperationException("Không tìm thấy tài khoản.");
+                throw new AppValidationException("Không tìm thấy tài khoản.");
             var verify = _pwdHasher.VerifyHashedPassword(account, account.PasswordHash, dto.CurrentPassword);
             if (verify == PasswordVerificationResult.Failed)
-                throw new InvalidOperationException("Mật khẩu hiện tại không đúng.");
+                throw new AppValidationException("Mật khẩu hiện tại không đúng.");
             account.PasswordHash = _pwdHasher.HashPassword(account, dto.NewPassword);
             if (account.MustChangePassword) account.MustChangePassword = false;
             accRepo.UpdateAsync(account);
@@ -284,7 +285,7 @@ namespace AptCare.Service.Services.Implements
             }
             var user = await _unitOfWork.GetRepository<User>()
                 .SingleOrDefaultAsync(predicate: u => u.UserId == account.AccountId, include: q => q.Include(x => x.Account));
-            if (user == null) throw new InvalidOperationException("Không tìm thấy người dùng.");
+            if (user == null) throw new AppValidationException("Không tìm thấy người dùng.");
 
             return await _tokenService.GenerateTokensAsync(user, dto.DeviceInfo);
         }

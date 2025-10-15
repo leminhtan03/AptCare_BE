@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AptCare.Api.Controllers
 {
-    //[Authorize(Roles = nameof(AccountRole.Manager))] // Áp dụng cho toàn bộ controller
+    [Authorize(Roles = nameof(AccountRole.Manager))] // Áp dụng cho toàn bộ controller
     public class FloorController : BaseApiController
     {
         private readonly IFloorService _floorService;

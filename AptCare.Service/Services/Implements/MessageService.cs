@@ -24,9 +24,9 @@ namespace AptCare.Service.Services.Implements
         private readonly ICloudinaryService _cloudinaryService;
 
         public MessageService(
-            IUnitOfWork<AptCareSystemDBContext> unitOfWork, 
-            ILogger<Message> logger, 
-            IMapper mapper, 
+            IUnitOfWork<AptCareSystemDBContext> unitOfWork,
+            ILogger<Message> logger,
+            IMapper mapper,
             IHttpContextAccessor httpContextAccessor,
             ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
         {
@@ -63,7 +63,7 @@ namespace AptCare.Service.Services.Implements
 
                 var message = _mapper.Map<Message>(dto);
                 message.SenderId = userId;
-                
+
                 await _unitOfWork.GetRepository<Message>().InsertAsync(message);
 
                 await PushMessageNotificationAsync(message);
@@ -77,7 +77,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 throw new Exception($"Lỗi hệ thống: {e.Message}");
-            }            
+            }
         }
 
         public async Task<string> CreateFileMessageAsync(int conversationId, IFormFile file)
@@ -114,7 +114,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     throw new Exception("Có lỗi xảy ra khi gửi file.");
                 }
-               
+
                 var message = new Message
                 {
                     ConversationId = conversationId,
@@ -122,9 +122,9 @@ namespace AptCare.Service.Services.Implements
                     Content = content,
                     Status = MessageStatus.Sent,
                     CreatedAt = DateTime.UtcNow.AddHours(7),
-                    Type = messageType                  
+                    Type = messageType
                 };
-                
+
                 await _unitOfWork.GetRepository<Message>().InsertAsync(message);
 
                 await PushMessageNotificationAsync(message);
@@ -212,7 +212,7 @@ namespace AptCare.Service.Services.Implements
             await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
         }
 
-        public async Task<IPaginate<MessageDto>> GetPaginateMessagesAsync(int conversationId,DateTime? before, int pageSize)
+        public async Task<IPaginate<MessageDto>> GetPaginateMessagesAsync(int conversationId, DateTime? before, int pageSize)
         {
             var userId = GetUserId();
             var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(p => p.ConversationId == conversationId);

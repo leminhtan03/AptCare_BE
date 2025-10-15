@@ -16,6 +16,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using AptCare.Service.Exceptions;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -51,7 +52,7 @@ namespace AptCare.Service.Services.Implements
         {
             var key = _configuration["Jwt:Key"];
             if (string.IsNullOrWhiteSpace(key))
-                throw new InvalidOperationException("Missing Jwt:Key configuration.");
+                throw new AppValidationException("Missing Jwt:Key configuration.");
             return new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
         }
 

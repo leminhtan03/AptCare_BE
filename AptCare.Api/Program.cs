@@ -1,11 +1,13 @@
 ﻿
 using AptCare.Api.Extensions;
 using AptCare.Api.MapperProfile;
+using AptCare.Api.Middleware;
 using AptCare.Repository;
 using AptCare.Repository.Repositories;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 
 namespace AptCare.Api
 {
@@ -82,24 +84,33 @@ namespace AptCare.Api
                     }
                 }
             }
-            if (app.Environment.IsDevelopment())
+
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
-                app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    // Hiển thị UI của Swagger
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "AptCareSystem API v1");
-                });
-            }
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
+            app.UseMiddleware<ProblemDetailsMiddleware>();
 
 
+            //if (app.Environment.IsDevelopment())
+            //{
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                // Hiển thị UI của Swagger
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "AptCareSystem API v1");
+            });
+            //}
+
+            //Comment lại khi deploy lên server 
             app.UseHttpsRedirection();
             app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
-
+            app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
+            app.MapGet("/health", () => Results.Ok(new { status = "Healthy" })).AllowAnonymous();
             app.Run();
         }
     }

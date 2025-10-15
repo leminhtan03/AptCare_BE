@@ -8,6 +8,7 @@ using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.UserDtos;
+using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using BCrypt.Net;
@@ -39,15 +40,15 @@ namespace AptCare.Service.Services.Implements
                 var userRepo = _unitOfWork.GetRepository<User>();
                 if (await userRepo.AnyAsync(u => u.Email == createUserDto.Email))
                 {
-                    throw new InvalidOperationException($"Email \'{createUserDto.Email}\' đã tồn tại trong hệ thống.");
+                    throw new AppValidationException($"Email \'{createUserDto.Email}\' đã tồn tại trong hệ thống.");
                 }
                 if (await userRepo.AnyAsync(u => u.PhoneNumber == createUserDto.PhoneNumber))
                 {
-                    throw new InvalidOperationException($"Số điện thoại \'{createUserDto.PhoneNumber}\' đã tồn tại trong hệ thống.");
+                    throw new AppValidationException($"Số điện thoại \'{createUserDto.PhoneNumber}\' đã tồn tại trong hệ thống.");
                 }
                 if (await userRepo.AnyAsync(u => u.CitizenshipIdentity == createUserDto.CitizenshipIdentity))
                 {
-                    throw new InvalidOperationException($"CCCD \'{createUserDto.CitizenshipIdentity}\' đã tồn tại trong hệ thống.");
+                    throw new AppValidationException($"CCCD \'{createUserDto.CitizenshipIdentity}\' đã tồn tại trong hệ thống.");
                 }
                 var user = _mapper.Map<User>(createUserDto);
                 user.Status = ActiveStatus.Active;
@@ -75,7 +76,7 @@ namespace AptCare.Service.Services.Implements
                         }
                         else
                         {
-                            throw new InvalidOperationException($"Apartment with RoomNumber '{aptDto.RoomNumber}' not found.");
+                            throw new AppValidationException($"Apartment with RoomNumber '{aptDto.RoomNumber}' not found.");
                         }
                     }
                 }
@@ -272,7 +273,7 @@ namespace AptCare.Service.Services.Implements
                     }
                     else
                     {
-                        throw new InvalidOperationException($"Apartment with RoomNumber '{dto.RoomNumber}' not found.");
+                        throw new AppValidationException($"Apartment with RoomNumber '{dto.RoomNumber}' not found.");
                     }
                 }
             }
@@ -336,12 +337,12 @@ namespace AptCare.Service.Services.Implements
                 using (var package = new ExcelPackage(fileStream))
                 {
                     var usersSheet = package.Workbook.Worksheets["Users"];
-                    if (usersSheet == null) throw new InvalidOperationException("Không tìm thấy sheet 'Users' trong file Excel.");
+                    if (usersSheet == null) throw new AppValidationException("Không tìm thấy sheet 'Users' trong file Excel.");
 
                     var userMap = await ProcessUsersSheet(usersSheet, result);
 
                     var relationsSheet = package.Workbook.Worksheets["UserApartments"];
-                    if (relationsSheet == null) throw new InvalidOperationException("Không tìm thấy sheet 'UserApartments' trong file Excel.");
+                    if (relationsSheet == null) throw new AppValidationException("Không tìm thấy sheet 'UserApartments' trong file Excel.");
 
                     await ProcessUserApartmentsSheet(relationsSheet, userMap, result);
 
@@ -483,15 +484,15 @@ namespace AptCare.Service.Services.Implements
                 }
                 if (await _unitOfWork.GetRepository<User>().AnyAsync(u => u.Email == createAccountDto.UserData.Email))
                 {
-                    throw new InvalidOperationException($"Email \'{createAccountDto.UserData.Email}\' đã tồn tại trong hệ thống.");
+                    throw new AppValidationException($"Email \'{createAccountDto.UserData.Email}\' đã tồn tại trong hệ thống.");
                 }
                 if (await _unitOfWork.GetRepository<User>().AnyAsync(u => u.PhoneNumber == createAccountDto.UserData.PhoneNumber))
                 {
-                    throw new InvalidOperationException($"Số điện thoại \'{createAccountDto.UserData.PhoneNumber}\' đã tồn tại trong hệ thống.");
+                    throw new AppValidationException($"Số điện thoại \'{createAccountDto.UserData.PhoneNumber}\' đã tồn tại trong hệ thống.");
                 }
                 if (await _unitOfWork.GetRepository<User>().AnyAsync(u => u.CitizenshipIdentity == createAccountDto.UserData.CitizenshipIdentity))
                 {
-                    throw new InvalidOperationException($"Mã định danh \'{createAccountDto.UserData.CitizenshipIdentity}\' đã tồn tại trong hệ thống.");
+                    throw new AppValidationException($"Mã định danh \'{createAccountDto.UserData.CitizenshipIdentity}\' đã tồn tại trong hệ thống.");
                 }
 
                 var user = _mapper.Map<User>(createAccountDto.UserData);
@@ -530,7 +531,7 @@ namespace AptCare.Service.Services.Implements
                             }
                             else
                             {
-                                throw new InvalidOperationException($"Căn hộ với mã '{aptDto.RoomNumber}' không tồn tại.");
+                                throw new AppValidationException($"Căn hộ với mã '{aptDto.RoomNumber}' không tồn tại.");
                             }
                         }
                         await _unitOfWork.GetRepository<UserApartment>().InsertRangeAsync(user.UserApartments);
