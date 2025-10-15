@@ -15,7 +15,7 @@ namespace AptCare.Service.Dtos.WorkSlotDtos
         public DateOnly Date { get; set; }
 
         [Required]
-        public SlotTime Slot { get; set; }
+        public int SlotId { get; set; }
 
         [Required]
         public WorkSlotStatus Status { get; set; }

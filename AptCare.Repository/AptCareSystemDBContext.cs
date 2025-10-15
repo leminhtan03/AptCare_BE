@@ -26,7 +26,9 @@ namespace AptCare.Repository
         public DbSet<Conversation> Conversations { get; set; }
         public DbSet<Message> Messages { get; set; }
         public DbSet<ConversationParticipant> ConversationParticipants { get; set; }
-
+        public DbSet<Issue> Issues { get; set; }
+        public DbSet<InvoiceService> InvoiceServices { get; set; }
+        public DbSet<CommonAreaObject> CommonAreaObjects { get; set; }
         public DbSet<Accessory> Accessories { get; set; }
         public DbSet<RepairRequest> RepairRequests { get; set; }
         public DbSet<RepairReport> RepairReports { get; set; }
@@ -37,9 +39,8 @@ namespace AptCare.Repository
         public DbSet<RequestTracking> RequestTrackings { get; set; }
         public DbSet<Feedback> Feedbacks { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
-        public DbSet<InvoiceItem> InvoiceItems { get; set; }
+        public DbSet<InvoiceAccessory> InvoiceAccessories { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
-        public DbSet<WorkOrder> WorkOrders { get; set; }
         public DbSet<Contract> Contracts { get; set; }
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
         public DbSet<MaintenanceTrackingHistory> MaintenanceTrackingHistories { get; set; }
@@ -106,6 +107,13 @@ namespace AptCare.Repository
                 .HasForeignKey(ca => ca.FloorId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // CommonArea - CommonAreaObject (1 - n)
+            modelBuilder.Entity<CommonAreaObject>()
+                .HasOne(cao => cao.CommonArea)
+                .WithMany(ca => ca.CommonAreaObjects)
+                .HasForeignKey(ca => ca.CommonAreaObjectId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // User - Apartment (n - n)
             modelBuilder.Entity<UserApartment>(entity =>
             {
@@ -120,7 +128,7 @@ namespace AptCare.Repository
 
             // ========================= Report =========================
             // User - Report (1 - n)
-            // CommonArea - Report (1 - n)
+            // CommonAreaObject - Report (1 - n)
             modelBuilder.Entity<Report>(entity =>
             {
                 entity.HasOne(r => r.User)
@@ -128,9 +136,9 @@ namespace AptCare.Repository
                       .HasForeignKey(r => r.UserId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(r => r.CommonArea)
-                      .WithMany(ca => ca.Reports)
-                      .HasForeignKey(r => r.CommonAreaId)
+                entity.HasOne(r => r.CommonAreaObject)
+                      .WithMany(cao => cao.Reports)
+                      .HasForeignKey(r => r.CommonAreaObjectId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -145,6 +153,15 @@ namespace AptCare.Repository
                 entity.HasOne(tt => tt.Technique)
                       .WithMany(t => t.TechnicianTechniques)
                       .HasForeignKey(tt => tt.TechniqueId);
+            });
+
+            // Technique - Issue (1 - n)
+            modelBuilder.Entity<Issue>(entity =>
+            {
+                entity.HasOne(i => i.Technique)
+                      .WithMany(t => t.Issues)
+                      .HasForeignKey(i => i.TechniqueId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             // ========================= WorkSlot =========================
@@ -192,7 +209,8 @@ namespace AptCare.Repository
             // User - RepairRequest (1 - n)
             // Apartment - RepairRequest (1 - n)
             // CommonArea - RepairRequest (1 - n)
-            // Technician - RepairRequest (1 - n)
+            // MaintenanceRequest - RepairRequest (1 - n)
+            // Issue - RepairRequest (1 - n)
             modelBuilder.Entity<RepairRequest>(entity =>
             {
                 entity.HasOne(rr => rr.User)
@@ -203,16 +221,18 @@ namespace AptCare.Repository
                       .WithMany(a => a.RepairRequests)
                       .HasForeignKey(rr => rr.ApartmentId)
                       .OnDelete(DeleteBehavior.Restrict);
-                entity.HasOne(rr => rr.CommonArea)
-                      .WithMany(ca => ca.RepairRequests)
-                      .HasForeignKey(rr => rr.CommonAreaId)
-                      .OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne(rr => rr.MaintenanceRequest)
                       .WithMany(mr => mr.RepairRequests)
-                      .HasForeignKey(rr => rr.MaintenanceRequestId);
-                entity.HasOne(rr => rr.Technique)
-                      .WithMany(mr => mr.RepairRequests)
-                      .HasForeignKey(rr => rr.TechniqueId);
+                      .HasForeignKey(rr => rr.MaintenanceRequestId)
+                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(rr => rr.Issue)
+                      .WithMany(i => i.RepairRequests)
+                      .HasForeignKey(rr => rr.IssueId)
+                      .OnDelete(DeleteBehavior.Restrict);             
+                entity.HasOne(rr => rr.ParentRequest)
+                      .WithMany(rr => rr.ChildRequests)
+                      .HasForeignKey(rr => rr.ParentRequestId)
+                      .OnDelete(DeleteBehavior.Restrict);
             });
 
             // RepairRequest - Appointment (1 - n)
@@ -224,14 +244,18 @@ namespace AptCare.Repository
             });
 
             // Appointment - AppointmentAssign (1 - n)
-            // Appointment - InspectionReport (1 - n)
+            // Technician - AppointmentAssign (1 - n)
             modelBuilder.Entity<AppointmentAssign>(entity =>
             {
                 entity.HasOne(aa => aa.Appointment)
                       .WithMany(a => a.AppointmentAssigns)
                       .HasForeignKey(aa => aa.AppointmentId);
+                entity.HasOne(aa => aa.Technician)
+                      .WithMany(a => a.AppointmentAssigns)
+                      .HasForeignKey(aa => aa.AppointmentId);
             });
 
+            // Appointment - InspectionReport (1 - n)
             modelBuilder.Entity<InspectionReport>(entity =>
             {
                 entity.HasOne(ir => ir.Appointment)
@@ -280,16 +304,24 @@ namespace AptCare.Repository
                       .HasForeignKey(i => i.RepairRequestId);
             });
 
-            // Invoice - InvoiceItem (1 - n)
-            // Accessory - InvoiceItem (1 - n)
-            modelBuilder.Entity<InvoiceItem>(entity =>
+            // Invoice - InvoiceAccessory (1 - n)
+            // Accessory - InvoiceAccessory (1 - n)
+            modelBuilder.Entity<InvoiceAccessory>(entity =>
             {
-                entity.HasOne(ii => ii.Invoice)
-                      .WithMany(i => i.InvoiceItems)
-                      .HasForeignKey(ii => ii.InvoiceId);
-                entity.HasOne(ii => ii.Accessory)
-                      .WithMany(a => a.InvoiceItems)
-                      .HasForeignKey(ii => ii.AccessoryId);
+                entity.HasOne(ia => ia.Invoice)
+                      .WithMany(i => i.InvoiceAccessories)
+                      .HasForeignKey(ia => ia.InvoiceId);
+                entity.HasOne(ia => ia.Accessory)
+                      .WithMany(a => a.InvoiceAccessories)
+                      .HasForeignKey(ia => ia.AccessoryId);
+            });
+
+            // Invoice - InvoiceService (1 - n)
+            modelBuilder.Entity<InvoiceService>(entity =>
+            {
+                entity.HasOne(ia => ia.Invoice)
+                      .WithMany(i => i.InvoiceServices)
+                      .HasForeignKey(ia => ia.InvoiceId);               
             });
 
             // Invoice - Transaction (1 - n)
@@ -300,12 +332,12 @@ namespace AptCare.Repository
                       .HasForeignKey(t => t.InvoiceId);
             });
 
-            // WorkSlot - WorkOrder (1 - n)
-            modelBuilder.Entity<WorkOrder>(entity =>
+            // Slot - WorkSlot (1 - n)
+            modelBuilder.Entity<WorkSlot>(entity =>
             {
-                entity.HasOne(wo => wo.Appointment)
-                      .WithMany(ws => ws.WorkOrders)
-                      .HasForeignKey(wo => wo.AppointmentId);
+                entity.HasOne(ws => ws.Slot)
+                      .WithMany(s => s.WorkSlots)
+                      .HasForeignKey(ws => ws.SlotId);
             });
 
             // RepairRequest - Contract (1 - n)
@@ -316,15 +348,15 @@ namespace AptCare.Repository
                       .HasForeignKey(c => c.RepairRequestId);
             });
 
-            // CommonArea - MaintenanceRequest (1 - n)
-            // MaintenanceRequest - MaintenanceTrackingHistory (1 - n)
+            // CommonAreaObject - MaintenanceRequest (1 - n)
             modelBuilder.Entity<MaintenanceRequest>(entity =>
             {
-                entity.HasOne(mr => mr.CommonArea)
-                      .WithMany(ca => ca.MaintenanceRequests)
-                      .HasForeignKey(mr => mr.CommonAreaId);
+                entity.HasOne(mr => mr.CommonAreaObject)
+                      .WithOne(cao => cao.MaintenanceRequest)
+                      .HasForeignKey<CommonAreaObject>(cao => cao.CommonAreaObjectId);
             });
 
+            // MaintenanceRequest - MaintenanceTrackingHistory (1 - n)
             modelBuilder.Entity<MaintenanceTrackingHistory>(entity =>
             {
                 entity.HasOne(mth => mth.MaintenanceRequest)

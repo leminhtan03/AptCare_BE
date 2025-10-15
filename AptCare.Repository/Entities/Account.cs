@@ -12,10 +12,10 @@ namespace AptCare.Repository.Entities
 
         [Required]
         [MaxLength(256)]
-        public string Username { get; set; }
+        public string Username { get; set; } = null!;
 
         [Required]
-        public string PasswordHash { get; set; }
+        public string PasswordHash { get; set; } = null!;
 
         public bool LockoutEnabled { get; set; }
         public bool EmailConfirmed { get; set; }
@@ -24,7 +24,7 @@ namespace AptCare.Repository.Entities
 
         public AccountRole Role { get; set; }
 
-        public User User { get; set; }
+        public User User { get; set; } = null!;
 
         public ICollection<AccountToken>? AccountTokens { get; set; }
         public ICollection<AccountOTPHistory>? AccountOTPHistories { get; set; }

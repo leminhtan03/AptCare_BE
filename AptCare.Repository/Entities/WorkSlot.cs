@@ -13,16 +13,22 @@ namespace AptCare.Repository.Entities
     {
         [Key]
         public int WorkSlotId { get; set; }
+
         [Required]
         public DateOnly Date { get; set; }
+
         [Required]
-        public SlotTime Slot { get; set; }
+        [ForeignKey("Slot")]
+        public int SlotId { get; set; }
+        public Slot Slot { get; set; } = null!;
+
         public WorkSlotStatus Status { get; set; }
+
         [Required]
         [ForeignKey("Technician")]
         public int TechnicianId { get; set; }
+        public User Technician { get; set; } = null!;
 
-        public User Technician { get; set; }
         public ICollection<WorkSlotStatusTracking>? WorkSlotStatusTrackings { get; set; }
     }
 }
