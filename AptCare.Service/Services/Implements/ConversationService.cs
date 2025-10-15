@@ -21,11 +21,12 @@ namespace AptCare.Service.Services.Implements
 {
     public class ConversationService : BaseService<Conversation>, IConversationService
     {
-        private IHttpContextAccessor _httpContextAccessor;
+        private readonly IUserContext _userContext;
 
-        public ConversationService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<Conversation> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, mapper)
+
+        public ConversationService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<Conversation> logger, IMapper mapper, IUserContext userContext) : base(unitOfWork, logger, mapper)
         {
-            _httpContextAccessor = httpContextAccessor;
+            _userContext = userContext;
         }
 
         public async Task<string> CreateConversationAsync(ConversationCreateDto dto)
@@ -59,7 +60,7 @@ namespace AptCare.Service.Services.Implements
                     JoinedAt = DateTime.UtcNow.AddHours(7),
                     IsMuted = false
                 });
-            }            
+            }
 
             if (!string.IsNullOrEmpty(dto.Title))
             {
@@ -80,7 +81,7 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<IEnumerable<ConversationDto>> GetMyConversationsAsync()
         {
-            var userId = GetUserId();
+            var userId = _userContext.CurrentUserId;
             var conversations = await _unitOfWork.GetRepository<Conversation>().GetListAsync(
                     selector: s => ConvertToDto(s, userId),
                     predicate: x => x.ConversationParticipants.Any(cp => cp.ParticipantId == userId),
@@ -93,7 +94,7 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<ConversationDto> GetConversationByIdAsync(int id)
         {
-            var userId = GetUserId();
+            var userId = _userContext.CurrentUserId;
             var conversation = await _unitOfWork.GetRepository<Conversation>().SingleOrDefaultAsync(
                     selector: s => ConvertToDto(s, userId),
                     predicate: x => x.ConversationId == id,
@@ -114,7 +115,7 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<string> MuteConversationAsync(int id)
         {
-            var userId = GetUserId();
+            var userId = _userContext.CurrentUserId;
             var conversationParticipant = await _unitOfWork.GetRepository<ConversationParticipant>().SingleOrDefaultAsync(
                     predicate: x => x.ConversationId == id && x.ParticipantId == userId
                     );
@@ -132,7 +133,7 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<string> UnmuteConversationAsync(int id)
         {
-            var userId = GetUserId();
+            var userId = _userContext.CurrentUserId;
             var conversationParticipant = await _unitOfWork.GetRepository<ConversationParticipant>().SingleOrDefaultAsync(
                     predicate: x => x.ConversationId == id && x.ParticipantId == userId
                     );
@@ -148,17 +149,7 @@ namespace AptCare.Service.Services.Implements
             return "Bật thông báo thành công.";
         }
 
-        public int GetUserId()
-        {
-            try
-            {
-                return int.Parse(_httpContextAccessor.HttpContext.User.FindFirst("userID")?.Value);
-            }
-            catch (Exception e)
-            {
-                throw new Exception("Vui lòng đăng nhập.");
-            }
-        }
+
 
         private ConversationDto ConvertToDto(Conversation conversation, int userId)
         {
@@ -204,8 +195,8 @@ namespace AptCare.Service.Services.Implements
 
                     case MessageType.System:
                         lastMessage = "[Thông báo hệ thống]";
-                        break;  
-                        
+                        break;
+
                     case MessageType.Emoji:
                         lastMessage = "Đã gửi một biểu tượng cảm xúc";
                         break;

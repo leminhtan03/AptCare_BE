@@ -102,7 +102,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     throw new Exception("Kĩ thuật viên không tồn tại.");
                 }
-               
+
                 var workSlots = new List<WorkSlot>();
 
                 foreach (var dateSlot in dto.DateSlots)

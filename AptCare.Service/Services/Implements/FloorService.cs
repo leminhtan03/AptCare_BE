@@ -51,7 +51,7 @@ namespace AptCare.Service.Services.Implements
         public async Task<string> UpdateFloorAsync(int id, FloorUpdateDto dto)
         {
             try
-            {                
+            {
                 var floor = await _unitOfWork.GetRepository<Floor>().SingleOrDefaultAsync(
                     predicate: x => x.FloorId == id
                     );
@@ -146,7 +146,7 @@ namespace AptCare.Service.Services.Implements
                 );
 
             return result;
-        }      
+        }
 
         private Func<IQueryable<Floor>, IOrderedQueryable<Floor>> BuildOrderBy(string sortBy)
         {

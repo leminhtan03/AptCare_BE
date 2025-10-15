@@ -1,5 +1,4 @@
-﻿
-namespace AptCare.Service.Services.Implements
+﻿namespace AptCare.Service.Services.Interfaces
 {
     public interface IMailSenderService
     {

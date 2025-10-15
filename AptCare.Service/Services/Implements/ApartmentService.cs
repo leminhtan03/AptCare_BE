@@ -1,11 +1,14 @@
 ﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
+using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
-using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -14,7 +17,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
-using AptCare.Repository.Enum;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -26,122 +28,87 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<string> CreateApartmentAsync(ApartmentCreateDto dto)
         {
-            try
-            {
-                var floor = await _unitOfWork.GetRepository<Floor>().SingleOrDefaultAsync(
-                    predicate: x => x.FloorId == dto.FloorId
-                    );
-                if (floor == null)
-                {
-                    throw new Exception("Tầng không tồn tại.");
-                }
-                if (floor.Status == ActiveStatus.Inactive)
-                {
-                    throw new Exception("Tầng đã ngưng hoạt động.");
-                }
+            // validate floor
+            var floor = await _unitOfWork.GetRepository<Floor>()
+                .SingleOrDefaultAsync(predicate: x => x.FloorId == dto.FloorId);
 
-                var isDupApartment = await _unitOfWork.GetRepository<Apartment>().AnyAsync(
-                    predicate: x => x.RoomNumber == dto.RoomNumber
-                    );
-                if (isDupApartment)
-                {
-                    throw new Exception("Số phòng đã tồn tại.");
-                }
+            if (floor is null)
+                throw new AppValidationException("Tầng không tồn tại.", StatusCodes.Status404NotFound);
 
-                var apartment = _mapper.Map<Apartment>(dto);
+            if (floor.Status == ActiveStatus.Inactive)
+                throw new AppValidationException("Tầng đã ngưng hoạt động.");
 
-                await _unitOfWork.GetRepository<Apartment>().InsertAsync(apartment);
-                await _unitOfWork.CommitAsync();
-                return "Taọ căn hộ mới thành công";
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
-            }
+            // kiểm tra trùng phòng (nên kèm FloorId để không đụng tầng khác)
+            var isDup = await _unitOfWork.GetRepository<Apartment>().AnyAsync(
+                x => x.FloorId == dto.FloorId && x.RoomNumber == dto.RoomNumber);
+
+            if (isDup)
+                throw new AppValidationException("Số phòng đã tồn tại.", StatusCodes.Status409Conflict);
+
+            var apartment = _mapper.Map<Apartment>(dto);
+
+            await _unitOfWork.GetRepository<Apartment>().InsertAsync(apartment);
+            await _unitOfWork.CommitAsync();
+            return "Tạo căn hộ mới thành công";
         }
 
         public async Task<string> UpdateApartmentAsync(int id, ApartmentUpdateDto dto)
         {
-            try
-            {                
-                var apartment = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(
-                    predicate: x => x.ApartmentId == id
-                    );
-                if (apartment == null)
-                {
-                    throw new KeyNotFoundException("Căn hộ không tồn tại.");
-                }
+            var apartment = await _unitOfWork.GetRepository<Apartment>()
+                .SingleOrDefaultAsync(predicate: x => x.ApartmentId == id);
 
-                var floor = await _unitOfWork.GetRepository<Floor>().SingleOrDefaultAsync(
-                    predicate: x => x.FloorId == dto.FloorId
-                    );
-                if (floor == null)
-                {
-                    throw new Exception("Tầng không tồn tại.");
-                }
-                if (floor.Status == ActiveStatus.Inactive)
-                {
-                    throw new Exception("Tầng đã ngưng hoạt động.");
-                }
+            if (apartment is null)
+                throw new AppValidationException("Căn hộ không tồn tại.", StatusCodes.Status404NotFound);
 
-                var isDupApartment = await _unitOfWork.GetRepository<Apartment>().AnyAsync(
-                    predicate: x => x.RoomNumber == dto.RoomNumber
-                    );
-                if (isDupApartment)
-                {
-                    throw new Exception("Số phòng đã tồn tại.");
-                }
+            var floor = await _unitOfWork.GetRepository<Floor>()
+                .SingleOrDefaultAsync(predicate: x => x.FloorId == dto.FloorId);
 
-                _mapper.Map(dto, apartment);
-                _unitOfWork.GetRepository<Apartment>().UpdateAsync(apartment);
-                await _unitOfWork.CommitAsync();
-                return "Cập nhật căn hộ thành công";
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
-            }
+            if (floor is null)
+                throw new AppValidationException("Tầng không tồn tại.", StatusCodes.Status404NotFound);
+
+            if (floor.Status == ActiveStatus.Inactive)
+                throw new AppValidationException("Tầng đã ngưng hoạt động.");
+
+            var isDup = await _unitOfWork.GetRepository<Apartment>().AnyAsync(
+                x => x.ApartmentId != id &&
+                     x.FloorId == dto.FloorId &&
+                     x.RoomNumber == dto.RoomNumber);
+
+            if (isDup)
+                throw new AppValidationException("Số phòng đã tồn tại.", StatusCodes.Status409Conflict);
+
+            _mapper.Map(dto, apartment);
+            _unitOfWork.GetRepository<Apartment>().UpdateAsync(apartment);
+            await _unitOfWork.CommitAsync();
+            return "Cập nhật căn hộ thành công";
         }
 
         public async Task<string> DeleteApartmentAsync(int id)
         {
-            try
-            {
-                var apartment = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(
-                    predicate: x => x.ApartmentId == id
-                    );
+            var apartment = await _unitOfWork.GetRepository<Apartment>()
+                .SingleOrDefaultAsync(predicate: x => x.ApartmentId == id);
 
-                if (apartment == null)
-                {
-                    throw new KeyNotFoundException("Căn hộ không tồn tại.");
-                }
+            if (apartment is null)
+                throw new AppValidationException("Căn hộ không tồn tại.", StatusCodes.Status404NotFound);
 
-                _unitOfWork.GetRepository<Apartment>().DeleteAsync(apartment);
-                await _unitOfWork.CommitAsync();
-                return "Xóa căn hộ thành công";
-            }
-            catch (Exception e)
-            {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
-            }
+            _unitOfWork.GetRepository<Apartment>().DeleteAsync(apartment);
+            await _unitOfWork.CommitAsync();
+            return "Xóa căn hộ thành công";
         }
 
         public async Task<ApartmentDto> GetApartmentByIdAsync(int id)
         {
-            var apartment = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(
+            var apt = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(
                 selector: x => _mapper.Map<ApartmentDto>(x),
                 predicate: p => p.ApartmentId == id,
                 include: i => i.Include(x => x.UserApartments)
-                                    .ThenInclude(x => x.User)
-                                        .ThenInclude(x => x.Account)
-                );
+                               .ThenInclude(x => x.User)
+                               .ThenInclude(x => x.Account));
 
-            if (apartment == null)
-            {
-                throw new KeyNotFoundException("Căn hộ không tồn tại");
-            }
+            if (apt is null)
+                throw new AppValidationException("Căn hộ không tồn tại.", StatusCodes.Status404NotFound);
 
-            return apartment;
+            return apt;
         }
 
         public async Task<IPaginate<ApartmentDto>> GetPaginateApartmentAsync(PaginateDto dto)

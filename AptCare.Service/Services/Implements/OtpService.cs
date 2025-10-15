@@ -24,7 +24,6 @@ namespace AptCare.Service.Services.Implements
         {
             var lifetime = ttl ?? TimeSpan.FromMinutes(5);
 
-            // 2) Hủy các OTP còn hiệu lực trước đó (tránh spam/đè)
             var repo = _unitOfWork.GetRepository<AccountOTPHistory>();
             var actives = await repo.GetListAsync(predicate: p =>
                 p.AccountId == accountId &&
@@ -58,8 +57,6 @@ namespace AptCare.Service.Services.Implements
         {
             var repo = _unitOfWork.GetRepository<AccountOTPHistory>();
             var now = DateTime.UtcNow;
-
-            // Lấy OTP mới nhất còn active
             var otp = (await repo.GetListAsync(predicate: p =>
                         p.AccountId == accountId &&
                         p.OTPType == type &&
@@ -72,9 +69,8 @@ namespace AptCare.Service.Services.Implements
 
             if (!SlowEquals(otp.OTPCode, HashString(otpCode))) return false;
 
-            // Đúng → đánh dấu Verified & Active => Consumed (1 lần dùng)
             otp.VerifiedAt = now;
-            otp.Status = OTPStatus.Verified; // hoặc Consumed tuỳ enum bạn định nghĩa
+            otp.Status = OTPStatus.Verified;
             repo.UpdateAsync(otp);
             await _unitOfWork.CommitAsync();
             return true;

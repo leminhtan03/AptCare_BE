@@ -1,4 +1,7 @@
-﻿using AptCare.Service.Dtos.AuthenDto;
+﻿using AptCare.Repository.Paginate;
+using AptCare.Service.Dtos.Account;
+using AptCare.Service.Dtos.AuthenDto;
+using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -33,6 +36,8 @@ namespace AptCare.Api.Controllers
         /// <response code="201">Đăng ký thành công, OTP đã được gửi.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ hoặc email đã tồn tại.</response>
         [HttpPost("register")]
+        [ProducesResponseType(typeof(RegisterResponseDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto)
         {
             var res = await _authenService.RegisterAsync(dto);
@@ -53,6 +58,8 @@ namespace AptCare.Api.Controllers
         /// <response code="204">Gửi lại OTP thành công.</response>
         /// <response code="400">Tài khoản không tồn tại hoặc không thể gửi lại OTP.</response>
         [HttpPost("register/resend-otp")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ResendOtp([FromQuery] int accountId)
         {
             await _authenService.ResendEmailVerificationOtpAsync(accountId);
@@ -79,6 +86,8 @@ namespace AptCare.Api.Controllers
         /// <response code="400">Token không hợp lệ hoặc đã hết hạn, hoặc dữ liệu đầu vào không hợp lệ.</response>
 
         [HttpPost("register/verify")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Verify([FromBody] VerifyDto dto)
         {
             var ok = await _authenService.VerifyEmailAsync(dto.AccountId, dto.Otp);
@@ -105,6 +114,8 @@ namespace AptCare.Api.Controllers
         /// <response code="200">Xác thực và đăng nhập thành công, trả về token.</response>
         /// <response code="400">Mã OTP không hợp lệ hoặc đã hết hạn, hoặc dữ liệu đầu vào không hợp lệ.</response>
         [HttpPost("register/verify-and-login")]
+        [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> VerifyAndLogin([FromBody] VerifyAndLoginDto dto)
         {
             var tokens = await _authenService.VerifyEmailAndLoginAsync(dto.AccountId, dto.Otp, dto.DeviceId);
@@ -135,9 +146,12 @@ namespace AptCare.Api.Controllers
         /// <param name="dto">Thông tin đăng nhập bao gồm UsernameOrEmail, Password và DeviceId.</param>
         /// <returns>Cặp token (AccessToken và RefreshToken) để xác thực các request tiếp theo.</returns>
         /// <response code="200">Đăng nhập thành công, trả về token.</response>
-        /// <response code="400">Thông tin đăng nhập không chính xác hoặc không hợp lệ.</response>
-        /// <response code="403">Tài khoản yêu cầu đổi mật khẩu trước khi đăng nhập. Trả về object chứa accountId và code "PASSWORD_CHANGE_REQUIRED".</response>
+        /// <response code="400">Thông tin đăng nhập không chính xác hoặc tài khoản chưa được xác thực.</response>
+        /// <response code="403">Yêu cầu thay đổi mật khẩu trước khi đăng nhập.</response>
         [HttpPost("login")]
+        [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(object), StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
         {
             try
@@ -176,9 +190,11 @@ namespace AptCare.Api.Controllers
         /// </remarks>
         /// <param name="dto">Thông tin yêu cầu đặt lại mật khẩu bao gồm email tài khoản.</param>
         /// <returns>Không có nội dung trả về khi gửi OTP thành công.</returns>
-        /// <response code="200">Gửi mã OTP đặt lại mật khẩu thành công.</response>
-        /// <response code="400">Email không tồn tại hoặc tài khoản chưa được xác thực.</response>
+        /// <response code="200">Gửi yêu cầu đặt lại mật khẩu thành công, OTP đã được gửi.</response>
+        /// <response code="400">Email không tồn tại hoặc không hợp lệ.</response>
         [HttpPost("password-reset/request")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> PasswordResetRequest([FromBody] PasswordResetRequestDto dto)
         {
             await _authenService.PasswordResetRequestAsync(dto);
@@ -204,6 +220,8 @@ namespace AptCare.Api.Controllers
         /// <response code="200">Xác thực OTP thành công, trả về reset token.</response>
         /// <response code="400">Mã OTP không hợp lệ hoặc đã hết hạn, hoặc dữ liệu đầu vào không hợp lệ.</response>
         [HttpPost("password-reset/verify-otp")]
+        [ProducesResponseType(typeof(Dictionary<string, string>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> PasswordResetVerifyOtp([FromBody] PasswordResetVerifyOtpDto dto)
         {
             var resetToken = await _authenService.PasswordResetVerifyOtpAsync(dto);
@@ -229,6 +247,8 @@ namespace AptCare.Api.Controllers
         /// <response code="204">Đặt lại mật khẩu thành công.</response>
         /// <response code="400">Token không hợp lệ hoặc đã hết hạn, hoặc dữ liệu đầu vào không hợp lệ.</response>
         [HttpPost("password-reset/confirm")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> PasswordResetConfirm([FromBody] PasswordResetConfirmDto dto)
         {
             await _authenService.PasswordResetConfirmAsync(dto);
@@ -250,6 +270,8 @@ namespace AptCare.Api.Controllers
         /// <response code="401">Người dùng chưa đăng nhập hoặc token không hợp lệ.</response>
         [HttpGet("me")]
         [Authorize]
+        [ProducesResponseType(typeof(GetOwnProfileDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> GetOwnProfile()
         {
             var profile = await _authenService.GetOwnProfile();
@@ -277,6 +299,8 @@ namespace AptCare.Api.Controllers
         /// <response code="200">Đổi mật khẩu thành công, trả về token đăng nhập mới.</response>
         /// <response code="400">Mật khẩu hiện tại không chính xác hoặc mật khẩu mới không đáp ứng yêu cầu.</response>
         [HttpPost("password/first-change")]
+        [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> FirstLoginChangePassword([FromBody] FirstLoginChangePasswordDto dto)
         {
             var tokens = await _authenService.FirstLoginChangePasswordAsync(dto);

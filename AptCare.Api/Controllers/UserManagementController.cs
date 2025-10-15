@@ -13,6 +13,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AptCare.Api.Controllers
 {
+    [Authorize(Roles = nameof(AccountRole.Manager))]
     public class UserManagementController : BaseApiController
     {
         private readonly IUserService _userService;
@@ -34,7 +35,6 @@ namespace AptCare.Api.Controllers
         /// - 404 Not Found if user doesn't exist
         /// - 500 Internal Server Error if an exception occurs
         /// </returns>
-        //[Authorize(Roles = nameof(AccountRole.Manager))]
         [HttpGet("{id}")]
         public async Task<ActionResult> GetUserById(int id)
         {
@@ -93,7 +93,6 @@ namespace AptCare.Api.Controllers
         /// </returns>
         /// <exception cref="ArgumentException">Ném khi ID không hợp lệ</exception>
         /// <exception cref="ValidationException">Ném khi dữ liệu đầu vào vi phạm validation rules</exception>
-        //[Authorize(Roles = nameof(AccountRole.Manager))]
         [HttpPut("{id}")]
         public async Task<ActionResult> UpdateUser(int id, [FromBody] UpdateUserDto updateUserDto)
         {
@@ -146,7 +145,6 @@ namespace AptCare.Api.Controllers
         /// </returns>
         /// <exception cref="ArgumentException">Ném khi các tham số phân trang không hợp lệ</exception>
         /// <exception cref="InvalidOperationException">Ném khi có lỗi trong quá trình truy vấn dữ liệu</exception>
-        //[Authorize(Roles = nameof(AccountRole.Manager))]
         [HttpGet("residents_data")]
         public async Task<ActionResult> GetResidentDataPage([FromQuery] GetResidentDataFilterDto getResidentDataFilterDto)
         {
@@ -201,7 +199,6 @@ namespace AptCare.Api.Controllers
         /// </returns>
         /// <exception cref="ArgumentException">Ném khi các tham số phân trang không hợp lệ</exception>
         /// <exception cref="InvalidOperationException">Ném khi có lỗi trong quá trình truy vấn dữ liệu</exception>
-        //[Authorize(Roles = nameof(AccountRole.Manager))]
         [HttpGet("system_users")]
         public async Task<ActionResult> GetSystemUserPage([FromQuery] GetSystemUserFilterDto getSystemUserPageDto)
         {
@@ -247,7 +244,6 @@ namespace AptCare.Api.Controllers
         /// <exception cref="ArgumentException">Ném khi file không hợp lệ hoặc định dạng sai</exception>
         /// <exception cref="InvalidDataException">Ném khi cấu trúc dữ liệu trong Excel không đúng</exception>
         /// <exception cref="IOException">Ném khi có lỗi đọc file</exception>
-        //[Authorize(Roles = nameof(AccountRole.Manager))]
         [HttpPost("import-residents")]
         public async Task<IActionResult> ImportResidents(IFormFile file)
         {
@@ -335,7 +331,40 @@ namespace AptCare.Api.Controllers
                 return StatusCode(500, "An error occurred while processing your request." + ex.Message);
             }
         }
-
+        /// <summary>
+        /// Tạo tài khoản mới cho người dùng với thông tin đầy đủ cá nhân và phân quyền.
+        /// </summary>
+        /// <remarks>
+        /// <para>Endpoint này cho phép tạo đồng thời cả thông tin người dùng và tài khoản đăng nhập trong một thao tác.</para>
+        /// <para>Thông tin cá nhân của người dùng và phân công căn hộ (nếu có) được cung cấp cùng với thông tin tài khoản.</para>
+        /// <para>Mật khẩu sẽ được mã hóa và lưu trữ an toàn trong hệ thống.</para>
+        /// <para><strong>Lưu ý:</strong> Endpoint này yêu cầu quyền Manager và tạo được tất cả các loại tài khoản trong hệ thống.</para>
+        /// <para><strong>Validation rules:</strong></para>
+        /// <list type="bullet">
+        /// <item><description>Thông tin người dùng cần tuân theo các quy tắc xác thực của CreateUserDto</description></item>
+        /// <item><description>Mật khẩu phải đáp ứng chính sách bảo mật của hệ thống</description></item>
+        /// <item><description>AccountRole phải là một trong các vai trò hợp lệ của hệ thống</description></item>
+        /// </list>
+        /// </remarks>
+        /// <param name="createAccountDto">Đối tượng chứa thông tin tài khoản và người dùng cần tạo.
+        /// <para><strong>Các thuộc tính bao gồm:</strong></para>
+        /// <list type="bullet">
+        /// <item><description><strong>Password:</strong> Mật khẩu cho tài khoản mới</description></item>
+        /// <item><description><strong>AccountRole:</strong> Vai trò của tài khoản (Enum: "Manager", "Resident", "Receptionist", "Technician", "TechnicianLead")</description></item>
+        /// <item><description><strong>UserData:</strong> Thông tin chi tiết của người dùng (CreateUserDto) bao gồm thông tin cá nhân và phân công căn hộ</description></item>
+        /// </list>
+        /// </param>
+        /// <returns>
+        /// <para><strong>Các trường hợp trả về:</strong></para>
+        /// <list type="table">
+        /// <item><term>200 OK</term><description>Tạo thành công, trả về UserDto của người dùng mới được tạo với thông tin tài khoản</description></item>
+        /// <item><term>400 Bad Request</term><description>Dữ liệu đầu vào không hợp lệ (model validation failed, email đã tồn tại)</description></item>
+        /// <item><term>500 Internal Server Error</term><description>Lỗi hệ thống trong quá trình tạo người dùng hoặc tài khoản</description></item>
+        /// </list>
+        /// </returns>
+        /// <exception cref="ValidationException">Ném khi dữ liệu đầu vào vi phạm validation rules</exception>
+        /// <exception cref="InvalidOperationException">Ném khi email đã tồn tại trong hệ thống</exception>
+        /// <exception cref="ArgumentException">Ném khi thông tin tài khoản không hợp lệ hoặc vai trò không được hỗ trợ</exception>
         [HttpPost("create-account-for-new-user")]
         public async Task<IActionResult> CreateAccountForNewUser([FromBody] CreateAccountForNewUserDto createAccountDto)
         {

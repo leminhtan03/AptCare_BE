@@ -1,6 +1,6 @@
 ﻿
 using AptCare.Repository.Repositories;
-using AptCare.Service.Services.Implements;
+using AptCare.Service.Exceptions;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Hosting;
@@ -66,11 +66,11 @@ namespace AptCare.Service.Services.Interfaces
         private async Task SendMimeMessageAsync(MimeMessage message)
         {
             if (string.IsNullOrWhiteSpace(_mailSettings.Host))
-                throw new InvalidOperationException("MailSettings.Host is empty.");
+                throw new AppValidationException("MailSettings.Host is empty.");
             if (_mailSettings.Port <= 0)
-                throw new InvalidOperationException("MailSettings.Port is invalid.");
+                throw new AppValidationException("MailSettings.Port is invalid.");
             if (string.IsNullOrWhiteSpace(_mailSettings.Sender))
-                throw new InvalidOperationException("MailSettings.Sender is empty.");
+                throw new AppValidationException("MailSettings.Sender is empty.");
 
             using var smtpClient = new SmtpClient
             {
@@ -85,7 +85,7 @@ namespace AptCare.Service.Services.Interfaces
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Gửi email thất bại: {ex.Message}", ex);
+                throw new AppValidationException($"Gửi email thất bại: {ex.Message}");
             }
             finally
             {

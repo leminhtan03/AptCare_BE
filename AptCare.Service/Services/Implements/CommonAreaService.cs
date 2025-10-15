@@ -1,9 +1,12 @@
-﻿using AptCare.Repository.Entities;
+﻿using AptCare.Repository;
+using AptCare.Repository.Entities;
+using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
-using AptCare.Repository;
-using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Exceptions;
+using AptCare.Service.Extensions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
@@ -12,9 +15,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
-using AptCare.Repository.Enum;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -35,11 +35,11 @@ namespace AptCare.Service.Services.Implements
                     );
                     if (floor == null)
                     {
-                        throw new Exception("Tầng không tồn tại.");
+                        throw new AppValidationException("Tầng không tồn tại.");
                     }
                     if (floor.Status == ActiveStatus.Inactive)
                     {
-                        throw new Exception("Tầng đã ngưng hoạt động.");
+                        throw new AppValidationException("Tầng đã ngưng hoạt động.");
                     }
                 }
 
@@ -48,7 +48,7 @@ namespace AptCare.Service.Services.Implements
                     );
                 if (isDupCommonArea)
                 {
-                    throw new Exception("Mã khu vực chung đã tồn tại.");
+                    throw new AppValidationException("Mã khu vực chung đã tồn tại.");
                 }
 
                 var CommonArea = _mapper.Map<CommonArea>(dto);
@@ -59,7 +59,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}");
             }
         }
 
@@ -73,7 +73,7 @@ namespace AptCare.Service.Services.Implements
 
                 if (commonArea == null)
                 {
-                    throw new KeyNotFoundException("Khu vực chung không tồn tại.");
+                    throw new AppValidationException("Khu vực chung không tồn tại.");
                 }
 
                 if (dto.FloorId != null)
@@ -83,11 +83,11 @@ namespace AptCare.Service.Services.Implements
                     );
                     if (floor == null)
                     {
-                        throw new Exception("Tầng không tồn tại.");
+                        throw new AppValidationException("Tầng không tồn tại.");
                     }
                     if (floor.Status == ActiveStatus.Inactive)
                     {
-                        throw new Exception("Tầng đã ngưng hoạt động.");
+                        throw new AppValidationException("Tầng đã ngưng hoạt động.");
                     }
                 }
 
@@ -96,7 +96,7 @@ namespace AptCare.Service.Services.Implements
                     );
                 if (isDupCommonArea)
                 {
-                    throw new Exception("Mã khu vực chung đã tồn tại.");
+                    throw new AppValidationException("Mã khu vực chung đã tồn tại.");
                 }
 
 
@@ -107,7 +107,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}");
             }
         }
 
@@ -120,7 +120,7 @@ namespace AptCare.Service.Services.Implements
                     );
                 if (commonArea == null)
                 {
-                    throw new KeyNotFoundException("Khu vực chung không tồn tại.");
+                    throw new AppValidationException("Khu vực chung không tồn tại.");
                 }
 
                 _unitOfWork.GetRepository<CommonArea>().DeleteAsync(commonArea);
@@ -129,7 +129,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}");
             }
         }
 
@@ -142,7 +142,7 @@ namespace AptCare.Service.Services.Implements
                 );
             if (commonArea == null)
             {
-                throw new KeyNotFoundException("Khu vực chung không tồn tại");
+                throw new AppValidationException("Khu vực chung không tồn tại");
             }
 
             return commonArea;

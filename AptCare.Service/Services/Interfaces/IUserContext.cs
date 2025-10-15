@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace AptCare.Service.Services.Interfaces
 {
-    public interface IProviderContext
+    public interface IUserContext
     {
         int CurrentUserId { get; }
         string Role { get; }
