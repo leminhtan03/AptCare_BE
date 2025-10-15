@@ -13,8 +13,8 @@ namespace AptCare.Repository.Entities
         public int RepairRequestId { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
-        public string Note { get; set; }
-        public string Status { get; set; }
+        public string Note { get; set; } = null!;
+        public string Status { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(RepairRequestId))]
@@ -22,8 +22,7 @@ namespace AptCare.Repository.Entities
 
         public RepairReport RepairReport { get; set; } = null!;
 
-        public ICollection<AppointmentAssign> AppointmentAssigns { get; set; }
-        public ICollection<InspectionReport> InspectionReports { get; set; }
-        public ICollection<WorkOrder> WorkOrders { get; set; }
+        public ICollection<AppointmentAssign>? AppointmentAssigns { get; set; }
+        public ICollection<InspectionReport>? InspectionReports { get; set; }
     }
 }

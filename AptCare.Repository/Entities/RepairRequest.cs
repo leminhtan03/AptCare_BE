@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AptCare.Repository.Enum;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -10,41 +11,43 @@ namespace AptCare.Repository.Entities
         [Key]
         public int RepairRequestId { get; set; }
 
+        [ForeignKey("User")]
         public int UserId { get; set; }
-        public int? ApartmentId { get; set; }
-        public int? CommonAreaId { get; set; }
+        public User User { get; set; } = null!;
+
+        [ForeignKey("Apartment")]
+        public int? ApartmentId { get; set; }    
+        public Apartment? Apartment { get; set; }
+
+        [ForeignKey("ParentRequest")]
         public int? ParentRequestId { get; set; }
-        public int? TechniqueId { get; set; }
+        public RepairRequest? ParentRequest { get; set; }
+
+        [ForeignKey("Issue")]
+        public int? IssueId { get; set; }
+        public Issue? Issue { get; set; }
+
+        [ForeignKey("MaintenanceRequest")]
         public int? MaintenanceRequestId { get; set; }
+        public MaintenanceRequest? MaintenanceRequest { get; set; }
+
+        [Required]
+        [MaxLength(100)]
+        public string Object { get; set; } = null!;
+
+        [Required]
+        [MaxLength(1000)]
+        public string Description { get; set; } = null!;
         public bool IsEmergency { get; set; }
-        public string Object { get; set; }
-        public string Description { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? AcceptanceTime { get; set; }
-        public string Status { get; set; }
+        public RequestStatus Status { get; set; }
 
-        [ForeignKey(nameof(UserId))]
-        public User User { get; set; }
-
-        [ForeignKey(nameof(ApartmentId))]
-        public Apartment Apartment { get; set; }
-
-        [ForeignKey(nameof(CommonAreaId))]
-        public CommonArea CommonArea { get; set; }
-
-        [ForeignKey(nameof(ParentRequestId))]
-        public RepairRequest ParentRequest { get; set; }
-
-        [ForeignKey(nameof(TechniqueId))]
-        public Technique Technique { get; set; }
-
-        [ForeignKey(nameof(MaintenanceRequestId))]
-        public MaintenanceRequest MaintenanceRequest { get; set; }
-
-        public ICollection<Appointment> Appointments { get; set; }
-        public ICollection<RequestTracking> RequestTrackings { get; set; }
-        public ICollection<Feedback> Feedbacks { get; set; }
-        public ICollection<Invoice> Invoices { get; set; }
-        public ICollection<Contract> Contracts { get; set; }
+        public ICollection<RepairRequest>? ChildRequests { get; set; }
+        public ICollection<Appointment>? Appointments { get; set; }
+        public ICollection<RequestTracking>? RequestTrackings { get; set; }
+        public ICollection<Feedback>? Feedbacks { get; set; }
+        public ICollection<Invoice>? Invoices { get; set; }
+        public ICollection<Contract>? Contracts { get; set; }
     }
 }

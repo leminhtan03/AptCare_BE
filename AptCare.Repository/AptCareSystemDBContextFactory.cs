@@ -20,7 +20,7 @@ namespace AptCare.Repository
                 .AddJsonFile($"appsettings.{env}.json", optional: true, reloadOnChange: false)
                 .AddEnvironmentVariables()
                 .Build();
-            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            var connectionString = configuration.GetConnectionString("DefaultConnection");            
             var optionsBuilder = new DbContextOptionsBuilder<AptCareSystemDBContext>();
             optionsBuilder.UseNpgsql(connectionString);
             return new AptCareSystemDBContext(optionsBuilder.Options);

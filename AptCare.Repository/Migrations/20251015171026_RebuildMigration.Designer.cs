@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     [DbContext(typeof(AptCareSystemDBContext))]
-    [Migration("20251013190033_EditEnumTokenTypeAndOtpType2")]
-    partial class EditEnumTokenTypeAndOtpType2
+    [Migration("20251015171026_RebuildMigration")]
+    partial class RebuildMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -33,19 +33,23 @@ namespace AptCare.Repository.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AccessoryId"));
 
+                    b.Property<string>("Descrption")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric");
 
-                    b.Property<int>("Status")
+                    b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Unit")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.HasKey("AccessoryId");
 
@@ -65,6 +69,9 @@ namespace AptCare.Repository.Migrations
 
                     b.Property<DateTime?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -167,7 +174,6 @@ namespace AptCare.Repository.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ApartmentId"));
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
@@ -229,20 +235,33 @@ namespace AptCare.Repository.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AppointmentAssignId"));
 
+                    b.Property<DateTime?>("ActualEndTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ActualStartTime")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("AppointmentId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("AssignedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("UserId")
+                    b.Property<DateTime>("EstimatedEndTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EstimatedStartTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TechnicianId")
                         .HasColumnType("integer");
 
                     b.HasKey("AppointmentAssignId");
 
                     b.HasIndex("AppointmentId");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("AppointmentAssigns");
                 });
@@ -261,7 +280,6 @@ namespace AptCare.Repository.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
@@ -269,7 +287,6 @@ namespace AptCare.Repository.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Location")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
@@ -286,6 +303,31 @@ namespace AptCare.Repository.Migrations
                     b.HasIndex("FloorId");
 
                     b.ToTable("CommonAreas");
+                });
+
+            modelBuilder.Entity("AptCare.Repository.Entities.CommonAreaObject", b =>
+                {
+                    b.Property<int>("CommonAreaObjectId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CommonAreaId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("CommonAreaObjectId");
+
+                    b.ToTable("CommonAreaObjects");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.Contract", b =>
@@ -514,13 +556,13 @@ namespace AptCare.Repository.Migrations
                     b.ToTable("Invoices");
                 });
 
-            modelBuilder.Entity("AptCare.Repository.Entities.InvoiceItem", b =>
+            modelBuilder.Entity("AptCare.Repository.Entities.InvoiceAccessory", b =>
                 {
-                    b.Property<int>("InvoiceItemId")
+                    b.Property<int>("InvoiceAccessoryId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InvoiceItemId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InvoiceAccessoryId"));
 
                     b.Property<int>("AccessoryId")
                         .HasColumnType("integer");
@@ -528,9 +570,10 @@ namespace AptCare.Repository.Migrations
                     b.Property<int>("InvoiceId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("ItemName")
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric");
@@ -538,17 +581,78 @@ namespace AptCare.Repository.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("InvoiceItemId");
+                    b.HasKey("InvoiceAccessoryId");
 
                     b.HasIndex("AccessoryId");
 
                     b.HasIndex("InvoiceId");
 
-                    b.ToTable("InvoiceItems");
+                    b.ToTable("InvoiceAccessories");
+                });
+
+            modelBuilder.Entity("AptCare.Repository.Entities.InvoiceService", b =>
+                {
+                    b.Property<int>("InvoiceServiceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InvoiceServiceId"));
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("InvoiceServiceId");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("InvoiceServices");
+                });
+
+            modelBuilder.Entity("AptCare.Repository.Entities.Issue", b =>
+                {
+                    b.Property<int>("IssueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IssueId"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("EstimatedDuration")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsEmergency")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("RequiredTechnician")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TechniqueId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("IssueId");
+
+                    b.HasIndex("TechniqueId");
+
+                    b.ToTable("Issues");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.MaintenanceRequest", b =>
@@ -559,7 +663,10 @@ namespace AptCare.Repository.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("MaintenanceRequestId"));
 
-                    b.Property<int>("CommonAreaId")
+                    b.Property<int?>("CommonAreaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CommonAreaObjectId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
@@ -567,17 +674,14 @@ namespace AptCare.Repository.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<int>("Frequency")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("NextDay")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Object")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -803,26 +907,27 @@ namespace AptCare.Repository.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<bool>("IsEmergency")
                         .HasColumnType("boolean");
+
+                    b.Property<int?>("IssueId")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("MaintenanceRequestId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Object")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<int?>("ParentRequestId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("TechniqueId")
+                    b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.Property<int>("UserId")
@@ -834,11 +939,11 @@ namespace AptCare.Repository.Migrations
 
                     b.HasIndex("CommonAreaId");
 
+                    b.HasIndex("IssueId");
+
                     b.HasIndex("MaintenanceRequestId");
 
                     b.HasIndex("ParentRequestId");
-
-                    b.HasIndex("TechniqueId");
 
                     b.HasIndex("UserId");
 
@@ -853,11 +958,13 @@ namespace AptCare.Repository.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReportId"));
 
-                    b.Property<int>("CommonAreaId")
+                    b.Property<int?>("CommonAreaId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CommonAreaObjectId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
@@ -875,6 +982,8 @@ namespace AptCare.Repository.Migrations
                     b.HasKey("ReportId");
 
                     b.HasIndex("CommonAreaId");
+
+                    b.HasIndex("CommonAreaObjectId");
 
                     b.HasIndex("UserId");
 
@@ -955,6 +1064,33 @@ namespace AptCare.Repository.Migrations
                     b.ToTable("RequestTrackings");
                 });
 
+            modelBuilder.Entity("AptCare.Repository.Entities.Slot", b =>
+                {
+                    b.Property<int>("SlotId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("SlotId"));
+
+                    b.Property<string>("FromTime")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ToTime")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("SlotId");
+
+                    b.ToTable("Slot");
+                });
+
             modelBuilder.Entity("AptCare.Repository.Entities.TechnicianTechnique", b =>
                 {
                     b.Property<int>("TechnicianId")
@@ -979,7 +1115,6 @@ namespace AptCare.Repository.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("TechniqueId"));
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
@@ -1107,44 +1242,6 @@ namespace AptCare.Repository.Migrations
                     b.ToTable("UserApartments");
                 });
 
-            modelBuilder.Entity("AptCare.Repository.Entities.WorkOrder", b =>
-                {
-                    b.Property<int>("WorkOrderId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("WorkOrderId"));
-
-                    b.Property<DateTime?>("ActualEndTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ActualStartTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("AppointmentId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("EstimatedEndTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("EstimatedStartTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TechnicianId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("WorkOrderId");
-
-                    b.HasIndex("AppointmentId");
-
-                    b.HasIndex("TechnicianId");
-
-                    b.ToTable("WorkOrders");
-                });
-
             modelBuilder.Entity("AptCare.Repository.Entities.WorkSlot", b =>
                 {
                     b.Property<int>("WorkSlotId")
@@ -1156,7 +1253,7 @@ namespace AptCare.Repository.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
-                    b.Property<int>("Slot")
+                    b.Property<int>("SlotId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Status")
@@ -1166,6 +1263,8 @@ namespace AptCare.Repository.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("WorkSlotId");
+
+                    b.HasIndex("SlotId");
 
                     b.HasIndex("TechnicianId");
 
@@ -1270,15 +1369,15 @@ namespace AptCare.Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AptCare.Repository.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                    b.HasOne("AptCare.Repository.Entities.User", "Technician")
+                        .WithMany("AppointmentAssigns")
+                        .HasForeignKey("AppointmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Appointment");
 
-                    b.Navigation("User");
+                    b.Navigation("Technician");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.CommonArea", b =>
@@ -1290,6 +1389,25 @@ namespace AptCare.Repository.Migrations
                         .IsRequired();
 
                     b.Navigation("Floor");
+                });
+
+            modelBuilder.Entity("AptCare.Repository.Entities.CommonAreaObject", b =>
+                {
+                    b.HasOne("AptCare.Repository.Entities.CommonArea", "CommonArea")
+                        .WithMany("CommonAreaObjects")
+                        .HasForeignKey("CommonAreaObjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AptCare.Repository.Entities.MaintenanceRequest", "MaintenanceRequest")
+                        .WithOne("CommonAreaObject")
+                        .HasForeignKey("AptCare.Repository.Entities.CommonAreaObject", "CommonAreaObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CommonArea");
+
+                    b.Navigation("MaintenanceRequest");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.Contract", b =>
@@ -1375,16 +1493,16 @@ namespace AptCare.Repository.Migrations
                     b.Navigation("RepairRequest");
                 });
 
-            modelBuilder.Entity("AptCare.Repository.Entities.InvoiceItem", b =>
+            modelBuilder.Entity("AptCare.Repository.Entities.InvoiceAccessory", b =>
                 {
                     b.HasOne("AptCare.Repository.Entities.Accessory", "Accessory")
-                        .WithMany("InvoiceItems")
+                        .WithMany("InvoiceAccessories")
                         .HasForeignKey("AccessoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("AptCare.Repository.Entities.Invoice", "Invoice")
-                        .WithMany("InvoiceItems")
+                        .WithMany("InvoiceAccessories")
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1394,15 +1512,33 @@ namespace AptCare.Repository.Migrations
                     b.Navigation("Invoice");
                 });
 
-            modelBuilder.Entity("AptCare.Repository.Entities.MaintenanceRequest", b =>
+            modelBuilder.Entity("AptCare.Repository.Entities.InvoiceService", b =>
                 {
-                    b.HasOne("AptCare.Repository.Entities.CommonArea", "CommonArea")
-                        .WithMany("MaintenanceRequests")
-                        .HasForeignKey("CommonAreaId")
+                    b.HasOne("AptCare.Repository.Entities.Invoice", "Invoice")
+                        .WithMany("InvoiceServices")
+                        .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("CommonArea");
+                    b.Navigation("Invoice");
+                });
+
+            modelBuilder.Entity("AptCare.Repository.Entities.Issue", b =>
+                {
+                    b.HasOne("AptCare.Repository.Entities.Technique", "Technique")
+                        .WithMany("Issues")
+                        .HasForeignKey("TechniqueId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Technique");
+                });
+
+            modelBuilder.Entity("AptCare.Repository.Entities.MaintenanceRequest", b =>
+                {
+                    b.HasOne("AptCare.Repository.Entities.CommonArea", null)
+                        .WithMany("MaintenanceRequests")
+                        .HasForeignKey("CommonAreaId");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.MaintenanceTrackingHistory", b =>
@@ -1489,22 +1625,24 @@ namespace AptCare.Repository.Migrations
                         .HasForeignKey("ApartmentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("AptCare.Repository.Entities.CommonArea", "CommonArea")
+                    b.HasOne("AptCare.Repository.Entities.CommonArea", null)
                         .WithMany("RepairRequests")
-                        .HasForeignKey("CommonAreaId")
+                        .HasForeignKey("CommonAreaId");
+
+                    b.HasOne("AptCare.Repository.Entities.Issue", "Issue")
+                        .WithMany("RepairRequests")
+                        .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("AptCare.Repository.Entities.MaintenanceRequest", "MaintenanceRequest")
                         .WithMany("RepairRequests")
-                        .HasForeignKey("MaintenanceRequestId");
+                        .HasForeignKey("MaintenanceRequestId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("AptCare.Repository.Entities.RepairRequest", "ParentRequest")
-                        .WithMany()
-                        .HasForeignKey("ParentRequestId");
-
-                    b.HasOne("AptCare.Repository.Entities.Technique", "Technique")
-                        .WithMany("RepairRequests")
-                        .HasForeignKey("TechniqueId");
+                        .WithMany("ChildRequests")
+                        .HasForeignKey("ParentRequestId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("AptCare.Repository.Entities.User", "User")
                         .WithMany("RepairRequests")
@@ -1514,22 +1652,24 @@ namespace AptCare.Repository.Migrations
 
                     b.Navigation("Apartment");
 
-                    b.Navigation("CommonArea");
+                    b.Navigation("Issue");
 
                     b.Navigation("MaintenanceRequest");
 
                     b.Navigation("ParentRequest");
-
-                    b.Navigation("Technique");
 
                     b.Navigation("User");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.Report", b =>
                 {
-                    b.HasOne("AptCare.Repository.Entities.CommonArea", "CommonArea")
+                    b.HasOne("AptCare.Repository.Entities.CommonArea", null)
                         .WithMany("Reports")
-                        .HasForeignKey("CommonAreaId")
+                        .HasForeignKey("CommonAreaId");
+
+                    b.HasOne("AptCare.Repository.Entities.CommonAreaObject", "CommonAreaObject")
+                        .WithMany("Reports")
+                        .HasForeignKey("CommonAreaObjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1539,7 +1679,7 @@ namespace AptCare.Repository.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("CommonArea");
+                    b.Navigation("CommonAreaObject");
 
                     b.Navigation("User");
                 });
@@ -1645,32 +1785,21 @@ namespace AptCare.Repository.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AptCare.Repository.Entities.WorkOrder", b =>
-                {
-                    b.HasOne("AptCare.Repository.Entities.Appointment", "Appointment")
-                        .WithMany("WorkOrders")
-                        .HasForeignKey("AppointmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AptCare.Repository.Entities.User", "Technician")
-                        .WithMany()
-                        .HasForeignKey("TechnicianId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Appointment");
-
-                    b.Navigation("Technician");
-                });
-
             modelBuilder.Entity("AptCare.Repository.Entities.WorkSlot", b =>
                 {
+                    b.HasOne("AptCare.Repository.Entities.Slot", "Slot")
+                        .WithMany("WorkSlots")
+                        .HasForeignKey("SlotId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("AptCare.Repository.Entities.User", "Technician")
                         .WithMany("WorkSlots")
                         .HasForeignKey("TechnicianId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Slot");
 
                     b.Navigation("Technician");
                 });
@@ -1688,7 +1817,7 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.Accessory", b =>
                 {
-                    b.Navigation("InvoiceItems");
+                    b.Navigation("InvoiceAccessories");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.Account", b =>
@@ -1712,16 +1841,21 @@ namespace AptCare.Repository.Migrations
                     b.Navigation("AppointmentAssigns");
 
                     b.Navigation("InspectionReports");
-
-                    b.Navigation("WorkOrders");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.CommonArea", b =>
                 {
+                    b.Navigation("CommonAreaObjects");
+
                     b.Navigation("MaintenanceRequests");
 
                     b.Navigation("RepairRequests");
 
+                    b.Navigation("Reports");
+                });
+
+            modelBuilder.Entity("AptCare.Repository.Entities.CommonAreaObject", b =>
+                {
                     b.Navigation("Reports");
                 });
 
@@ -1741,13 +1875,23 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.Invoice", b =>
                 {
-                    b.Navigation("InvoiceItems");
+                    b.Navigation("InvoiceAccessories");
+
+                    b.Navigation("InvoiceServices");
 
                     b.Navigation("Transactions");
                 });
 
+            modelBuilder.Entity("AptCare.Repository.Entities.Issue", b =>
+                {
+                    b.Navigation("RepairRequests");
+                });
+
             modelBuilder.Entity("AptCare.Repository.Entities.MaintenanceRequest", b =>
                 {
+                    b.Navigation("CommonAreaObject")
+                        .IsRequired();
+
                     b.Navigation("MaintenanceTrackingHistories");
 
                     b.Navigation("RepairRequests");
@@ -1772,6 +1916,8 @@ namespace AptCare.Repository.Migrations
                 {
                     b.Navigation("Appointments");
 
+                    b.Navigation("ChildRequests");
+
                     b.Navigation("Contracts");
 
                     b.Navigation("Feedbacks");
@@ -1781,9 +1927,14 @@ namespace AptCare.Repository.Migrations
                     b.Navigation("RequestTrackings");
                 });
 
+            modelBuilder.Entity("AptCare.Repository.Entities.Slot", b =>
+                {
+                    b.Navigation("WorkSlots");
+                });
+
             modelBuilder.Entity("AptCare.Repository.Entities.Technique", b =>
                 {
-                    b.Navigation("RepairRequests");
+                    b.Navigation("Issues");
 
                     b.Navigation("TechnicianTechniques");
                 });
@@ -1791,6 +1942,8 @@ namespace AptCare.Repository.Migrations
             modelBuilder.Entity("AptCare.Repository.Entities.User", b =>
                 {
                     b.Navigation("Account");
+
+                    b.Navigation("AppointmentAssigns");
 
                     b.Navigation("ConversationParticipants");
 

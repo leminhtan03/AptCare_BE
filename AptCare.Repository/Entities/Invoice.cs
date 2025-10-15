@@ -11,17 +11,20 @@ namespace AptCare.Repository.Entities
         [Key]
         public int InvoiceId { get; set; }
 
+        [ForeignKey("RepairRequest")]
         public int RepairRequestId { get; set; }
+        public RepairRequest RepairRequest { get; set; } = null!;
+
         public bool IsChargeable { get; set; }
         public decimal TotalAmount { get; set; }
         public InvoiceType Type { get; set; }
         public DateTime CreatedAt { get; set; }
         public ActiveStatus Status { get; set; }
 
-        [ForeignKey(nameof(RepairRequestId))]
-        public RepairRequest RepairRequest { get; set; }
+        
+        public ICollection<InvoiceAccessory>? InvoiceAccessories { get; set; }
 
-        public ICollection<InvoiceItem> InvoiceItems { get; set; }
-        public ICollection<Transaction> Transactions { get; set; }
+        public ICollection<InvoiceService>? InvoiceServices { get; set; }
+        public ICollection<Transaction>? Transactions { get; set; }
     }
 }

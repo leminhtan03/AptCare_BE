@@ -16,16 +16,16 @@ namespace AptCare.Repository.Entities
 
         [ForeignKey("Floor")]
         public int FloorId { get; set; }
-        public Floor Floor { get; set; }
+        public Floor Floor { get; set; } = null!;
 
         [Required]
         [MaxLength(50)]
-        public string RoomNumber { get; set; }
+        public string RoomNumber { get; set; } = null!;
 
         public ApartmentStatus Status { get; set; }
 
         [MaxLength(500)]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         // Navigation properties
         public ICollection<UserApartment>? UserApartments { get; set; }
