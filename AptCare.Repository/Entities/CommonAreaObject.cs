@@ -9,26 +9,26 @@ using System.Threading.Tasks;
 
 namespace AptCare.Repository.Entities
 {
-    public class Report
+    public class CommonAreaObject
     {
         [Key]
-        public int ReportId { get; set; }
-
-        [ForeignKey("User")]
-        public int UserId { get; set; }
-        public User User { get; set; } = null!;
-
-        [ForeignKey("CommonAreaObject")]
         public int CommonAreaObjectId { get; set; }
-        public CommonAreaObject CommonAreaObject { get; set; } = null!;
+
+        [Required]
+        [ForeignKey("CommonArea")]
+        public int CommonAreaId { get; set; }
+        public CommonArea CommonArea { get; set; } = null!;
 
         [Required]
         [MaxLength(256)]
-        public string Title { get; set; } = null!;
+        public string Name { get; set; } = null!;
 
         [MaxLength(1000)]
         public string? Description { get; set; }
-        //Thay đổi sau
+
         public ActiveStatus Status { get; set; }
+        
+        public ICollection<Report>? Reports { get; set; }
+        public MaintenanceRequest? MaintenanceRequest { get; set; }
     }
 }

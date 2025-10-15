@@ -11,20 +11,19 @@ namespace AptCare.Repository.Entities
         [Key]
         public int MaintenanceRequestId { get; set; }
 
-        public int CommonAreaId { get; set; }
-        public string Object { get; set; }
-        public string Description { get; set; }
+        [ForeignKey("CommonAreaObject")]
+        public int CommonAreaObjectId { get; set; }
+        public CommonAreaObject CommonAreaObject { get; set; } = null!;
+
+        [Required]
+        [MaxLength(1000)]
+        public string? Description { get; set; }
         public int Frequency { get; set; }
         public DateTime NextDay { get; set; }
         public DateTime CreatedAt { get; set; }
         public ActiveStatus Status { get; set; }
-
-
-
-        [ForeignKey(nameof(CommonAreaId))]
-        public CommonArea CommonArea { get; set; }     
-
-        public ICollection<MaintenanceTrackingHistory> MaintenanceTrackingHistories { get; set; }
-        public ICollection<RepairRequest> RepairRequests { get; set; }
+  
+        public ICollection<MaintenanceTrackingHistory>? MaintenanceTrackingHistories { get; set; }
+        public ICollection<RepairRequest>? RepairRequests { get; set; }
     }
 }

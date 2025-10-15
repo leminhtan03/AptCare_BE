@@ -49,8 +49,17 @@ namespace AptCare.Service.Services.Implements
                     throw new Exception("'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'");
                 }
 
+                var isExistingSlot = await _unitOfWork.GetRepository<Slot>().AnyAsync(
+                    predicate: x => x.SlotId == dto.SlotId 
+                    );
+                if (!isExistingSlot)
+                {
+
+                    throw new Exception("Slot không tồn tại.");
+                }
+
                 var isDupWorkSlot = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
-                    predicate: x => x.TechnicianId == dto.TechnicianId && x.Date >= dto.FromDate && x.Date <= dto.ToDate && x.Slot == dto.Slot
+                    predicate: x => x.TechnicianId == dto.TechnicianId && x.Date >= dto.FromDate && x.Date <= dto.ToDate && x.SlotId == dto.SlotId
                     );
                 if (isDupWorkSlot)
                 {
@@ -65,7 +74,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         TechnicianId = dto.TechnicianId,
                         Date = date,
-                        Slot = dto.Slot,
+                        SlotId = dto.SlotId,
                         Status = WorkSlotStatus.NotStarted
                     });
                 }
@@ -98,8 +107,17 @@ namespace AptCare.Service.Services.Implements
 
                 foreach (var dateSlot in dto.DateSlots)
                 {
+                    var isExistingSlot = await _unitOfWork.GetRepository<Slot>().AnyAsync(
+                        predicate: x => x.SlotId == dateSlot.SlotId
+                        );
+                    if (!isExistingSlot)
+                    {
+
+                        throw new Exception("Slot không tồn tại.");
+                    }
+
                     var isDupWorkSlot = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
-                        predicate: x => x.TechnicianId == dto.TechnicianId && x.Date == dateSlot.Date && x.Slot == dateSlot.Slot
+                        predicate: x => x.TechnicianId == dto.TechnicianId && x.Date == dateSlot.Date && x.SlotId == dateSlot.SlotId
                         );
                     if (isDupWorkSlot)
                     {
@@ -110,7 +128,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         TechnicianId = dto.TechnicianId,
                         Date = dateSlot.Date,
-                        Slot = dateSlot.Slot,
+                        SlotId = dateSlot.SlotId,
                         Status = WorkSlotStatus.NotStarted
                     });
                 }
@@ -147,8 +165,17 @@ namespace AptCare.Service.Services.Implements
                     throw new Exception("Kĩ thuật viên không tồn tại.");
                 }
 
+                var isExistingSlot = await _unitOfWork.GetRepository<Slot>().AnyAsync(
+                    predicate: x => x.SlotId == dto.SlotId
+                    );
+                if (!isExistingSlot)
+                {
+
+                    throw new Exception("Slot không tồn tại.");
+                }
+
                 var isDupWorkSlot = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
-                    predicate: x => x.TechnicianId == dto.TechnicianId && x.Date == dto.Date && x.Slot == dto.Slot);
+                    predicate: x => x.TechnicianId == dto.TechnicianId && x.Date == dto.Date && x.SlotId == dto.SlotId);
                 if (isDupWorkSlot)
                 {
                     throw new Exception("Lịch làm việc đã tồn tại.");

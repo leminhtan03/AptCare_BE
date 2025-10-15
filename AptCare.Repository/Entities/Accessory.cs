@@ -8,11 +8,16 @@ namespace AptCare.Repository.Entities
         [Key]
         public int AccessoryId { get; set; }
 
-        public string Name { get; set; }
-        public string Unit { get; set; }
+        [Required]
+        [MaxLength(256)]
+        public string Name { get; set; } = null!;
+
+        [MaxLength(1000)]
+        public string? Descrption { get; set; }
         public decimal Price { get; set; }
+        public int Quantity { get; set; }
         public ActiveStatus Status { get; set; }
 
-        public ICollection<InvoiceItem> InvoiceItems { get; set; }
+        public ICollection<InvoiceAccessory>? InvoiceAccessories { get; set; }
     }
 }

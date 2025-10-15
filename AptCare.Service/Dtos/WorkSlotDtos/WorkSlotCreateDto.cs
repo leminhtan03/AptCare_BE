@@ -1,4 +1,5 @@
-﻿using AptCare.Repository.Enum;
+﻿using AptCare.Repository.Entities;
+using AptCare.Repository.Enum;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -20,7 +21,7 @@ namespace AptCare.Service.Dtos.WorkSlotDtos
         public DateOnly ToDate { get; set; }
 
         [Required]
-        public SlotTime Slot { get; set; }
+        public int SlotId { get; set; }
     }
 
     public class WorkSlotCreateDateSlotDto
@@ -38,6 +39,6 @@ namespace AptCare.Service.Dtos.WorkSlotDtos
         public DateOnly Date { get; set; }
 
         [Required]
-        public SlotTime Slot { get; set; }
+        public int SlotId { get; set; }
     }
 }
