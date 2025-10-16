@@ -57,7 +57,7 @@ namespace AptCare.Api.MapperProfile
             CreateMap<Floor, FloorDto>()
                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
             CreateMap<FloorCreateDto, Floor>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => nameof(ActiveStatus.Active)));
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ActiveStatus.Active));
             CreateMap<FloorUpdateDto, Floor>()
                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
@@ -91,7 +91,7 @@ namespace AptCare.Api.MapperProfile
                    }
                }));
             CreateMap<ApartmentCreateDto, Apartment>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => nameof(ApartmentStatus.Active)));
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ApartmentStatus.Active));
             CreateMap<ApartmentUpdateDto, Apartment>()
                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
@@ -100,7 +100,7 @@ namespace AptCare.Api.MapperProfile
                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
                .ForMember(dest => dest.Floor, opt => opt.MapFrom(src => src.Floor.FloorNumber.ToString()));
             CreateMap<CommonAreaCreateDto, CommonArea>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => nameof(ActiveStatus.Active)));
+               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ActiveStatus.Active));
             CreateMap<CommonAreaUpdateDto, CommonArea>()
                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
