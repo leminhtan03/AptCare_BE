@@ -18,9 +18,9 @@ namespace AptCare.Repository.Entities
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(UserId))]
-        public User User { get; set; }
+        public User User { get; set; } = null!;
 
         [ForeignKey(nameof(InvoiceId))]
-        public Invoice Invoice { get; set; }
+        public Invoice Invoice { get; set; } = null!;
     }
 }

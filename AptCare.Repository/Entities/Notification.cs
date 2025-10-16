@@ -16,7 +16,8 @@ namespace AptCare.Repository.Entities
 
         public int? MessageId { get; set; }
         public int ReceiverId { get; set; }
-        public string Description { get; set; }
+        [Required]
+        public string Description { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
         public bool IsRead { get; set; }
         public NotificationType Type { get; set; }

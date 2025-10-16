@@ -23,7 +23,7 @@ namespace AptCare.Repository.Entities
         public ActiveStatus Status { get; set; }
 
         [MaxLength(500)]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         // Navigation properties
         public ICollection<Apartment>? Apartments { get; set; }

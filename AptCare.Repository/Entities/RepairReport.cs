@@ -13,16 +13,17 @@ namespace AptCare.Repository.Entities
 
         public int AppointmentId { get; set; }
         public int UserId { get; set; }
-        public string Description { get; set; }
+        [Required]
+        public string Description { get; set; } = null!;
         public ReportStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(AppointmentId))]
-        public Appointment Appointment { get; set; }
+        public Appointment Appointment { get; set; } = null!;
 
         [ForeignKey(nameof(UserId))]
-        public User User { get; set; }
+        public User User { get; set; } = null!;
 
-        public ICollection<ReportApproval> ReportApprovals { get; set; }
+        public ICollection<ReportApproval>? ReportApprovals { get; set; }
     }
 }
