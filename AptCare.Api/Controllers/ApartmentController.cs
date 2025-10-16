@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AptCare.Api.Controllers
 {
-    [Authorize(Roles = nameof(AccountRole.Manager))]
     public class ApartmentController : BaseApiController
     {
         private readonly IApartmentService _apartmentService;
@@ -22,7 +21,7 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách căn hộ có phân trang, tìm kiếm và sắp xếp.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
+        /// **Chỉ role:** tất cả người dùng đã đăng nhập.    
         ///  
         /// **Tham số phân trang (PaginateDto):**
         /// - <b>page</b>: Số trang hiện tại (bắt đầu từ 1).  
@@ -38,9 +37,9 @@ namespace AptCare.Api.Controllers
         /// <response code="200">Trả về danh sách căn hộ.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet]
+        [Authorize]
         [ProducesResponseType(typeof(IPaginate<ApartmentDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetPaginateApartment([FromQuery] PaginateDto dto)
         {
             var result = await _apartmentService.GetPaginateApartmentAsync(dto);
@@ -51,17 +50,18 @@ namespace AptCare.Api.Controllers
         /// Lấy thông tin chi tiết của một căn hộ theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager
+        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
         /// </remarks>
         /// <param name="id">ID của căn hộ cần lấy thông tin.</param>
         /// <returns>Thông tin chi tiết của căn hộ.</returns>
         /// <response code="200">Trả về thông tin căn hộ.</response>
         /// <response code="404">Không tìm thấy căn hộ.</response>
-        [HttpGet("{id:int}")]
+        /// <response code="401">Không có quyền truy cập.</response>
+        [HttpGet("{id}")]
+        [Authorize]
         [ProducesResponseType(typeof(ApartmentDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetApartmentById(int id)
         {
             var result = await _apartmentService.GetApartmentByIdAsync(id);
@@ -80,7 +80,10 @@ namespace AptCare.Api.Controllers
         /// <returns>Thông báo tạo căn hộ thành công.</returns>
         /// <response code="200">Căn hộ được tạo thành công.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
         [HttpPost]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
         [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -104,8 +107,11 @@ namespace AptCare.Api.Controllers
         /// <returns>Thông báo cập nhật thành công.</returns>
         /// <response code="200">Cập nhật căn hộ thành công.</response>
         /// <response code="404">Không tìm thấy căn hộ.</response>
-        [HttpPut("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
+        [HttpPut("{id}")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -129,8 +135,11 @@ namespace AptCare.Api.Controllers
         /// <returns>Thông báo xóa thành công.</returns>
         /// <response code="200">Căn hộ được xóa thành công.</response>
         /// <response code="404">Không tìm thấy căn hộ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
         [HttpDelete("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

@@ -1,5 +1,6 @@
 ﻿using AptCare.Repository.Entities;
 using AptCare.Repository.Enum.AccountUserEnum;
+using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.UserDtos;
@@ -36,6 +37,10 @@ namespace AptCare.Api.Controllers
         /// - 500 Internal Server Error if an exception occurs
         /// </returns>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> GetUserById(int id)
         {
             try
@@ -94,6 +99,12 @@ namespace AptCare.Api.Controllers
         /// <exception cref="ArgumentException">Ném khi ID không hợp lệ</exception>
         /// <exception cref="ValidationException">Ném khi dữ liệu đầu vào vi phạm validation rules</exception>
         [HttpPut("{id}")]
+        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> UpdateUser(int id, [FromBody] UpdateUserDto updateUserDto)
         {
             try
@@ -146,6 +157,11 @@ namespace AptCare.Api.Controllers
         /// <exception cref="ArgumentException">Ném khi các tham số phân trang không hợp lệ</exception>
         /// <exception cref="InvalidOperationException">Ném khi có lỗi trong quá trình truy vấn dữ liệu</exception>
         [HttpGet("residents_data")]
+        [ProducesResponseType(typeof(IPaginate<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetResidentDataPage([FromQuery] GetResidentDataFilterDto getResidentDataFilterDto)
         {
             try
@@ -200,6 +216,11 @@ namespace AptCare.Api.Controllers
         /// <exception cref="ArgumentException">Ném khi các tham số phân trang không hợp lệ</exception>
         /// <exception cref="InvalidOperationException">Ném khi có lỗi trong quá trình truy vấn dữ liệu</exception>
         [HttpGet("system_users")]
+        [ProducesResponseType(typeof(IPaginate<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetSystemUserPage([FromQuery] GetSystemUserFilterDto getSystemUserPageDto)
         {
             try
@@ -245,6 +266,11 @@ namespace AptCare.Api.Controllers
         /// <exception cref="InvalidDataException">Ném khi cấu trúc dữ liệu trong Excel không đúng</exception>
         /// <exception cref="IOException">Ném khi có lỗi đọc file</exception>
         [HttpPost("import-residents")]
+        [ProducesResponseType(typeof(ImportResultDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> ImportResidents(IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -319,6 +345,11 @@ namespace AptCare.Api.Controllers
         /// <exception cref="InvalidOperationException">Ném khi email đã tồn tại trong hệ thống</exception>
         /// <exception cref="ArgumentException">Ném khi dữ liệu căn hộ không hợp lệ</exception>
         [HttpPost("create-user-data")]
+        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
         {
             try
@@ -366,6 +397,11 @@ namespace AptCare.Api.Controllers
         /// <exception cref="InvalidOperationException">Ném khi email đã tồn tại trong hệ thống</exception>
         /// <exception cref="ArgumentException">Ném khi thông tin tài khoản không hợp lệ hoặc vai trò không được hỗ trợ</exception>
         [HttpPost("create-account-for-new-user")]
+        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateAccountForNewUser([FromBody] CreateAccountForNewUserDto createAccountDto)
         {
             try

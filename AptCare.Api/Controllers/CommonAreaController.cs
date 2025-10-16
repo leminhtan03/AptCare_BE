@@ -5,10 +5,10 @@ using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sprache;
 
 namespace AptCare.Api.Controllers
 {
-    [Authorize(Roles = nameof(AccountRole.Manager))]
     public class CommonAreaController : BaseApiController
     {
         private readonly ICommonAreaService _commonAreaService;
@@ -22,7 +22,7 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách khu vực chung có phân trang, tìm kiếm và sắp xếp.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
+        /// **Chỉ role:** tất cả người dùng đã đăng nhập.    
         ///  
         /// **Tham số phân trang (PaginateDto):**
         /// - <b>page</b>: Số trang hiện tại (bắt đầu từ 1).  
@@ -39,11 +39,10 @@ namespace AptCare.Api.Controllers
         /// <returns>Danh sách khu vực chung kèm thông tin phân trang.</returns>
         /// <response code="200">Trả về danh sách khu vực chung.</response>
         /// <response code="401">Không có quyền truy cập.</response>
-        /// <response code="403">Không đủ quyền truy cập.</response>
         [HttpGet]
+        [Authorize]
         [ProducesResponseType(typeof(IPaginate<CommonAreaDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetPaginateCommonArea([FromQuery] PaginateDto dto)
         {
             var result = await _commonAreaService.GetPaginateCommonAreaAsync(dto);
@@ -54,19 +53,18 @@ namespace AptCare.Api.Controllers
         /// Lấy thông tin chi tiết của khu vực chung theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager
+        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
         /// </remarks>
         /// <param name="id">ID của khu vực chung cần lấy thông tin.</param>
         /// <returns>Thông tin chi tiết của khu vực chung.</returns>
         /// <response code="200">Trả về thông tin khu vực chung.</response>
         /// <response code="404">Không tìm thấy khu vực chung.</response>
         /// <response code="401">Không có quyền truy cập.</response>
-        /// <response code="403">Không đủ quyền truy cập.</response>
-        [HttpGet("{id:int}")]
+        [HttpGet("{id}")]
+        [Authorize]
         [ProducesResponseType(typeof(CommonAreaDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetCommonAreaById(int id)
         {
             var result = await _commonAreaService.GetCommonAreaByIdAsync(id);
@@ -88,6 +86,7 @@ namespace AptCare.Api.Controllers
         /// <response code="401">Không có quyền truy cập.</response>
         /// <response code="403">Không đủ quyền truy cập.</response>
         [HttpPost]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
         [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -115,15 +114,16 @@ namespace AptCare.Api.Controllers
         /// <response code="401">Không có quyền truy cập.</response>
         /// <response code="403">Không đủ quyền truy cập.</response>
         [HttpPut("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> UpdateCommonArea(int id, CommonAreaUpdateDto dto)
         {
-            await _commonAreaService.UpdateCommonAreaAsync(id, dto);
-            return NoContent();
+            var result = await _commonAreaService.UpdateCommonAreaAsync(id, dto);
+            return Ok(result);
         }
 
         /// <summary>
@@ -141,14 +141,15 @@ namespace AptCare.Api.Controllers
         /// <response code="401">Không có quyền truy cập.</response>
         /// <response code="403">Không đủ quyền truy cập.</response>
         [HttpDelete("{id:int}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> DeleteCommonArea(int id)
         {
-            await _commonAreaService.DeleteCommonAreaAsync(id);
-            return NoContent();
+            var result = await _commonAreaService.DeleteCommonAreaAsync(id);
+            return Ok(result);
         }
     }
 }
