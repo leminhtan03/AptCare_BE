@@ -1,4 +1,6 @@
 ﻿using AptCare.Repository.Enum.AccountUserEnum;
+using AptCare.Repository.Paginate;
+using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -26,10 +28,14 @@ namespace AptCare.Api.Controllers
         /// Nếu 2 người đã có cuộc trò chuyện, không thể tạo lại.
         /// </remarks>
         [HttpPost]
+        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> CreateConversation([FromBody] ConversationCreateDto dto)
         {
             var result = await _conversationService.CreateConversationAsync(dto);
-            return Ok(new { message = result });
+            return Created(string.Empty, result);
         }
 
         /// <summary>
@@ -41,6 +47,10 @@ namespace AptCare.Api.Controllers
         /// Trả về danh sách gồm: tiêu đề, thành viên, tin nhắn gần nhất, và thời gian cập nhật cuối.
         /// </remarks>
         [HttpGet("my")]
+        [ProducesResponseType(typeof(IEnumerable<ConversationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> GetMyConversations()
         {
             var result = await _conversationService.GetMyConversationsAsync();
@@ -56,6 +66,10 @@ namespace AptCare.Api.Controllers
         /// Bao gồm danh sách tin nhắn, thông tin người tham gia và trạng thái đọc.
         /// </remarks>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ConversationDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> GetConversationById(int id)
         {
             var result = await _conversationService.GetConversationByIdAsync(id);
@@ -72,10 +86,14 @@ namespace AptCare.Api.Controllers
         /// Dùng khi người dùng không muốn nhận thông báo tin nhắn mới.
         /// </remarks>
         [HttpPatch("{id}/mute")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> MuteConversation(int id)
         {
             var result = await _conversationService.MuteConversationAsync(id);
-            return Ok(new { message = result });
+            return Ok(result);
         }
 
         /// <summary>
@@ -85,10 +103,14 @@ namespace AptCare.Api.Controllers
         /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
         /// </remarks>
         [HttpPatch("{id}/unmute")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> UnmuteConversation(int id)
         {
             var result = await _conversationService.UnmuteConversationAsync(id);
-            return Ok(new { message = result });
+            return Ok(result);
         }
     }
 }

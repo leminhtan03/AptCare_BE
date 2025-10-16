@@ -20,14 +20,7 @@ namespace AptCare.Api.Controllers
         /// Tạo lịch làm việc liên tục từ ngày bắt đầu đến ngày kết thúc (cùng 1 ca làm việc).
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** TechnicianLead hoặc Manager.  
-        ///  
-        /// Tự động tạo lịch cho kỹ thuật viên trong khoảng thời gian nhất định, theo slot cố định (ví dụ: ca sáng).  
-        ///  
-        /// **Enum SlotTime:**  
-        /// - `Slot1` — 8:00 - 16:00  
-        /// - `Slot2` — 16:00 - 24:00  
-        /// - `Slot3` — 00:00 - 8:00  
+        /// **Chỉ role:** Manager.  
         ///  
         /// **Enum WorkSlotStatus:**  
         /// - `NotStarted` — Chưa làm  
@@ -37,20 +30,29 @@ namespace AptCare.Api.Controllers
         /// **Ràng buộc:**  
         /// - 'FromDate' phải nhỏ hơn hoặc bằng 'ToDate'.  
         /// - Mỗi kỹ thuật viên, ngày và slot chỉ có thể tồn tại một lịch làm việc duy nhất.  
+        /// 
+        /// <response code="201">Tạo lịch thành công.</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
         /// </remarks>
-        //[Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
         [HttpPost("from-date-to-date")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> CreateWorkSlotsFromDateToDate([FromBody] WorkSlotCreateFromDateToDateDto dto)
         {
             var result = await _workSlotService.CreateWorkSlotsFromDateToDateAsync(dto);
-            return Ok(new { message = result });
+            return Created(string.Empty, result);
         }
 
         /// <summary>
         /// Tạo lịch làm việc cho danh sách ngày và ca cụ thể.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** TechnicianLead hoặc Manager.  
+        /// **Chỉ role:** Manager.  
         ///  
         /// Cho phép tạo nhiều lịch làm việc không liên tiếp — ví dụ:  
         /// - 01/10/2025 (Slot1)  
@@ -63,13 +65,22 @@ namespace AptCare.Api.Controllers
         /// - `Slot3` — 00:00 - 8:00  
         ///  
         /// **Ràng buộc:** Mỗi kỹ thuật viên, ngày và slot chỉ có thể có 1 lịch duy nhất.
+        /// 
+        /// <response code="201">Tạo lịch thành công.</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
         /// </remarks>
-        //[Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
         [HttpPost("date-slot-list")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> CreateWorkSlotsDateSlot([FromBody] WorkSlotCreateDateSlotDto dto)
         {
             var result = await _workSlotService.CreateWorkSlotsDateSlotAsync(dto);
-            return Ok(new { message = result });
+            return Created(string.Empty, result);
         }
 
         /// <summary>
@@ -86,13 +97,22 @@ namespace AptCare.Api.Controllers
         /// - `Off` — Nghỉ  
         ///  
         /// **Ràng buộc:** Không thể cập nhật sang lịch đã tồn tại (trùng TechnicianId, Date, Slot).
+        /// <response code="200">Cập nhật lịch thành công.</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
+        /// <response code="404">Không tìm thấy lịch.</response>
         /// </remarks>
-        //[Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
         [HttpPut("{id}")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> UpdateWorkSlot(int id, [FromBody] WorkSlotUpdateDto dto)
         {
             var result = await _workSlotService.UpdateWorkSlotAsync(id, dto);
-            return Ok(new { message = result });
+            return Ok(result);
         }
 
         /// <summary>
@@ -103,13 +123,22 @@ namespace AptCare.Api.Controllers
         ///  
         /// Xóa hoàn toàn lịch làm việc của kỹ thuật viên khỏi hệ thống.  
         /// **Lưu ý:** Không thể khôi phục lại lịch đã xóa.
+        /// 
+        /// <response code="200">Xóa lịch thành công.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
+        /// <response code="404">Không tìm thấy lịch.</response>
         /// </remarks>
-        //[Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
         [HttpDelete("{id}")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> DeleteWorkSlot(int id)
         {
             var result = await _workSlotService.DeleteWorkSlotAsync(id);
-            return Ok(new { message = result });
+            return Ok(result);
         }
 
         /// <summary>
@@ -124,9 +153,18 @@ namespace AptCare.Api.Controllers
         /// - `NotStarted` — Chưa làm  
         /// - `Completed` — Đã làm  
         /// - `Off` — Nghỉ
+        ///   
+        /// <response code="200">Lấy lịch thành công.</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
         /// </remarks>
-        //[Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
         [HttpGet("technician-schedule")]
+        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetTechnicianSchedule(
             [FromQuery] int? technicianId,
             [FromQuery] DateOnly fromDate,
@@ -149,9 +187,18 @@ namespace AptCare.Api.Controllers
         /// - `NotStarted` — Chưa làm  
         /// - `Completed` — Đã làm  
         /// - `Off` — Nghỉ
+        ///   
+        /// <response code="200">Lấy lịch thành công.</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
         /// </remarks>
-        [Authorize(Roles = nameof(AccountRole.Technician))]
         [HttpGet("my-schedule")]
+        [Authorize(Roles = nameof(AccountRole.Technician))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetMySchedule(
             [FromQuery] DateOnly fromDate,
             [FromQuery] DateOnly toDate,
