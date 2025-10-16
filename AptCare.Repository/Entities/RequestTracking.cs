@@ -12,14 +12,14 @@ namespace AptCare.Repository.Entities
 
         public int RepairRequestId { get; set; }
         public RequestStatus Status { get; set; }
-        public string Note { get; set; }
+        public string? Note { get; set; }
         public int? UpdatedBy { get; set; }
         public DateTime UpdatedAt { get; set; }
 
         [ForeignKey(nameof(RepairRequestId))]
-        public RepairRequest RepairRequest { get; set; }
+        public RepairRequest RepairRequest { get; set; } = null!;
 
         [ForeignKey(nameof(UpdatedBy))]
-        public User UpdatedByUser { get; set; }
+        public User UpdatedByUser { get; set; } = null!;
     }
 }

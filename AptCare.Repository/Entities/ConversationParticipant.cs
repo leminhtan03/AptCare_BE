@@ -21,7 +21,7 @@ namespace AptCare.Repository.Entities
         [Required]
         public bool IsMuted { get; set; }
 
-        public Conversation Conversation { get; set; }
-        public User Participant { get; set; }
+        public Conversation Conversation { get; set; } = null!;
+        public User Participant { get; set; } = null!;
     }
 }

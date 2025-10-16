@@ -15,7 +15,7 @@ namespace AptCare.Repository.Entities
         public int CommonAreaId { get; set; }
 
         [ForeignKey("Floor")]
-        public int FloorId { get; set; }
+        public int? FloorId { get; set; }
         public Floor? Floor { get; set; }
 
         [Required]

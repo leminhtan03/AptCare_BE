@@ -111,7 +111,7 @@ namespace AptCare.Repository
             modelBuilder.Entity<CommonAreaObject>()
                 .HasOne(cao => cao.CommonArea)
                 .WithMany(ca => ca.CommonAreaObjects)
-                .HasForeignKey(ca => ca.CommonAreaObjectId)
+                .HasForeignKey(cao => cao.CommonAreaId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // User - Apartment (n - n)
@@ -348,12 +348,12 @@ namespace AptCare.Repository
                       .HasForeignKey(c => c.RepairRequestId);
             });
 
-            // CommonAreaObject - MaintenanceRequest (1 - n)
-            modelBuilder.Entity<MaintenanceRequest>(entity =>
+            // MaintenanceRequest - CommonAreaObject (1 - n)
+            modelBuilder.Entity<CommonAreaObject>(entity =>
             {
-                entity.HasOne(mr => mr.CommonAreaObject)
-                      .WithOne(cao => cao.MaintenanceRequest)
-                      .HasForeignKey<CommonAreaObject>(cao => cao.CommonAreaObjectId);
+                entity.HasOne(mr => mr.MaintenanceRequest)
+                      .WithOne(cao => cao.CommonAreaObject)
+                      .HasForeignKey<MaintenanceRequest>(mr => mr.CommonAreaObjectId);
             });
 
             // MaintenanceRequest - MaintenanceTrackingHistory (1 - n)
@@ -366,7 +366,7 @@ namespace AptCare.Repository
 
             // Media generic (EntityType + EntityId)
             modelBuilder.Entity<Media>()
-                        .HasIndex(m => new { m.EntityType, m.EntityId });
+                        .HasIndex(m => new { m.Entity, m.EntityId });
         }
     }
 }
