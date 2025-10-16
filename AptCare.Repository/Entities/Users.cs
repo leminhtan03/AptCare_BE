@@ -11,17 +11,17 @@ namespace AptCare.Repository.Entities
 
         [Required]
         [MaxLength(256)]
-        public string FirstName { get; set; }
+        public string FirstName { get; set; } = null!;
 
         [Required]
         [MaxLength(256)]
-        public string LastName { get; set; }
+        public string LastName { get; set; } = null!;
 
         [Required]
         [MaxLength(20)]
         [StringLength(20)]
         // [Index(IsUnique = true)]
-        public string PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = null!;
 
         [Required]
         [MaxLength(256)]
@@ -30,7 +30,7 @@ namespace AptCare.Repository.Entities
         public string Email { get; set; }
 
         [MaxLength(50)]
-        public string CitizenshipIdentity { get; set; }
+        public string? CitizenshipIdentity { get; set; }
 
         public DateTime? Birthday { get; set; }
 

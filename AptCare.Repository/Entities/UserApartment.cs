@@ -15,15 +15,15 @@ namespace AptCare.Repository.Entities
         [Required]
         [ForeignKey("User")]
         public int UserId { get; set; }
-        public User User { get; set; }
+        public User User { get; set; } = null!;
         [Required]
         [ForeignKey("Apartment")]
         public int ApartmentId { get; set; }
-        public Apartment Apartment { get; set; }
+        public Apartment Apartment { get; set; } = null!;
 
         public RoleInApartmentType RoleInApartment { get; set; }
 
-        public string RelationshipToOwner { get; set; }
+        public string? RelationshipToOwner { get; set; }
 
         public ActiveStatus Status { get; set; }
     }

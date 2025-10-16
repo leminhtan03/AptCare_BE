@@ -18,7 +18,7 @@ namespace AptCare.Repository.Entities
         [ForeignKey("Technique")]
         public int TechniqueId { get; set; }
 
-        public User Technician { get; set; }
-        public Technique Technique { get; set; }
+        public User Technician { get; set; } = null!;
+        public Technique Technique { get; set; } = null!;
     }
 }

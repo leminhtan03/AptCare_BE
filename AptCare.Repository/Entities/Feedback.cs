@@ -17,12 +17,12 @@ namespace AptCare.Repository.Entities
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(RepairRequestId))]
-        public RepairRequest RepairRequest { get; set; }
+        public RepairRequest RepairRequest { get; set; } = null!;
 
         [ForeignKey(nameof(UserId))]
-        public User User { get; set; }
+        public User User { get; set; } = null!;
 
         [ForeignKey(nameof(ParentFeedbackId))]
-        public Feedback ParentFeedback { get; set; }
+        public Feedback? ParentFeedback { get; set; }
     }
 }
