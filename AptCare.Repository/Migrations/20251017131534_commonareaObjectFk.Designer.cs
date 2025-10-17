@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     [DbContext(typeof(AptCareSystemDBContext))]
-    [Migration("20251015225856_UpdateNullPossibleEntities")]
-    partial class UpdateNullPossibleEntities
+    [Migration("20251017131534_commonareaObjectFk")]
+    partial class commonareaObjectFk
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -308,7 +308,10 @@ namespace AptCare.Repository.Migrations
             modelBuilder.Entity("AptCare.Repository.Entities.CommonAreaObject", b =>
                 {
                     b.Property<int>("CommonAreaObjectId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CommonAreaObjectId"));
 
                     b.Property<int>("CommonAreaId")
                         .HasColumnType("integer");
@@ -326,6 +329,8 @@ namespace AptCare.Repository.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("CommonAreaObjectId");
+
+                    b.HasIndex("CommonAreaId");
 
                     b.ToTable("CommonAreaObjects");
                 });
@@ -688,6 +693,9 @@ namespace AptCare.Repository.Migrations
                     b.HasKey("MaintenanceRequestId");
 
                     b.HasIndex("CommonAreaId");
+
+                    b.HasIndex("CommonAreaObjectId")
+                        .IsUnique();
 
                     b.ToTable("MaintenanceRequests");
                 });
@@ -1086,7 +1094,7 @@ namespace AptCare.Repository.Migrations
 
                     b.HasKey("SlotId");
 
-                    b.ToTable("Slot");
+                    b.ToTable("Slots");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.TechnicianTechnique", b =>
@@ -1390,19 +1398,12 @@ namespace AptCare.Repository.Migrations
                 {
                     b.HasOne("AptCare.Repository.Entities.CommonArea", "CommonArea")
                         .WithMany("CommonAreaObjects")
-                        .HasForeignKey("CommonAreaObjectId")
+                        .HasForeignKey("CommonAreaId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("AptCare.Repository.Entities.MaintenanceRequest", "MaintenanceRequest")
-                        .WithOne("CommonAreaObject")
-                        .HasForeignKey("AptCare.Repository.Entities.CommonAreaObject", "CommonAreaObjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_CommonAreaObjects_CommonAreas_CommonAreaId");
 
                     b.Navigation("CommonArea");
-
-                    b.Navigation("MaintenanceRequest");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.Contract", b =>
@@ -1534,6 +1535,14 @@ namespace AptCare.Repository.Migrations
                     b.HasOne("AptCare.Repository.Entities.CommonArea", null)
                         .WithMany("MaintenanceRequests")
                         .HasForeignKey("CommonAreaId");
+
+                    b.HasOne("AptCare.Repository.Entities.CommonAreaObject", "CommonAreaObject")
+                        .WithOne("MaintenanceRequest")
+                        .HasForeignKey("AptCare.Repository.Entities.MaintenanceRequest", "CommonAreaObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CommonAreaObject");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.MaintenanceTrackingHistory", b =>
@@ -1851,6 +1860,8 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.CommonAreaObject", b =>
                 {
+                    b.Navigation("MaintenanceRequest");
+
                     b.Navigation("Reports");
                 });
 
@@ -1884,9 +1895,6 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.MaintenanceRequest", b =>
                 {
-                    b.Navigation("CommonAreaObject")
-                        .IsRequired();
-
                     b.Navigation("MaintenanceTrackingHistories");
 
                     b.Navigation("RepairRequests");

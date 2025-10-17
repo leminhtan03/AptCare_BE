@@ -64,6 +64,7 @@ namespace AptCare.Repository
                       .HasForeignKey<Account>(a => a.AccountId);
             });
 
+
             // Account - AccountToken (1 - n)
             modelBuilder.Entity<AccountToken>()
                 .HasOne(at => at.Account)
@@ -113,6 +114,7 @@ namespace AptCare.Repository
                 .HasOne(cao => cao.CommonArea)
                 .WithMany(ca => ca.CommonAreaObjects)
                 .HasForeignKey(cao => cao.CommonAreaId)
+                .HasConstraintName("FK_CommonAreaObjects_CommonAreas_CommonAreaId")
                 .OnDelete(DeleteBehavior.Restrict);
 
             // User - Apartment (n - n)
@@ -229,7 +231,7 @@ namespace AptCare.Repository
                 entity.HasOne(rr => rr.Issue)
                       .WithMany(i => i.RepairRequests)
                       .HasForeignKey(rr => rr.IssueId)
-                      .OnDelete(DeleteBehavior.Restrict);             
+                      .OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne(rr => rr.ParentRequest)
                       .WithMany(rr => rr.ChildRequests)
                       .HasForeignKey(rr => rr.ParentRequestId)
@@ -322,7 +324,7 @@ namespace AptCare.Repository
             {
                 entity.HasOne(ia => ia.Invoice)
                       .WithMany(i => i.InvoiceServices)
-                      .HasForeignKey(ia => ia.InvoiceId);               
+                      .HasForeignKey(ia => ia.InvoiceId);
             });
 
             // Invoice - Transaction (1 - n)

@@ -1397,7 +1397,8 @@ namespace AptCare.Repository.Migrations
                         .WithMany("CommonAreaObjects")
                         .HasForeignKey("CommonAreaId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_CommonAreaObjects_CommonAreas_CommonAreaId");
 
                     b.Navigation("CommonArea");
                 });

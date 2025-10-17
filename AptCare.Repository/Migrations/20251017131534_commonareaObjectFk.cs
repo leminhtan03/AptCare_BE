@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     /// <inheritdoc />
-    public partial class RebuildMigration : Migration
+    public partial class commonareaObjectFk : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -51,7 +51,7 @@ namespace AptCare.Repository.Migrations
                     BuildingCode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     FloorNumber = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false)
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -65,7 +65,7 @@ namespace AptCare.Repository.Migrations
                     MediaId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     EntityId = table.Column<int>(type: "integer", nullable: false),
-                    EntityType = table.Column<string>(type: "text", nullable: false),
+                    Entity = table.Column<string>(type: "text", nullable: false),
                     FilePath = table.Column<string>(type: "text", nullable: false),
                     FileName = table.Column<string>(type: "text", nullable: false),
                     ContentType = table.Column<string>(type: "text", nullable: false),
@@ -78,7 +78,7 @@ namespace AptCare.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Slot",
+                name: "Slots",
                 columns: table => new
                 {
                     SlotId = table.Column<int>(type: "integer", nullable: false)
@@ -90,7 +90,7 @@ namespace AptCare.Repository.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Slot", x => x.SlotId);
+                    table.PrimaryKey("PK_Slots", x => x.SlotId);
                 });
 
             migrationBuilder.CreateTable(
@@ -117,7 +117,7 @@ namespace AptCare.Repository.Migrations
                     LastName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     PhoneNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    CitizenshipIdentity = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    CitizenshipIdentity = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     Birthday = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -154,7 +154,7 @@ namespace AptCare.Repository.Migrations
                 {
                     CommonAreaId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    FloorId = table.Column<int>(type: "integer", nullable: false),
+                    FloorId = table.Column<int>(type: "integer", nullable: true),
                     AreaCode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
@@ -345,9 +345,9 @@ namespace AptCare.Repository.Migrations
                 {
                     table.PrimaryKey("PK_WorkSlots", x => x.WorkSlotId);
                     table.ForeignKey(
-                        name: "FK_WorkSlots_Slot_SlotId",
+                        name: "FK_WorkSlots_Slots_SlotId",
                         column: x => x.SlotId,
-                        principalTable: "Slot",
+                        principalTable: "Slots",
                         principalColumn: "SlotId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -365,7 +365,7 @@ namespace AptCare.Repository.Migrations
                     UserId = table.Column<int>(type: "integer", nullable: false),
                     ApartmentId = table.Column<int>(type: "integer", nullable: false),
                     RoleInApartment = table.Column<int>(type: "integer", nullable: false),
-                    RelationshipToOwner = table.Column<string>(type: "text", nullable: false),
+                    RelationshipToOwner = table.Column<string>(type: "text", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -386,27 +386,25 @@ namespace AptCare.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MaintenanceRequests",
+                name: "CommonAreaObjects",
                 columns: table => new
                 {
-                    MaintenanceRequestId = table.Column<int>(type: "integer", nullable: false)
+                    CommonAreaObjectId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    CommonAreaObjectId = table.Column<int>(type: "integer", nullable: false),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
-                    Frequency = table.Column<int>(type: "integer", nullable: false),
-                    NextDay = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    CommonAreaId = table.Column<int>(type: "integer", nullable: true)
+                    CommonAreaId = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MaintenanceRequests", x => x.MaintenanceRequestId);
+                    table.PrimaryKey("PK_CommonAreaObjects", x => x.CommonAreaObjectId);
                     table.ForeignKey(
-                        name: "FK_MaintenanceRequests_CommonAreas_CommonAreaId",
+                        name: "FK_CommonAreaObjects_CommonAreas_CommonAreaId",
                         column: x => x.CommonAreaId,
                         principalTable: "CommonAreas",
-                        principalColumn: "CommonAreaId");
+                        principalColumn: "CommonAreaId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -518,30 +516,68 @@ namespace AptCare.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CommonAreaObjects",
+                name: "MaintenanceRequests",
                 columns: table => new
                 {
+                    MaintenanceRequestId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CommonAreaObjectId = table.Column<int>(type: "integer", nullable: false),
-                    CommonAreaId = table.Column<int>(type: "integer", nullable: false),
-                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false)
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    Frequency = table.Column<int>(type: "integer", nullable: false),
+                    NextDay = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    CommonAreaId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CommonAreaObjects", x => x.CommonAreaObjectId);
+                    table.PrimaryKey("PK_MaintenanceRequests", x => x.MaintenanceRequestId);
                     table.ForeignKey(
-                        name: "FK_CommonAreaObjects_CommonAreas_CommonAreaObjectId",
+                        name: "FK_MaintenanceRequests_CommonAreaObjects_CommonAreaObjectId",
                         column: x => x.CommonAreaObjectId,
+                        principalTable: "CommonAreaObjects",
+                        principalColumn: "CommonAreaObjectId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MaintenanceRequests_CommonAreas_CommonAreaId",
+                        column: x => x.CommonAreaId,
                         principalTable: "CommonAreas",
-                        principalColumn: "CommonAreaId",
+                        principalColumn: "CommonAreaId");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Reports",
+                columns: table => new
+                {
+                    ReportId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    CommonAreaObjectId = table.Column<int>(type: "integer", nullable: false),
+                    Title = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    CommonAreaId = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reports", x => x.ReportId);
+                    table.ForeignKey(
+                        name: "FK_Reports_CommonAreaObjects_CommonAreaObjectId",
+                        column: x => x.CommonAreaObjectId,
+                        principalTable: "CommonAreaObjects",
+                        principalColumn: "CommonAreaObjectId",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_CommonAreaObjects_MaintenanceRequests_CommonAreaObjectId",
-                        column: x => x.CommonAreaObjectId,
-                        principalTable: "MaintenanceRequests",
-                        principalColumn: "MaintenanceRequestId",
-                        onDelete: ReferentialAction.Cascade);
+                        name: "FK_Reports_CommonAreas_CommonAreaId",
+                        column: x => x.CommonAreaId,
+                        principalTable: "CommonAreas",
+                        principalColumn: "CommonAreaId");
+                    table.ForeignKey(
+                        name: "FK_Reports_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -627,41 +663,6 @@ namespace AptCare.Repository.Migrations
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_RepairRequests_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Reports",
-                columns: table => new
-                {
-                    ReportId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
-                    CommonAreaObjectId = table.Column<int>(type: "integer", nullable: false),
-                    Title = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    CommonAreaId = table.Column<int>(type: "integer", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Reports", x => x.ReportId);
-                    table.ForeignKey(
-                        name: "FK_Reports_CommonAreaObjects_CommonAreaObjectId",
-                        column: x => x.CommonAreaObjectId,
-                        principalTable: "CommonAreaObjects",
-                        principalColumn: "CommonAreaObjectId",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Reports_CommonAreas_CommonAreaId",
-                        column: x => x.CommonAreaId,
-                        principalTable: "CommonAreas",
-                        principalColumn: "CommonAreaId");
-                    table.ForeignKey(
-                        name: "FK_Reports_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "UserId",
@@ -790,7 +791,7 @@ namespace AptCare.Repository.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     RepairRequestId = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    Note = table.Column<string>(type: "text", nullable: false),
+                    Note = table.Column<string>(type: "text", nullable: true),
                     UpdatedBy = table.Column<int>(type: "integer", nullable: true),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -1017,6 +1018,11 @@ namespace AptCare.Repository.Migrations
                 column: "RepairRequestId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_CommonAreaObjects_CommonAreaId",
+                table: "CommonAreaObjects",
+                column: "CommonAreaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_CommonAreas_FloorId",
                 table: "CommonAreas",
                 column: "FloorId");
@@ -1087,6 +1093,12 @@ namespace AptCare.Repository.Migrations
                 column: "CommonAreaId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_MaintenanceRequests_CommonAreaObjectId",
+                table: "MaintenanceRequests",
+                column: "CommonAreaObjectId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_MaintenanceTrackingHistories_MaintenanceRequestId",
                 table: "MaintenanceTrackingHistories",
                 column: "MaintenanceRequestId");
@@ -1097,9 +1109,9 @@ namespace AptCare.Repository.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Medias_EntityType_EntityId",
+                name: "IX_Medias_Entity_EntityId",
                 table: "Medias",
-                columns: new[] { "EntityType", "EntityId" });
+                columns: new[] { "Entity", "EntityId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Messages_ConversationId",
@@ -1331,9 +1343,6 @@ namespace AptCare.Repository.Migrations
                 name: "InspectionReports");
 
             migrationBuilder.DropTable(
-                name: "CommonAreaObjects");
-
-            migrationBuilder.DropTable(
                 name: "Invoices");
 
             migrationBuilder.DropTable(
@@ -1346,7 +1355,7 @@ namespace AptCare.Repository.Migrations
                 name: "Appointments");
 
             migrationBuilder.DropTable(
-                name: "Slot");
+                name: "Slots");
 
             migrationBuilder.DropTable(
                 name: "RepairReports");
@@ -1368,6 +1377,9 @@ namespace AptCare.Repository.Migrations
 
             migrationBuilder.DropTable(
                 name: "Techniques");
+
+            migrationBuilder.DropTable(
+                name: "CommonAreaObjects");
 
             migrationBuilder.DropTable(
                 name: "CommonAreas");
