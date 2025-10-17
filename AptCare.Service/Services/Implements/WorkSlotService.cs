@@ -24,11 +24,11 @@ namespace AptCare.Service.Services.Implements
 {
     public class WorkSlotService : BaseService<WorkSlotService>, IWorkSlotService
     {
-        private IHttpContextAccessor _httpContextAccessor;
+        private readonly IUserContext _userContext;
 
-        public WorkSlotService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<WorkSlotService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, mapper)
+        public WorkSlotService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<WorkSlotService> logger, IMapper mapper, IUserContext userContext) : base(unitOfWork, logger, mapper)
         {
-            _httpContextAccessor = httpContextAccessor;
+            _userContext = userContext;
         }
 
         public async Task<string> CreateWorkSlotsFromDateToDateAsync(WorkSlotCreateFromDateToDateDto dto)
@@ -107,10 +107,10 @@ namespace AptCare.Service.Services.Implements
 
                 foreach (var dateSlot in dto.DateSlots)
                 {
-                    var isExistingSlot = await _unitOfWork.GetRepository<Slot>().AnyAsync(
+                    var slot = await _unitOfWork.GetRepository<Slot>().SingleOrDefaultAsync(
                         predicate: x => x.SlotId == dateSlot.SlotId
                         );
-                    if (!isExistingSlot)
+                    if (slot == null)
                     {
 
                         throw new Exception("Slot không tồn tại.");
@@ -121,7 +121,26 @@ namespace AptCare.Service.Services.Implements
                         );
                     if (isDupWorkSlot)
                     {
-                        throw new Exception("Lịch làm việc đã tồn tại.");
+                        throw new Exception($"Lịch làm việc đã tồn tại (Slot {slot.FromTime} - {slot.ToTime} ngày {dateSlot.Date}).");
+                    }
+
+                    var isSameDay = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
+                        predicate: x => x.TechnicianId == dto.TechnicianId && x.Date == dateSlot.Date
+                        );
+                    if (isSameDay)
+                    {
+                        throw new Exception($"Không thể làm 2 slot chung 1 ngày ({dateSlot.Date}).");
+                    }
+
+                    var isContinueSlot = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
+                        predicate: x => x.TechnicianId == dto.TechnicianId && 
+                                        ((x.Date.AddDays(1) ==  dateSlot.Date && slot.FromTime == x.Slot.ToTime) ||
+                                         (x.Date.AddDays(-1) == dateSlot.Date && slot.ToTime == x.Slot.FromTime)),
+                        include: i => i.Include(x => x.Slot)
+                        );
+                    if (isContinueSlot)
+                    {
+                        throw new Exception($"Không thể làm 2 slot liên tiếp 1 ngày (Slot {slot.FromTime} - {slot.ToTime} ngày {dateSlot.Date}).");
                     }
 
                     workSlots.Add(new WorkSlot
@@ -239,6 +258,7 @@ namespace AptCare.Service.Services.Implements
                                 && (!status.HasValue || x.Status == status)
                                 && (!technicianId.HasValue || x.TechnicianId == technicianId),
                 include: i => i.Include(x => x.Technician)
+                               .Include(x => x.Slot)
             );
 
             if (workSlots == null || !workSlots.Any())
@@ -250,10 +270,10 @@ namespace AptCare.Service.Services.Implements
                             {
                                 Date = dateGroup.Key,
                                 Slots = dateGroup
-                                    .GroupBy(s => s.Slot)
+                                    .GroupBy(s => s.SlotId)
                                     .Select(slotGroup => new SlotDto
                                     {
-                                        Slot = slotGroup.Key.ToString(),
+                                        SlotId = slotGroup.Key,
                                         TechnicianWorkSlots = slotGroup
                                             .Select(ws => _mapper.Map<TechnicianWorkSlotDto>(ws))
                                             .ToList()
@@ -268,20 +288,8 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<IEnumerable<WorkSlotDto>> GetMyScheduleAsync(DateOnly fromDate, DateOnly toDate, WorkSlotStatus? status)
         {
-            int technicianId = GetUserId();
+            int technicianId = _userContext.CurrentUserId;
             return await GetTechnicianScheduleAsync(technicianId, fromDate, toDate, status);
-        }
-
-        public int GetUserId()
-        {
-            try
-            {
-                return int.Parse(_httpContextAccessor.HttpContext.User.FindFirst("userID")?.Value);
-            }
-            catch (Exception e)
-            {
-                throw new Exception("Vui lòng đăng nhập.");
-            }
         }
     }
 }

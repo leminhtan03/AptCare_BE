@@ -20,17 +20,17 @@ namespace AptCare.Service.Services.Implements
 {
     public class MessageService : BaseService<Message>, IMessageService
     {
-        private IHttpContextAccessor _httpContextAccessor;
+        private readonly IUserContext _userContext;
         private readonly ICloudinaryService _cloudinaryService;
 
         public MessageService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
             ILogger<Message> logger,
             IMapper mapper,
-            IHttpContextAccessor httpContextAccessor,
+            IUserContext userContext,
             ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
         {
-            _httpContextAccessor = httpContextAccessor;
+            _userContext = userContext;
             _cloudinaryService = cloudinaryService;
         }
 
@@ -40,7 +40,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                var userId = GetUserId();
+                var userId = _userContext.CurrentUserId;
 
                 var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(
                                     predicate: p => p.ConversationId == dto.ConversationId
@@ -65,10 +65,8 @@ namespace AptCare.Service.Services.Implements
                 message.SenderId = userId;
 
                 await _unitOfWork.GetRepository<Message>().InsertAsync(message);
-
-                await PushMessageNotificationAsync(message);
-
                 await _unitOfWork.CommitAsync();
+                await PushMessageNotificationAsync(message);
                 await _unitOfWork.CommitTransactionAsync();
 
                 return "Đã gửi tin nhắn.";
@@ -86,7 +84,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                var userId = GetUserId();
+                var userId = _userContext.CurrentUserId;
 
                 var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(
                                     predicate: p => p.ConversationId == conversationId
@@ -126,10 +124,8 @@ namespace AptCare.Service.Services.Implements
                 };
 
                 await _unitOfWork.GetRepository<Message>().InsertAsync(message);
-
-                await PushMessageNotificationAsync(message);
-
                 await _unitOfWork.CommitAsync();
+                await PushMessageNotificationAsync(message);
                 await _unitOfWork.CommitTransactionAsync();
 
                 return "Đã gửi tin nhắn.";
@@ -210,11 +206,12 @@ namespace AptCare.Service.Services.Implements
             }
 
             await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
+            await _unitOfWork.CommitAsync();
         }
 
         public async Task<IPaginate<MessageDto>> GetPaginateMessagesAsync(int conversationId, DateTime? before, int pageSize)
         {
-            var userId = GetUserId();
+            var userId = _userContext.CurrentUserId;
             var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(p => p.ConversationId == conversationId);
 
             if (!isExistingConversation)
@@ -222,7 +219,7 @@ namespace AptCare.Service.Services.Implements
 
             var messages = await _unitOfWork.GetRepository<Message>().ProjectToPagingListAsync<MessageDto>(
                     configuration: _mapper.ConfigurationProvider,
-                    parameters: new { CurrentUserId = userId },
+                    //parameters: new { CurrentUserId = userId },
                     predicate: m => m.ConversationId == conversationId && (before == null || m.CreatedAt < before),
                     include: i => i.Include(x => x.Sender).Include(x => x.ReplyMessage),
                     orderBy: q => q.OrderByDescending(m => m.CreatedAt),
@@ -230,38 +227,89 @@ namespace AptCare.Service.Services.Implements
                     size: pageSize
                 );
 
+            foreach (var msg in messages.Items)
+            {
+                msg.IsMine = msg.SenderId == userId;
+            }
+
             return messages;
         }
 
         public async Task<MessageDto> GetMessageByIdAsync(int id)
         {
-            var userId = GetUserId();
-            var messages = await _unitOfWork.GetRepository<Message>().ProjectToSingleOrDefaultAsync<MessageDto>(
+            var userId = _userContext.CurrentUserId;
+            var message = await _unitOfWork.GetRepository<Message>().ProjectToSingleOrDefaultAsync<MessageDto>(
                     configuration: _mapper.ConfigurationProvider,
-                    parameters: new { CurrentUserId = userId },
+                    //parameters: new { CurrentUserId = userId },
                     predicate: m => m.MessageId == id,
                     include: i => i.Include(x => x.Sender)
                                    .Include(x => x.ReplyMessage)
                                        .ThenInclude(x => x.Sender)
                 );
-            if (messages == null)
+            if (message == null)
             {
                 throw new Exception("Tin nhắn không tồn tại.");
             }
-            return messages;
+
+            message.IsMine = message.SenderId == userId;
+            return message;
         }
 
-
-        public int GetUserId()
+        public async Task MarkAsDeliveredAsync(int conversationId)
         {
             try
             {
-                return int.Parse(_httpContextAccessor.HttpContext.User.FindFirst("userID")?.Value);
+                var userId = _userContext.CurrentUserId;
+                var messages = await _unitOfWork.GetRepository<Message>().GetListAsync(
+                    predicate: m => m.ConversationId == conversationId
+                                 && m.SenderId != userId
+                                 && m.Status == MessageStatus.Sent
+                );
+
+                if (!messages.Any())
+                    return;
+
+                foreach (var msg in messages)
+                {
+                    msg.Status = MessageStatus.Delivered;
+                }
+
+                _unitOfWork.GetRepository<Message>().UpdateRange(messages);
+                await _unitOfWork.CommitAsync();
             }
             catch (Exception e)
             {
-                throw new Exception("Vui lòng đăng nhập.");
+                throw new Exception($"Lỗi hệ thống: {e.Message}");
+            }            
+        }
+
+        public async Task MarkAsReadAsync(int conversationId)
+        {
+            try
+            {
+                var userId = _userContext.CurrentUserId;
+                var messages = await _unitOfWork.GetRepository<Message>().GetListAsync(
+                    predicate: m => m.ConversationId == conversationId
+                                 && m.SenderId != userId
+                                 && m.Status != MessageStatus.Read
+                );
+
+                if (!messages.Any())
+                    return;
+
+                foreach (var msg in messages)
+                {
+                    msg.Status = MessageStatus.Read;
+                }
+
+                _unitOfWork.GetRepository<Message>().UpdateRange(messages);
+                await _unitOfWork.CommitAsync();
+            }
+            catch (Exception e)
+            {
+                throw new Exception($"Lỗi hệ thống: {e.Message}");
             }
         }
+
     }
 }

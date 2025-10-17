@@ -129,9 +129,10 @@ namespace AptCare.Api.MapperProfile
                .ForMember(dest => dest.ReplySenderName, opt => opt.MapFrom(src => src.ReplyMessage != null
                                                                                 ? src.ReplyMessage.Sender.FirstName + " " + src.ReplyMessage.Sender.LastName
                                                                                 : null))
-               .ForMember(dest => dest.IsMine,
-                    opt => opt.MapFrom((src, dest, destMember, context) =>
-                        src.SenderId == (int)context.Items["CurrentUserId"]));
+               .ForMember(dest => dest.IsMine, opt => opt.Ignore());
+               //.ForMember(dest => dest.IsMine,
+               //     opt => opt.MapFrom((src, dest, destMember, context) =>
+               //         src.SenderId == (int)context.Items["CurrentUserId"]));
 
             CreateMap<Account, AccountForAdminDto>()
                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));

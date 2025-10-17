@@ -24,7 +24,8 @@ namespace AptCare.Api.Controllers
         /// <remarks>
         /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
         ///  
-        /// Nếu không nhập tiêu đề, hệ thống tự động tạo tiêu đề từ tên các người tham gia.  
+        /// Tạo cuộc trò chuyện với 1 người thì không cần nhập tiêu đề
+        /// Tạo cuộc trò chuyện với nhiều người: Nếu không nhập tiêu đề, hệ thống tự động tạo tiêu đề từ tên các người tham gia.  
         /// Nếu 2 người đã có cuộc trò chuyện, không thể tạo lại.
         /// </remarks>
         [HttpPost]

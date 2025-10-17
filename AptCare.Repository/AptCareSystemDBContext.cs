@@ -45,6 +45,7 @@ namespace AptCare.Repository
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
         public DbSet<MaintenanceTrackingHistory> MaintenanceTrackingHistories { get; set; }
         public DbSet<Media> Medias { get; set; }
+        public DbSet<Slot> Slots { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
