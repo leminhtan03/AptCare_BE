@@ -26,6 +26,7 @@ namespace AptCare.Repository.Seeds
             await SeedUserApartments(context);
             await SeedCommonAreas(context);
             await SeedCommonAreaObjects(context);
+            await SeedSlots(context);            
         }
 
         private static async Task SeedFloors(AptCareSystemDBContext context)
@@ -196,7 +197,7 @@ namespace AptCare.Repository.Seeds
                 };
                 var managerAccount = new Account
                 {
-                    Username = "manager",
+                    Username = "manager@aptcare.vn",
                     Role = AccountRole.Manager,
                     EmailConfirmed = true,
                     LockoutEnabled = false,
@@ -219,7 +220,7 @@ namespace AptCare.Repository.Seeds
                 };
                 var techLeadAccount = new Account
                 {
-                    Username = "techlead",
+                    Username = "techlead@aptcare.vn",
                     Role = AccountRole.TechnicianLead,
                     EmailConfirmed = true,
                     LockoutEnabled = false,
@@ -244,7 +245,7 @@ namespace AptCare.Repository.Seeds
                     };
                     var receptionistAccount = new Account
                     {
-                        Username = $"receptionist{i}",
+                        Username = $"receptionist{i}@aptcare.vn",
                         Role = AccountRole.Receptionist,
                         EmailConfirmed = true,
                         LockoutEnabled = false,
@@ -271,7 +272,7 @@ namespace AptCare.Repository.Seeds
                     };
                     var techAccount = new Account
                     {
-                        Username = $"technician{i}",
+                        Username = $"technician{i}@aptcare.vn",
                         Role = AccountRole.Technician,
                         EmailConfirmed = true,
                         LockoutEnabled = false,
@@ -316,7 +317,7 @@ namespace AptCare.Repository.Seeds
                         };
                         var account = new Account
                         {
-                            Username = $"resident{residentIndex}",
+                            Username = $"resident{residentIndex}@aptcare.vn",
                             Role = AccountRole.Resident,
                             EmailConfirmed = true,
                             LockoutEnabled = false,
@@ -487,6 +488,40 @@ namespace AptCare.Repository.Seeds
                 }
 
                 context.CommonAreaObjects.AddRange(areaObjects);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        private static async Task SeedSlots(AptCareSystemDBContext context)
+        {
+            if (!context.Slots.Any())
+            {
+                var slots = new List<Slot>
+                {
+                    new Slot
+                    {
+                        FromTime = "08:00",
+                        ToTime = "16:00",
+                        LastUpdated = DateTime.UtcNow.AddHours(7),
+                        Status = ActiveStatus.Active
+                    },
+                    new Slot
+                    {
+                        FromTime = "16:00",
+                        ToTime = "00:00",
+                        LastUpdated = DateTime.UtcNow.AddHours(7),
+                        Status = ActiveStatus.Active
+                    },
+                    new Slot
+                    {
+                        FromTime = "00:00",
+                        ToTime = "08:00",
+                        LastUpdated = DateTime.UtcNow.AddHours(7),
+                        Status = ActiveStatus.Active
+                    }
+                };
+
+                context.Slots.AddRange(slots);
                 await context.SaveChangesAsync();
             }
         }

@@ -15,9 +15,10 @@ namespace AptCare.Api.Extensions
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     In = ParameterLocation.Header,
-                    Description = "Vui lòng nhập Access Token với tiền tố 'Bearer ' vào ô bên dưới.\n\nVí dụ: 'Bearer 12345abcdef'",
+                    Description = "Vui lòng nhập Access Token với tiền tố 'Bearer ' vào ô bên dưới.\n\nVí dụ: '12345abcdef'",
                     Name = "Authorization",
-                    Type = SecuritySchemeType.ApiKey,
+                    Type = SecuritySchemeType.Http,
+                    BearerFormat = "JWT",
                     Scheme = "Bearer"
                 });
 
