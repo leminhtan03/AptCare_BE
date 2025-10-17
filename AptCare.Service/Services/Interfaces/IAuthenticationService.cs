@@ -17,7 +17,7 @@ namespace AptCare.Service.Services.Interfaces
         Task<bool> VerifyEmailAsync(int accountId, string otp);
         Task<TokenResponseDto> VerifyEmailAndLoginAsync(int accountId, string otp, string deviceId);
         Task<TokenResponseDto> LoginAsync(LoginRequestDto dto);
-        Task PasswordResetRequestAsync(PasswordResetRequestDto dto);
+        Task<ResetPasswordResponseDto> PasswordResetRequestAsync(PasswordResetRequestDto dto);
         Task<string> PasswordResetVerifyOtpAsync(PasswordResetVerifyOtpDto dto);
         Task PasswordResetConfirmAsync(PasswordResetConfirmDto dto);
         Task<GetOwnProfileDto> GetOwnProfile();

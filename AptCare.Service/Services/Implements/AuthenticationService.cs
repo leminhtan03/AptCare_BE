@@ -162,28 +162,42 @@ namespace AptCare.Service.Services.Implements
             return await _tokenService.GenerateTokensAsync(user, dto.DeviceInfo);
         }
 
-        public async Task PasswordResetRequestAsync(PasswordResetRequestDto dto)
+        public async Task<ResetPasswordResponseDto> PasswordResetRequestAsync(PasswordResetRequestDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Email)) return;
-            var userRepo = _unitOfWork.GetRepository<User>();
-            var user = await userRepo.SingleOrDefaultAsync(predicate: u => u.Email == dto.Email, include: q => q.Include(x => x.Account));
-            if (user == null || user.Account == null) throw new AppValidationException("Tài khoản không tồn tại.");
-            var otp = await _otpService.CreateOtpAsync(user.Account.AccountId, OTPType.PasswordReset, TimeSpan.FromMinutes(5), 6);
+            try
+            {
+                if (string.IsNullOrWhiteSpace(dto.Email)) throw new AppValidationException("Email là bắt buộc !!"); ;
+                var userRepo = _unitOfWork.GetRepository<User>();
+                var user = await userRepo.SingleOrDefaultAsync(predicate: u => u.Email == dto.Email, include: q => q.Include(x => x.Account));
+                if (user == null || user.Account == null) throw new AppValidationException("Tài khoản không tồn tại.");
+                var otp = await _otpService.CreateOtpAsync(user.Account.AccountId, OTPType.PasswordReset, TimeSpan.FromMinutes(5), 6);
 
-            await _mailSenderService.SendEmailWithTemplateAsync(
-                toEmail: user.Email,
-                subject: "[AptCare] Mã OTP đặt lại mật khẩu",
-                templateName: "PasswordResetOtp",
-                replacements: new Dictionary<string, string>
+                await _mailSenderService.SendEmailWithTemplateAsync(
+                    toEmail: user.Email,
+                    subject: "[AptCare] Mã OTP đặt lại mật khẩu",
+                    templateName: "PasswordResetOtp",
+                    replacements: new Dictionary<string, string>
+                    {
+                        ["FullName"] = user.FirstName + " " + user.LastName,
+                        ["OtpCode"] = otp,
+                        ["ExpiredMinutes"] = "5",
+                        ["SystemName"] = "AptCare System",
+                        ["SupportEmail"] = "support@aptcare.vn",
+                        ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
+                        ["Year"] = DateTime.UtcNow.Year.ToString()
+                    });
+                return new ResetPasswordResponseDto
                 {
-                    ["FullName"] = user.FirstName + " " + user.LastName,
-                    ["OtpCode"] = otp,
-                    ["ExpiredMinutes"] = "5",
-                    ["SystemName"] = "AptCare System",
-                    ["SupportEmail"] = "support@aptcare.vn",
-                    ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                    ["Year"] = DateTime.UtcNow.Year.ToString()
-                });
+                    Message = "Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư đến.",
+                    AccountId = user.Account.AccountId
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in PasswordResetRequestAsync: {Message}", ex.Message);
+                throw new AppValidationException("Đã xảy ra lỗi khi xử lý yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.");
+            }
+
         }
 
         public async Task<string> PasswordResetVerifyOtpAsync(PasswordResetVerifyOtpDto dto)

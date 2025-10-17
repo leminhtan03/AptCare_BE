@@ -38,7 +38,7 @@ namespace AptCare.Api
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins("http://localhost:5174") // Your frontend URL
+                    policy.WithOrigins("http://localhost:5173") // Your frontend URL
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials(); // Important for cookies/auth
@@ -103,7 +103,7 @@ namespace AptCare.Api
             //}
 
             //Comment lại khi deploy lên server 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
             app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();

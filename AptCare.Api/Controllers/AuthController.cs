@@ -197,8 +197,8 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> PasswordResetRequest([FromBody] PasswordResetRequestDto dto)
         {
-            await _authenService.PasswordResetRequestAsync(dto);
-            return Ok();
+            var result = await _authenService.PasswordResetRequestAsync(dto);
+            return Ok(result);
         }
         /// <summary>
         /// Xác thực mã OTP để đặt lại mật khẩu và nhận token xác nhận.
@@ -251,9 +251,17 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> PasswordResetConfirm([FromBody] PasswordResetConfirmDto dto)
         {
-            await _authenService.PasswordResetConfirmAsync(dto);
-            return NoContent();
+            try
+            {
+                await _authenService.PasswordResetConfirmAsync(dto);
+                return Ok("Đặt lại mật khẩu thành công");
+            }
+            catch (Exception ex)
+            {
+                throw new BadHttpRequestException(ex.Message);
+            }
         }
+
         /// <summary>
         /// Lấy thông tin hồ sơ của người dùng đã đăng nhập.
         /// </summary>

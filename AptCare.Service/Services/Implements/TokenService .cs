@@ -193,6 +193,7 @@ namespace AptCare.Service.Services.Implements
                 ExpiresAt = DateTime.UtcNow.Add(lifetime),
                 Status = TokenStatus.Active,
                 TokenType = TokenType.PasswordResetToken,
+                DeviceInfo = "ForRested",
                 AccountId = accountId
             };
             await repo.InsertAsync(entity);
