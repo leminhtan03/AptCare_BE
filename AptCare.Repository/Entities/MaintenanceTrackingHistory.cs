@@ -11,15 +11,18 @@ namespace AptCare.Repository.Entities
 
         public int MaintenanceRequestId { get; set; }
         public int UserId { get; set; }
-        public string Field { get; set; }
-        public string OldValue { get; set; }
-        public string NewValue { get; set; }
+        [Required]
+        public string Field { get; set; } = null!;
+        [Required]
+        public string OldValue { get; set; } = null!;
+        [Required]
+        public string NewValue { get; set; } = null!;
         public DateTime UpdatedAt { get; set; }
 
         [ForeignKey(nameof(MaintenanceRequestId))]
-        public MaintenanceRequest MaintenanceRequest { get; set; }
+        public MaintenanceRequest MaintenanceRequest { get; set; } = null!;
 
         [ForeignKey(nameof(UserId))]
-        public User User { get; set; }
+        public User User { get; set; } = null!;
     }
 }

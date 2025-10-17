@@ -20,12 +20,12 @@ namespace AptCare.Repository.Entities
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(InspectionReportId))]
-        public InspectionReport InspectionReport { get; set; }
+        public InspectionReport? InspectionReport { get; set; }
 
         [ForeignKey(nameof(RepairReportId))]
-        public RepairReport RepairReport { get; set; }
+        public RepairReport? RepairReport { get; set; }
 
         [ForeignKey(nameof(UserId))]
-        public User User { get; set; }
+        public User User { get; set; } = null!;
     }
 }

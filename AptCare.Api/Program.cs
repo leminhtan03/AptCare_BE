@@ -4,6 +4,7 @@ using AptCare.Api.MapperProfile;
 using AptCare.Api.Middleware;
 using AptCare.Repository;
 using AptCare.Repository.Repositories;
+using AptCare.Repository.Seeds;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -60,13 +61,21 @@ namespace AptCare.Api
                     try
                     {
                         logger.LogInformation("Đang thử áp dụng migrations... Lần thử: {RetryCount}", retryCount + 1);
-                        var dbContext = services.GetRequiredService<AptCareSystemDBContext>();
 
-                        await dbContext.Database.CanConnectAsync();
-
-                        await dbContext.Database.MigrateAsync();
+                        // Scope riêng cho migrate
+                        using (var migrateScope = app.Services.CreateScope())
+                        {
+                            var dbContext = migrateScope.ServiceProvider.GetRequiredService<AptCareSystemDBContext>();
+                            await dbContext.Database.MigrateAsync();
+                        }
 
                         logger.LogInformation("Áp dụng migrations thành công!");
+
+                        // Scope riêng cho seed
+                        using (var seedScope = app.Services.CreateScope())
+                        {
+                            await Seed.Initialize(seedScope.ServiceProvider);
+                        }
                         break;
                     }
                     catch (Exception ex)

@@ -18,7 +18,7 @@ namespace AptCare.Service.Dtos.WorkSlotDtos
 
     public class SlotDto
     {
-        public string Slot { get; set; } = null!;
+        public int SlotId { get; set; }
         public List<TechnicianWorkSlotDto> TechnicianWorkSlots { get; set; } = null!;
     }
 

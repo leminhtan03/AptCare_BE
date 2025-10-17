@@ -12,7 +12,7 @@ namespace AptCare.Repository.Entities
         [Required]
         [ForeignKey("WorkSlot")]
         public int WorkSlotId { get; set; }
-        public WorkSlot WorkSlot { get; set; }
+        public WorkSlot WorkSlot { get; set; } = null!;
         public DateTime StatusChangeTime { get; set; }
         public WorkSlotStatus PreviousStatus { get; set; }
         public WorkSlotStatus NewStatus { get; set; }

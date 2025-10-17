@@ -12,7 +12,7 @@ namespace AptCare.Repository.Entities
         [Key]
         public int ConversationId { get; set; }
         [Required]
-        public string Title { get; set; }
+        public string Title { get; set; } = null!;
         public ICollection<Message>? Messages { get; set; }
         public ICollection<ConversationParticipant>? ConversationParticipants { get; set; }
 

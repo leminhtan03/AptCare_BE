@@ -17,7 +17,7 @@ namespace AptCare.Repository.Entities
         public int ConversationId { get; set; }
         [ForeignKey("Sender")]
         public int SenderId { get; set; }
-        public User Sender { get; set; }
+        public User Sender { get; set; } = null!;
         [ForeignKey("RellyMessage")]
         public int? ReplyMessageId { get; set; }
         public string Content { get; set; }
@@ -27,7 +27,7 @@ namespace AptCare.Repository.Entities
 
         public Message? ReplyMessage { get; set; }
 
-        public Conversation Conversation { get; set; }
+        public Conversation Conversation { get; set; } = null!;
         public ICollection<Message>? ReplyMessages { get; set; }
 
         public Notification? Notification { get; set; }

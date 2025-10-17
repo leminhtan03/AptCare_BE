@@ -3,6 +3,7 @@ using System;
 using AptCare.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     [DbContext(typeof(AptCareSystemDBContext))]
-    partial class AptCareSystemDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251016084605_FixComonAreaObject")]
+    partial class FixComonAreaObject
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1091,7 +1094,7 @@ namespace AptCare.Repository.Migrations
 
                     b.HasKey("SlotId");
 
-                    b.ToTable("Slots");
+                    b.ToTable("Slot");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.TechnicianTechnique", b =>
