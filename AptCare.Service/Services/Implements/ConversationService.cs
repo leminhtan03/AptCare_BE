@@ -23,7 +23,6 @@ namespace AptCare.Service.Services.Implements
     {
         private readonly IUserContext _userContext;
 
-
         public ConversationService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<Conversation> logger, IMapper mapper, IUserContext userContext) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
@@ -31,6 +30,9 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<string> CreateConversationAsync(ConversationCreateDto dto)
         {
+            var currentUserId = _userContext.CurrentUserId;
+            dto.UserIds.Add(currentUserId);
+
             var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(
                                 predicate: p => p.ConversationParticipants.Count == 2
                                                 && p.ConversationParticipants.All(cp => dto.UserIds.Contains(cp.ParticipantId))
@@ -40,20 +42,21 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception($"Đã tồn tại cuộc trò chuyện của 2 người.");
             }
 
-            var title = "";
+            var names = new List<string>();
             var conversationParticipants = new List<ConversationParticipant>();
 
             foreach (var userId in dto.UserIds)
             {
                 var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
                     predicate: x => x.UserId == userId
-                    );
+                );
                 if (user == null)
                 {
                     throw new Exception($"Người dùng có ID {userId} không tồn tại.");
                 }
 
-                title = string.Join(", ", $"{user.FirstName} {user.LastName}");
+                names.Add($"{user.FirstName} {user.LastName}");
+
                 conversationParticipants.Add(new ConversationParticipant
                 {
                     ParticipantId = userId,
@@ -61,6 +64,8 @@ namespace AptCare.Service.Services.Implements
                     IsMuted = false
                 });
             }
+
+            var title = string.Join(", ", names);
 
             if (!string.IsNullOrEmpty(dto.Title))
             {
@@ -83,7 +88,7 @@ namespace AptCare.Service.Services.Implements
         {
             var userId = _userContext.CurrentUserId;
             var conversations = await _unitOfWork.GetRepository<Conversation>().GetListAsync(
-                    selector: s => ConvertToDto(s, userId),
+                    selector: s => ConvertToConversationDto(s, userId),
                     predicate: x => x.ConversationParticipants.Any(cp => cp.ParticipantId == userId),
                     include: i => i.Include(x => x.ConversationParticipants)
                                         .ThenInclude(x => x.Participant)
@@ -96,7 +101,7 @@ namespace AptCare.Service.Services.Implements
         {
             var userId = _userContext.CurrentUserId;
             var conversation = await _unitOfWork.GetRepository<Conversation>().SingleOrDefaultAsync(
-                    selector: s => ConvertToDto(s, userId),
+                    selector: s => ConvertToConversationDto(s, userId),
                     predicate: x => x.ConversationId == id,
                     include: i => i.Include(x => x.ConversationParticipants)
                                         .ThenInclude(x => x.Participant)
@@ -149,9 +154,7 @@ namespace AptCare.Service.Services.Implements
             return "Bật thông báo thành công.";
         }
 
-
-
-        private ConversationDto ConvertToDto(Conversation conversation, int userId)
+        public static ConversationDto ConvertToConversationDto(Conversation conversation, int userId)
         {
             var title = "conversation.Title";
             if (conversation.ConversationParticipants.Count == 2)
@@ -168,7 +171,8 @@ namespace AptCare.Service.Services.Implements
             var participants = new List<ParticipantDto>();
 
             string lastMessage = "";
-            var lastMessageEntity = conversation.Messages.OrderByDescending(x => x.CreatedAt).First();
+
+            var lastMessageEntity = conversation.Messages.Any() ? conversation.Messages.OrderByDescending(x => x.CreatedAt).First() : null;
             if (lastMessageEntity != null)
             {
                 switch (lastMessageEntity.Type)

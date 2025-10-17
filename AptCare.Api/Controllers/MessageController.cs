@@ -112,6 +112,53 @@ namespace AptCare.Api.Controllers
             var result = await _messageService.GetMessageByIdAsync(id);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Đánh dấu tin nhắn là đã giao đến người nhận (Delivered).
+        /// </summary>
+        /// <remarks>
+        /// **Chỉ role:** tất cả người dùng đã đăng nhập (người nhận tin nhắn).  
+        /// Cập nhật trạng thái `MessageStatus.Delivered`.
+        /// </remarks>
+        /// <param name="id">ID tin nhắn cần đánh dấu đã giao.</param>
+        /// <returns>Thông báo cập nhật thành công.</returns>
+        /// <response code="200">Tin nhắn được đánh dấu là đã giao.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="404">Không tìm thấy tin nhắn.</response>
+        [HttpPatch("{conversationId}/mark-as-delivered")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> MarkAsDeliveried(int conversationId)
+        {
+            await _messageService.MarkAsDeliveredAsync(conversationId);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Đánh dấu tin nhắn là đã đọc (Read).
+        /// </summary>
+        /// <remarks>
+        /// **Chỉ role:** tất cả người dùng đã đăng nhập (người nhận tin nhắn).  
+        /// Cập nhật trạng thái `MessageStatus.Read`.
+        /// </remarks>
+        /// <param name="id">ID tin nhắn cần đánh dấu đã đọc.</param>
+        /// <returns>Thông báo cập nhật thành công.</returns>
+        /// <response code="200">Tin nhắn được đánh dấu là đã đọc.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="404">Không tìm thấy tin nhắn.</response>
+        [HttpPatch("{conversationId}/mark-as-read")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> MarkAsRead(int conversationId)
+        {
+            await _messageService.MarkAsReadAsync(conversationId);
+            return NoContent();
+        }
+
     }
 
 }
