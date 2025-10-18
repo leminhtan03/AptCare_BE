@@ -5,6 +5,7 @@ using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
 using AptCare.Service.Dtos.IssueDto;
+using AptCare.Service.Dtos.TechniqueDto;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Dtos.WorkSlotDtos;
 using AutoMapper;
@@ -132,6 +133,12 @@ namespace AptCare.Api.MapperProfile
             CreateMap<Issue, IssueListItemDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
                 .ForMember(d => d.TechniqueName, o => o.MapFrom(s => s.Technique.Name));
+            CreateMap<IssueUpdateDto, Issue>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => Enum.Parse<ActiveStatus>(s.Status)));
+            CreateMap<Technique, TechniqueListItemDto>()
+                .ForMember(d => d.IssueCount, o => o.MapFrom(s => s.Issues.Count));
+            CreateMap<TechniqueCreateDto, Technique>();
+            CreateMap<TechniqueUpdateDto, Technique>();
         }
     }
 }

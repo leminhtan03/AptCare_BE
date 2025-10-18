@@ -11,6 +11,7 @@ namespace AptCare.Service.Dtos.IssueDto
     {
         public string Name { get; set; } = default!;
         public string? Description { get; set; }
+        public int TechniqueId { get; set; }
         public bool IsEmergency { get; set; }
         public int RequiredTechnician { get; set; }
         public int EstimatedDuration { get; set; }

@@ -81,7 +81,7 @@ namespace AptCare.Service.Services.Implements
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(15),                 // AccessToken TTL
+                Expires = DateTime.UtcNow.AddMinutes(120),                 // AccessToken TTL
                 Issuer = GetIssuerOrDefault(),                            // optional
                 Audience = GetAudienceOrDefault(),                        // optional
                 SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256Signature)
