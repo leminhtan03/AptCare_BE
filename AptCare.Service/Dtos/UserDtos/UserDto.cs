@@ -18,7 +18,7 @@ namespace AptCare.Service.Dtos.UserDtos
         public string CitizenshipIdentity { get; set; }
         public DateTime? Birthday { get; set; }
         public List<ApartmentForUserDto>? Apartments { get; set; }
-        public AccountForAdminDto AccountInfo { get; set; }
+        public AccountForAdminDto? AccountInfo { get; set; }
         public string Status { get; set; }
     }
 

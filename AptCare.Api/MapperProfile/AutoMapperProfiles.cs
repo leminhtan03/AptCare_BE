@@ -4,138 +4,134 @@ using AptCare.Repository.Enum.Apartment;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
+using AptCare.Service.Dtos.IssueDto;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Dtos.WorkSlotDtos;
 using AutoMapper;
+
 namespace AptCare.Api.MapperProfile
 {
     public class AutoMapperProfiles : Profile
     {
         public AutoMapperProfiles()
         {
-            CreateMap<User, UserDto>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-               .ForMember(
-                dest => dest.Apartments,
-                opt => opt.MapFrom(src =>
-                    src.UserApartments.Select(ua => new ApartmentForUserDto
-                    {
-                        RoomNumber = ua.Apartment.RoomNumber,
-                        RoleInApartment = ua.RoleInApartment.ToString(),
-                        RelationshipToOwner = ua.RelationshipToOwner
-                    })
-                ))
-               .ForMember(dest => dest.AccountInfo, opt => opt.MapFrom(src => src.Account));
-            CreateMap<User, GetOwnProfileDto>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-                .ForMember(dest => dest.Role , opt => opt.MapFrom(src => src.Account.Role.ToString()))
-                .ForMember(
-                dest => dest.Apartments,
-                    opt => opt.MapFrom(
-                        src => src.UserApartments.Select(
-                            ua => new ApartmentForUserProfileDto
-                            {
-                                RoomNumber = ua.Apartment.RoomNumber,
-                                RoleInApartment = ua.RoleInApartment.ToString(),
-                                RelationshipToOwner = ua.RelationshipToOwner,
-                                Floor = ua.Apartment.Floor.FloorNumber,
-                            })
-                ));
-
+            // ===== Account =====
             CreateMap<Account, AccountForAdminDto>()
-            .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()))
-            .ForMember(dest => dest.LockoutEnabled, opt => opt.MapFrom(src => src.LockoutEnabled))
-            .ForMember(dest => dest.LockoutEnd, opt => opt.MapFrom(src => src.LockoutEnd));
+                .ForMember(d => d.Role, o => o.MapFrom(s => s.Role.ToString()))
+                .ForMember(d => d.LockoutEnabled, o => o.MapFrom(s => s.LockoutEnabled))
+                .ForMember(d => d.LockoutEnd, o => o.MapFrom(s => s.LockoutEnd));
+            CreateMap<Account, AccountDto>()
+                .ForMember(d => d.Role, o => o.MapFrom(s => s.Role.ToString()));
 
+            // ===== UserApartment -> ApartmentForUser* (map con, dùng lại) =====
+            CreateMap<UserApartment, ApartmentForUserDto>()
+                .ForMember(d => d.RoomNumber, o => o.MapFrom(s => s.Apartment.RoomNumber))
+                .ForMember(d => d.RoleInApartment, o => o.MapFrom(s => s.RoleInApartment.ToString()))
+                .ForMember(d => d.RelationshipToOwner, o => o.MapFrom(s => s.RelationshipToOwner));
+
+            CreateMap<UserApartment, ApartmentForUserProfileDto>()
+                .ForMember(d => d.RoomNumber, o => o.MapFrom(s => s.Apartment.RoomNumber))
+                .ForMember(d => d.RoleInApartment, o => o.MapFrom(s => s.RoleInApartment.ToString()))
+                .ForMember(d => d.RelationshipToOwner, o => o.MapFrom(s => s.RelationshipToOwner))
+                .ForMember(d => d.Floor, o => o.MapFrom(s => s.Apartment.Floor.FloorNumber));
+
+            // ===== User -> UserDto / GetOwnProfileDto =====
+            CreateMap<User, UserDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.Apartments, o => o.MapFrom(s => s.UserApartments)) // dùng map con ở trên
+                .ForMember(d => d.AccountInfo, o => o.MapFrom(s => s.Account));
+
+            CreateMap<User, GetOwnProfileDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.Role, o => o.MapFrom(s => s.Account.Role.ToString()))
+                .ForMember(d => d.Apartments, o => o.MapFrom(s => s.UserApartments)); // dùng map con
+
+            // Cho tạo/cập nhật User
             CreateMap<CreateUserDto, User>();
             CreateMap<UpdateUserDto, User>()
-               .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-            CreateMap<Account, AccountDto>()
-               .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
-            //FLOOR
+            // ===== Floor =====
             CreateMap<Floor, FloorDto>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
             CreateMap<FloorCreateDto, Floor>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ActiveStatus.Active));
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
             CreateMap<FloorUpdateDto, Floor>()
-               .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
-            //APARTMENT
+            // ===== Apartment =====
             CreateMap<Apartment, ApartmentDto>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-               .ForMember(dest => dest.Floor, opt => opt.MapFrom(src => src.Floor.FloorNumber.ToString()))
-               .ForMember(dest => dest.Users, opt => opt.MapFrom(src => src.UserApartments));
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.Floor, o => o.MapFrom(s => s.Floor.FloorNumber.ToString()))
+                .ForMember(d => d.Users, o => o.MapFrom(s => s.UserApartments));
+
             CreateMap<UserApartment, UserInApartmentDto>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.User, o => o.MapFrom(s => new UserDto
+                {
+                    UserId = s.User.UserId,
+                    FirstName = s.User.FirstName,
+                    LastName = s.User.LastName,
+                    Email = s.User.Email,
+                    PhoneNumber = s.User.PhoneNumber,
+                    CitizenshipIdentity = s.User.CitizenshipIdentity,
+                    Birthday = s.User.Birthday,
+                    Apartments = null, // tránh vòng lặp
+                    Status = s.User.Status.ToString(),
+                    AccountInfo = s.User.Account == null ? null : new AccountForAdminDto
+                    {
+                        AccountId = s.User.Account.AccountId,
+                        Username = s.User.Account.Username,
+                        Role = s.User.Account.Role.ToString(),
+                        EmailConfirmed = s.User.Account.EmailConfirmed,
+                        LockoutEnabled = s.User.Account.LockoutEnabled,
+                        LockoutEnd = s.User.Account.LockoutEnd
+                    }
+                }));
 
-               .ForMember(dest => dest.User, opt => opt.MapFrom(src => new UserDto
-               {
-                   UserId = src.User.UserId,
-                   FirstName = src.User.FirstName,
-                   LastName = src.User.LastName,
-                   Email = src.User.Email,
-                   PhoneNumber = src.User.PhoneNumber,
-                   CitizenshipIdentity = src.User.CitizenshipIdentity,
-                   Birthday = src.User.Birthday,
-                   Apartments = null,
-                   Status = src.User.Status.ToString(),
-                   AccountInfo = src.User.Account == null ? null : new AccountForAdminDto
-                   {
-                       AccountId = src.User.Account.AccountId,
-                       Username = src.User.Account.Username,
-                       Role = src.User.Account.Role.ToString(),
-                       EmailConfirmed = src.User.Account.EmailConfirmed,
-                       LockoutEnabled = src.User.Account.LockoutEnabled,
-                       LockoutEnd = src.User.Account.LockoutEnd
-                   }
-               }));
             CreateMap<ApartmentCreateDto, Apartment>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ApartmentStatus.Active));
+                .ForMember(d => d.Status, o => o.MapFrom(s => ApartmentStatus.Active));
             CreateMap<ApartmentUpdateDto, Apartment>()
-               .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
-            //COMMON AREA
+            // ===== CommonArea =====
             CreateMap<CommonArea, CommonAreaDto>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-               .ForMember(dest => dest.Floor, opt => opt.MapFrom(src => src.Floor.FloorNumber.ToString()));
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.Floor, o => o.MapFrom(s => s.Floor.FloorNumber.ToString()));
             CreateMap<CommonAreaCreateDto, CommonArea>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ActiveStatus.Active));
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
             CreateMap<CommonAreaUpdateDto, CommonArea>()
-               .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
-            //WORK SLOT
+            // ===== WorkSlot =====
             CreateMap<WorkSlotUpdateDto, WorkSlot>()
-               .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<WorkSlot, TechnicianWorkSlotDto>()
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
 
-            //CONVERSATION
-            //CreateMap<Us, Conversation>()
-            //   .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-
-            //MESSAGE
+            // ===== Message / Chat =====
             CreateMap<TextMessageCreateDto, Message>()
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => MessageStatus.Sent))
-               .ForMember(dest => dest.Type, opt => opt.MapFrom(src => MessageType.Text))
-               .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow.AddHours(7)));
-            CreateMap<Message, MessageDto>()
-               .ForMember(dest => dest.SenderName, opt => opt.MapFrom(src => src.Sender.FirstName + " " + src.Sender.LastName))
-               //.ForMember(dest => dest.SenderAvatar, opt => opt.MapFrom(src => src.Sender.AvatarUrl))
-               .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()))
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-               .ForMember(dest => dest.ReplyType, opt => opt.MapFrom(src => src.ReplyMessage != null ? src.ReplyMessage.Type.ToString() : null))
-               .ForMember(dest => dest.ReplyContent, opt => opt.MapFrom(src => src.ReplyMessage != null ? src.ReplyMessage.Content : null))
-               .ForMember(dest => dest.ReplySenderName, opt => opt.MapFrom(src => src.ReplyMessage != null
-                                                                                ? src.ReplyMessage.Sender.FirstName + " " + src.ReplyMessage.Sender.LastName
-                                                                                : null))
-               .ForMember(dest => dest.IsMine, opt => opt.Ignore());
-               //.ForMember(dest => dest.IsMine,
-               //     opt => opt.MapFrom((src, dest, destMember, context) =>
-               //         src.SenderId == (int)context.Items["CurrentUserId"]));
+                .ForMember(d => d.Status, o => o.MapFrom(s => MessageStatus.Sent))
+                .ForMember(d => d.Type, o => o.MapFrom(s => MessageType.Text))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
 
-            CreateMap<Account, AccountForAdminDto>()
-               .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
+            CreateMap<Message, MessageDto>()
+                .ForMember(d => d.SenderName, o => o.MapFrom(s => s.Sender.FirstName + " " + s.Sender.LastName))
+                .ForMember(d => d.Type, o => o.MapFrom(s => s.Type.ToString()))
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.ReplyType, o => o.MapFrom(s => s.ReplyMessage != null ? s.ReplyMessage.Type.ToString() : null))
+                .ForMember(d => d.ReplyContent, o => o.MapFrom(s => s.ReplyMessage != null ? s.ReplyMessage.Content : null))
+                .ForMember(d => d.ReplySenderName, o => o.MapFrom(s => s.ReplyMessage != null
+                                                        ? s.ReplyMessage.Sender.FirstName + " " + s.ReplyMessage.Sender.LastName
+                                                        : null))
+                .ForMember(d => d.IsMine, o => o.Ignore());
+
+            // ===== Issue =====
+            CreateMap<IssueCreateDto, Issue>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
+            CreateMap<Issue, IssueListItemDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.TechniqueName, o => o.MapFrom(s => s.Technique.Name));
         }
     }
 }
