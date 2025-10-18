@@ -22,5 +22,6 @@ namespace AptCare.Service.Services.Interfaces
         Task PasswordResetConfirmAsync(PasswordResetConfirmDto dto);
         Task<GetOwnProfileDto> GetOwnProfile();
         Task<TokenResponseDto> FirstLoginChangePasswordAsync(FirstLoginChangePasswordDto dto);
+        Task<TokenResponseDto> RefreshTokensAsync(RefreshRequestDto dto);
     }
 }

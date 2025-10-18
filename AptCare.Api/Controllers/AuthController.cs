@@ -3,6 +3,7 @@ using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.AuthenDto;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Exceptions;
+using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
@@ -200,6 +201,15 @@ namespace AptCare.Api.Controllers
             var result = await _authenService.PasswordResetRequestAsync(dto);
             return Ok(result);
         }
+
+        [HttpPost("refresh")]
+        [AllowAnonymous]
+        public async Task<ActionResult<TokenResponseDto>> Refresh([FromBody] RefreshRequestDto dto)
+        {
+            var tokens = await _authenService.RefreshTokensAsync(dto);
+            return Ok(tokens);
+        }
+
         /// <summary>
         /// Xác thực mã OTP để đặt lại mật khẩu và nhận token xác nhận.
         /// </summary>

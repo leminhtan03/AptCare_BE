@@ -83,6 +83,7 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.GetRepository<User>().InsertAsync(user);
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
                 return _mapper.Map<UserDto>(user);
             }
             catch (Exception ex)

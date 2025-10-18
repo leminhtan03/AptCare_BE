@@ -34,15 +34,20 @@ namespace AptCare.Api
 
             builder.Services.AddHttpContextAccessor();
 
+            var allowed = new[]
+{
+                "http://localhost:5173",
+                "http://192.168.100.141"
+            };
             //CORS
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173") // Your frontend URL
+                    policy.WithOrigins(allowed) // Your frontend URL
                           .AllowAnyHeader()
                           .AllowAnyMethod()
-                          .AllowCredentials(); // Important for cookies/auth
+                          .AllowCredentials();
                 });
             });
 
