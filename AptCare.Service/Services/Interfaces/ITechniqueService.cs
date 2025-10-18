@@ -10,13 +10,11 @@ using System.Threading.Tasks;
 
 namespace AptCare.Service.Services.Interfaces
 {
-    public interface ITechnicanService
+    public interface ITechniqueService
     {
         Task<TechniqueListItemDto> CreateAsync(TechniqueCreateDto dto);
         Task<TechniqueListItemDto> UpdateAsync(int id, TechniqueUpdateDto dto);
-        Task DeleteAsync(int id);
         Task<TechniqueListItemDto?> GetByIdAsync(int id);
         Task<IPaginate<TechniqueListItemDto>> ListAsync(PaginateDto q);
-        Task<bool> ExistsAsync(int id);
     }
 }
