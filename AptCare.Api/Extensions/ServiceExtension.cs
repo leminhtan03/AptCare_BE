@@ -37,6 +37,8 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IOtpService, OtpService>();
             service.AddTransient<IRepairRequestService, RepairRequestService>();
 
+            service.AddTransient<ITechniqueService, TechniqueService>();
+            service.AddTransient<IIssueService, IssueService>();
 
 
             return service;

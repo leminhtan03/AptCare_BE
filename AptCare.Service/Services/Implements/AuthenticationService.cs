@@ -303,5 +303,11 @@ namespace AptCare.Service.Services.Implements
 
             return await _tokenService.GenerateTokensAsync(user, dto.DeviceInfo);
         }
+
+        public async Task<TokenResponseDto> RefreshTokensAsync(RefreshRequestDto dto)
+        {
+            var result = await _tokenService.RefreshTokensAsync(dto.RefreshToken);
+            return result;
+        }
     }
 }
