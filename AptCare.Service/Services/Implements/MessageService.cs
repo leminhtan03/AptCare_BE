@@ -15,6 +15,7 @@ using Microsoft.VisualBasic;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
 using Microsoft.EntityFrameworkCore;
+using AptCare.Service.Exceptions;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -47,7 +48,7 @@ namespace AptCare.Service.Services.Implements
                                     );
                 if (!isExistingConversation)
                 {
-                    throw new Exception($"Cuộc trò chuyện không tồn tại.");
+                    throw new AppValidationException($"Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 if (dto.RellyMessageId != null)
@@ -57,7 +58,7 @@ namespace AptCare.Service.Services.Implements
                                     );
                     if (!isExistingMessage)
                     {
-                        throw new Exception($"Tin nhắn không tồn tại.");
+                        throw new AppValidationException($"Tin nhắn không tồn tại.", StatusCodes.Status404NotFound);
                     }
                 }
 
@@ -74,7 +75,7 @@ namespace AptCare.Service.Services.Implements
             catch (Exception e)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -91,11 +92,11 @@ namespace AptCare.Service.Services.Implements
                                     );
                 if (!isExistingConversation)
                 {
-                    throw new Exception($"Cuộc trò chuyện không tồn tại.");
+                    throw new AppValidationException($"Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 if (file == null || file.Length == 0)
-                    throw new Exception("File không hợp lệ.");
+                    throw new AppValidationException("File không hợp lệ.");
 
                 MessageType messageType;
                 if (file.ContentType.StartsWith("image/"))
@@ -110,7 +111,7 @@ namespace AptCare.Service.Services.Implements
                 var content = await _cloudinaryService.UploadImageAsync(file);
                 if (content == null)
                 {
-                    throw new Exception("Có lỗi xảy ra khi gửi file.");
+                    throw new AppValidationException("Có lỗi xảy ra khi gửi file.", StatusCodes.Status500InternalServerError);
                 }
 
                 var message = new Message
@@ -133,7 +134,7 @@ namespace AptCare.Service.Services.Implements
             catch (Exception e)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -215,7 +216,7 @@ namespace AptCare.Service.Services.Implements
             var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(p => p.ConversationId == conversationId);
 
             if (!isExistingConversation)
-                throw new Exception("Cuộc trò chuyện không tồn tại.");
+                throw new AppValidationException("Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
 
             var messages = await _unitOfWork.GetRepository<Message>().ProjectToPagingListAsync<MessageDto>(
                     configuration: _mapper.ConfigurationProvider,
@@ -248,7 +249,7 @@ namespace AptCare.Service.Services.Implements
                 );
             if (message == null)
             {
-                throw new Exception("Tin nhắn không tồn tại.");
+                throw new AppValidationException("Tin nhắn không tồn tại.", StatusCodes.Status404NotFound);
             }
 
             message.IsMine = message.SenderId == userId;
@@ -279,7 +280,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }            
         }
 
@@ -307,7 +308,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 

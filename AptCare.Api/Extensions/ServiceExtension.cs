@@ -35,6 +35,8 @@ namespace AptCare.Api.Extensions
             service.AddTransient<ICloudinaryService, CloudinaryService>();
             service.AddTransient<IAuthenticationService, AuthenticationService>();
             service.AddTransient<IOtpService, OtpService>();
+            service.AddTransient<IRepairRequestService, RepairRequestService>();
+
             service.AddTransient<ITechniqueService, TechniqueService>();
             service.AddTransient<IIssueService, IssueService>();
 

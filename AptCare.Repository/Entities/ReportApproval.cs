@@ -16,7 +16,7 @@ namespace AptCare.Repository.Entities
         public int UserId { get; set; }
         public AccountRole Role { get; set; }
         public ReportStatus Status { get; set; }
-        public string Comment { get; set; }
+        public string? Comment { get; set; }
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(InspectionReportId))]

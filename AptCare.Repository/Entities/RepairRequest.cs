@@ -41,7 +41,6 @@ namespace AptCare.Repository.Entities
         public bool IsEmergency { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? AcceptanceTime { get; set; }
-        public RequestStatus Status { get; set; }
 
         public ICollection<RepairRequest>? ChildRequests { get; set; }
         public ICollection<Appointment>? Appointments { get; set; }

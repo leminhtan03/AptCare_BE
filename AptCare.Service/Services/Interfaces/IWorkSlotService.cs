@@ -16,5 +16,7 @@ namespace AptCare.Service.Services.Interfaces
         Task<string> DeleteWorkSlotAsync(int id);
         Task<IEnumerable<WorkSlotDto>> GetTechnicianScheduleAsync(int? technicianId, DateOnly fromDate, DateOnly toDate, WorkSlotStatus? status);
         Task<IEnumerable<WorkSlotDto>> GetMyScheduleAsync(DateOnly fromDate, DateOnly toDate, WorkSlotStatus? status);
+        Task<string> CheckInAsync(DateOnly date, int slotId);
+        Task<string> CheckOutAsync(DateOnly date, int slotId);
     }
 }

@@ -15,9 +15,9 @@ namespace AptCare.Repository.Entities
         public int SlotId { get; set; }
 
         [Required]
-        public string FromTime { get; set; } = null!;
+        public TimeSpan FromTime { get; set; }
         [Required]
-        public string ToTime { get; set; } = null!;
+        public TimeSpan ToTime { get; set; }
         public DateTime LastUpdated { get; set; }
         public ActiveStatus Status { get; set; }
 

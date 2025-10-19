@@ -4,6 +4,7 @@ using AptCare.Repository.Enum.Apartment;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
+using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Dtos.IssueDto;
 using AptCare.Service.Dtos.TechniqueDto;
 using AptCare.Service.Dtos.UserDtos;
@@ -126,6 +127,17 @@ namespace AptCare.Api.MapperProfile
                                                         ? s.ReplyMessage.Sender.FirstName + " " + s.ReplyMessage.Sender.LastName
                                                         : null))
                 .ForMember(d => d.IsMine, o => o.Ignore());
+
+            CreateMap<Account, AccountForAdminDto>()
+               .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
+
+            //REPAIR REQUEST
+            CreateMap<RepairRequest, RepairRequestDto>();
+            CreateMap<RepairRequestNormalCreateDto, RepairRequest>()
+               .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => false))
+               .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow.AddHours(7)));
+            CreateMap<RepairRequestEmergencyCreateDto, RepairRequest>()
+               .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => true));
 
             // ===== Issue =====
             CreateMap<IssueCreateDto, Issue>()

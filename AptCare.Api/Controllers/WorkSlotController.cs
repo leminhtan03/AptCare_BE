@@ -37,7 +37,7 @@ namespace AptCare.Api.Controllers
         /// <response code="403">Không đủ quyền truy cập.</response>
         /// </remarks>
         [HttpPost("from-date-to-date")]
-        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -72,7 +72,7 @@ namespace AptCare.Api.Controllers
         /// <response code="403">Không đủ quyền truy cập.</response>
         /// </remarks>
         [HttpPost("date-slot-list")]
-        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -104,7 +104,7 @@ namespace AptCare.Api.Controllers
         /// <response code="404">Không tìm thấy lịch.</response>
         /// </remarks>
         [HttpPut("{id}")]
-        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -130,7 +130,7 @@ namespace AptCare.Api.Controllers
         /// <response code="404">Không tìm thấy lịch.</response>
         /// </remarks>
         [HttpDelete("{id}")]
-        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -207,5 +207,68 @@ namespace AptCare.Api.Controllers
             var result = await _workSlotService.GetMyScheduleAsync(fromDate, toDate, status);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Điểm danh đầu giờ (Check-in) cho kỹ thuật viên.
+        /// </summary>
+        /// <remarks>
+        /// **Chỉ role:** Technician.  
+        ///  
+        /// Kỹ thuật viên điểm danh để xác nhận bắt đầu ca làm việc.  
+        ///  
+        /// **Ràng buộc:**  
+        /// - Lịch làm việc phải tồn tại.  
+        /// - Trạng thái phải là `NotStarted`.  
+        /// 
+        /// <response code="200">Điểm danh đầu giờ thành công.</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
+        /// <response code="404">Không tìm thấy lịch làm việc.</response>
+        /// </remarks>
+        [HttpPatch("check-in")]
+        [Authorize(Roles = nameof(AccountRole.Technician))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult> CheckIn([FromQuery] DateOnly date, [FromQuery] int slotId)
+        {
+            var result = await _workSlotService.CheckInAsync(date, slotId);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Điểm danh cuối giờ (Check-out) cho kỹ thuật viên.
+        /// </summary>
+        /// <remarks>
+        /// **Chỉ role:** Technician.  
+        ///  
+        /// Kỹ thuật viên điểm danh cuối giờ để xác nhận hoàn thành ca làm việc.  
+        ///  
+        /// **Ràng buộc:**  
+        /// - Lịch làm việc phải tồn tại.  
+        /// - Trạng thái phải là `Working`.  
+        /// 
+        /// <response code="200">Điểm danh cuối giờ thành công.</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập.</response>
+        /// <response code="404">Không tìm thấy lịch làm việc.</response>
+        /// </remarks>
+        [HttpPatch("check-out")]
+        [Authorize(Roles = nameof(AccountRole.Technician))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult> CheckOut([FromQuery] DateOnly date, [FromQuery] int slotId)
+        {
+            var result = await _workSlotService.CheckOutAsync(date, slotId);
+            return Ok(result);
+        }
+
     }
 }
