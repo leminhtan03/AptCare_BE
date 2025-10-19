@@ -40,13 +40,14 @@ namespace AptCare.Api.MapperProfile
             // ===== User -> UserDto / GetOwnProfileDto =====
             CreateMap<User, UserDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
-                .ForMember(d => d.Apartments, o => o.MapFrom(s => s.UserApartments)) // dùng map con ở trên
+                .ForMember(d => d.Apartments, o => o.MapFrom(s => s.UserApartments))
                 .ForMember(d => d.AccountInfo, o => o.MapFrom(s => s.Account));
 
             CreateMap<User, GetOwnProfileDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
                 .ForMember(d => d.Role, o => o.MapFrom(s => s.Account.Role.ToString()))
-                .ForMember(d => d.Apartments, o => o.MapFrom(s => s.UserApartments)); // dùng map con
+                .ForMember(d => d.Apartments, o => o.MapFrom(s => s.UserApartments))
+                .ForMember(d => d.Techniques, o => o.MapFrom(s => s.TechnicianTechniques));
 
             // Cho tạo/cập nhật User
             CreateMap<CreateUserDto, User>();
@@ -151,6 +152,9 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.IssueCount, o => o.MapFrom(s => s.Issues.Count));
             CreateMap<TechniqueCreateDto, Technique>();
             CreateMap<TechniqueUpdateDto, Technique>();
+            CreateMap<TechnicianTechnique, TechniqueResponseDto>()
+                .ForMember(e => e.TechniqueName, o => o.MapFrom(s => s.Technique.Name))
+                .ForMember(e => e.Description, o => o.MapFrom(s => s.Technique.Description));
         }
     }
 }

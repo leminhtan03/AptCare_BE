@@ -1,4 +1,5 @@
 ﻿using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Dtos.TechniqueDto;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,7 @@ namespace AptCare.Service.Dtos.Account
         public string CitizenshipIdentity { get; set; } = string.Empty;
         public DateTime? Birthday { get; set; }
         public List<ApartmentForUserProfileDto>? Apartments { get; set; }
+        public List<TechniqueResponseDto>? Techniques { get; set; }
         public string Role { get; set; } = string.Empty;
         public string Status { get; set; }
     }

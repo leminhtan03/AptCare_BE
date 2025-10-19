@@ -2,6 +2,7 @@
 using AptCare.Service.Services.Interfaces;
 using AptCare.Service.Dtos.TechniqueDto;
 using AptCare.Service.Dtos;
+using AptCare.Repository.Paginate;
 
 namespace AptCare.Api.Controllers
 {
@@ -27,6 +28,8 @@ namespace AptCare.Api.Controllers
         /// - 500 Internal Server Error if an exception occurs
         /// </returns>
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(TechniqueListItemDto), 200)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _techniqueService.GetByIdAsync(id);
@@ -51,6 +54,8 @@ namespace AptCare.Api.Controllers
         /// - 500 Internal Server Error if an exception occurs
         /// </returns>
         [HttpPost]
+        [ProducesResponseType(typeof(TechniqueListItemDto), 201)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] TechniqueCreateDto dto)
         {
             var result = await _techniqueService.CreateAsync(dto);
@@ -72,6 +77,8 @@ namespace AptCare.Api.Controllers
         /// - 500 Internal Server Error if an exception occurs
         /// </returns>
         [HttpPut("{id}")]
+        [ProducesResponseType(typeof(TechniqueListItemDto), 200)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Update(int id, [FromBody] TechniqueUpdateDto dto)
         {
             var result = await _techniqueService.UpdateAsync(id, dto);
@@ -95,6 +102,8 @@ namespace AptCare.Api.Controllers
         /// - 500 Internal Server Error if an exception occurs
         /// </returns>
         [HttpGet]
+        [ProducesResponseType(typeof(IPaginate<TechniqueListItemDto>), 200)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> List([FromQuery] PaginateDto query)
         {
             var result = await _techniqueService.ListAsync(query);
