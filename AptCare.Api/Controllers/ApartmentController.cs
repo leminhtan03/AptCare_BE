@@ -40,11 +40,36 @@ namespace AptCare.Api.Controllers
         [Authorize]
         [ProducesResponseType(typeof(IPaginate<ApartmentDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult> GetPaginateApartment([FromQuery] PaginateDto dto)
+        public async Task<ActionResult> GetPaginateApartment([FromQuery] PaginateDto dto, int? floorId)
         {
-            var result = await _apartmentService.GetPaginateApartmentAsync(dto);
+            var result = await _apartmentService.GetPaginateApartmentAsync(dto, floorId);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Lấy danh sách căn hộ theo ID tầng.
+        /// </summary>
+        /// <remarks>
+        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
+        ///  
+        /// Dùng khi cần hiển thị các căn hộ thuộc một tầng cụ thể.
+        /// </remarks>
+        /// <param name="floorId">ID của tầng cần lấy danh sách căn hộ.</param>
+        /// <returns>Danh sách căn hộ thuộc tầng đó.</returns>
+        /// <response code="200">Trả về danh sách căn hộ theo tầng.</response>
+        /// <response code="404">Không tìm thấy tầng.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        [HttpGet("by-floor/{floorId}")]
+        [Authorize]
+        [ProducesResponseType(typeof(IEnumerable<ApartmentDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> GetApartmentsByFloor(int floorId)
+        {
+            var result = await _apartmentService.GetApartmentsByFloorAsync(floorId);
+            return Ok(result);
+        }
+
 
         /// <summary>
         /// Lấy thông tin chi tiết của một căn hộ theo ID.

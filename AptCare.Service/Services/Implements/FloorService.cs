@@ -4,8 +4,10 @@ using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -33,7 +35,7 @@ namespace AptCare.Service.Services.Implements
 
                 if (isDupFloor)
                 {
-                    throw new Exception("Số tầng đã tồn tại.");
+                    throw new AppValidationException("Số tầng đã tồn tại.");
                 }
 
                 var floor = _mapper.Map<Floor>(dto);
@@ -44,7 +46,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -58,7 +60,7 @@ namespace AptCare.Service.Services.Implements
 
                 if (floor == null)
                 {
-                    throw new KeyNotFoundException("Tầng không tồn tại.");
+                    throw new AppValidationException("Tầng không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 var isDupFloor = await _unitOfWork.GetRepository<Floor>().AnyAsync(
@@ -67,7 +69,7 @@ namespace AptCare.Service.Services.Implements
 
                 if (isDupFloor)
                 {
-                    throw new Exception("Số tầng đã tồn tại.");
+                    throw new AppValidationException("Số tầng đã tồn tại.");
                 }
 
 
@@ -78,7 +80,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -92,7 +94,7 @@ namespace AptCare.Service.Services.Implements
 
                 if (floor == null)
                 {
-                    throw new KeyNotFoundException("Tầng không tồn tại.");
+                    throw new AppValidationException("Tầng không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 _unitOfWork.GetRepository<Floor>().DeleteAsync(floor);
@@ -101,7 +103,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -116,7 +118,7 @@ namespace AptCare.Service.Services.Implements
 
             if (floor == null)
             {
-                throw new KeyNotFoundException("Tầng không tồn tại");
+                throw new AppValidationException("Tầng không tồn tại", StatusCodes.Status404NotFound);
             }
 
             return floor;

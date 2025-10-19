@@ -111,21 +111,30 @@ namespace AptCare.Service.Services.Implements
             return apt;
         }
 
-        public async Task<IPaginate<ApartmentDto>> GetPaginateApartmentAsync(PaginateDto dto)
+        public async Task<IPaginate<ApartmentDto>> GetPaginateApartmentAsync(PaginateDto dto, int? floorId)
         {
             int page = dto.page > 0 ? dto.page : 1;
             int size = dto.size > 0 ? dto.size : 10;
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
 
+            if (floorId != null)
+            {
+                var isExistingFloor = await _unitOfWork.GetRepository<Floor>().AnyAsync(predicate: x => x.FloorId == floorId);
+                if (!isExistingFloor)
+                    throw new AppValidationException("Tầng không tồn tại.", StatusCodes.Status404NotFound);
+            }
+            
+
             Expression<Func<Apartment, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.RoomNumber.ToString().Contains(search) ||
                                                  p.Description.Contains(search)) &&
                 (string.IsNullOrEmpty(filter) ||
-                filter.Equals(p.Status.ToString().ToLower()));
+                filter.Equals(p.Status.ToString().ToLower()) &&
+                floorId == null || p.FloorId == floorId);
 
             var result = await _unitOfWork.GetRepository<Apartment>().GetPagingListAsync(
-                selector: x => _mapper.Map<ApartmentDto>(x),
+                selector: s => _mapper.Map<ApartmentDto>(s),
                 predicate: predicate,
                 include: i => i.Include(x => x.UserApartments)
                                     .ThenInclude(x => x.User)
@@ -133,6 +142,17 @@ namespace AptCare.Service.Services.Implements
                 orderBy: BuildOrderBy(dto.sortBy),
                     page: page,
                     size: size
+                );
+
+            return result;
+        }
+
+        public async Task<IEnumerable<ApartmentDto>> GetApartmentsByFloorAsync(int floorId)
+        {
+            var result = await _unitOfWork.GetRepository<Apartment>().GetListAsync(
+                selector: s => _mapper.Map<ApartmentDto>(s),
+                predicate: p => p.FloorId == floorId,
+                orderBy: o => o.OrderBy(x => x.RoomNumber)
                 );
 
             return result;

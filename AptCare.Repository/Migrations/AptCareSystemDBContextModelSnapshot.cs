@@ -195,7 +195,10 @@ namespace AptCare.Repository.Migrations
             modelBuilder.Entity("AptCare.Repository.Entities.Appointment", b =>
                 {
                     b.Property<int>("AppointmentId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AppointmentId"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -204,7 +207,6 @@ namespace AptCare.Repository.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Note")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("RepairRequestId")
@@ -213,9 +215,8 @@ namespace AptCare.Repository.Migrations
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.HasKey("AppointmentId");
 
@@ -259,6 +260,8 @@ namespace AptCare.Repository.Migrations
                     b.HasKey("AppointmentAssignId");
 
                     b.HasIndex("AppointmentId");
+
+                    b.HasIndex("TechnicianId");
 
                     b.ToTable("AppointmentAssigns");
                 });
@@ -884,6 +887,9 @@ namespace AptCare.Repository.Migrations
 
                     b.HasKey("RepairReportId");
 
+                    b.HasIndex("AppointmentId")
+                        .IsUnique();
+
                     b.HasIndex("UserId");
 
                     b.ToTable("RepairReports");
@@ -901,9 +907,6 @@ namespace AptCare.Repository.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("ApartmentId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("CommonAreaId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
@@ -931,17 +934,12 @@ namespace AptCare.Repository.Migrations
                     b.Property<int?>("ParentRequestId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
                     b.HasKey("RepairRequestId");
 
                     b.HasIndex("ApartmentId");
-
-                    b.HasIndex("CommonAreaId");
 
                     b.HasIndex("IssueId");
 
@@ -1003,7 +1001,6 @@ namespace AptCare.Repository.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ReportApprovalId"));
 
                     b.Property<string>("Comment")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
@@ -1075,9 +1072,8 @@ namespace AptCare.Repository.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("SlotId"));
 
-                    b.Property<string>("FromTime")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<TimeSpan>("FromTime")
+                        .HasColumnType("interval");
 
                     b.Property<DateTime>("LastUpdated")
                         .HasColumnType("timestamp with time zone");
@@ -1085,9 +1081,8 @@ namespace AptCare.Repository.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<string>("ToTime")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<TimeSpan>("ToTime")
+                        .HasColumnType("interval");
 
                     b.HasKey("SlotId");
 
@@ -1345,19 +1340,11 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.Appointment", b =>
                 {
-                    b.HasOne("AptCare.Repository.Entities.RepairReport", "RepairReport")
-                        .WithOne("Appointment")
-                        .HasForeignKey("AptCare.Repository.Entities.Appointment", "AppointmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("AptCare.Repository.Entities.RepairRequest", "RepairRequest")
                         .WithMany("Appointments")
                         .HasForeignKey("RepairRequestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("RepairReport");
 
                     b.Navigation("RepairRequest");
                 });
@@ -1372,7 +1359,7 @@ namespace AptCare.Repository.Migrations
 
                     b.HasOne("AptCare.Repository.Entities.User", "Technician")
                         .WithMany("AppointmentAssigns")
-                        .HasForeignKey("AppointmentId")
+                        .HasForeignKey("TechnicianId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1610,11 +1597,19 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.RepairReport", b =>
                 {
+                    b.HasOne("AptCare.Repository.Entities.Appointment", "Appointment")
+                        .WithOne("RepairReport")
+                        .HasForeignKey("AptCare.Repository.Entities.RepairReport", "AppointmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("AptCare.Repository.Entities.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Appointment");
 
                     b.Navigation("User");
                 });
@@ -1625,10 +1620,6 @@ namespace AptCare.Repository.Migrations
                         .WithMany("RepairRequests")
                         .HasForeignKey("ApartmentId")
                         .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("AptCare.Repository.Entities.CommonArea", null)
-                        .WithMany("RepairRequests")
-                        .HasForeignKey("CommonAreaId");
 
                     b.HasOne("AptCare.Repository.Entities.Issue", "Issue")
                         .WithMany("RepairRequests")
@@ -1842,6 +1833,9 @@ namespace AptCare.Repository.Migrations
                     b.Navigation("AppointmentAssigns");
 
                     b.Navigation("InspectionReports");
+
+                    b.Navigation("RepairReport")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.CommonArea", b =>
@@ -1849,8 +1843,6 @@ namespace AptCare.Repository.Migrations
                     b.Navigation("CommonAreaObjects");
 
                     b.Navigation("MaintenanceRequests");
-
-                    b.Navigation("RepairRequests");
 
                     b.Navigation("Reports");
                 });
@@ -1906,9 +1898,6 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.RepairReport", b =>
                 {
-                    b.Navigation("Appointment")
-                        .IsRequired();
-
                     b.Navigation("ReportApprovals");
                 });
 

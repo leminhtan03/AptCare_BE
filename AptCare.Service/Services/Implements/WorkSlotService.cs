@@ -19,6 +19,7 @@ using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Service.Dtos.UserDtos;
 using Microsoft.AspNetCore.Http;
+using AptCare.Service.Exceptions;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -41,21 +42,21 @@ namespace AptCare.Service.Services.Implements
                     );
                 if (!isExistingTechnician)
                 {
-                    throw new Exception("Kĩ thuật viên không tồn tại.");
+                    throw new AppValidationException("Kĩ thuật viên không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 if (dto.FromDate > dto.ToDate)
                 {
-                    throw new Exception("'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'");
+                    throw new AppValidationException("'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'");
                 }
 
-                var isExistingSlot = await _unitOfWork.GetRepository<Slot>().AnyAsync(
+                var slot = await _unitOfWork.GetRepository<Slot>().SingleOrDefaultAsync(
                     predicate: x => x.SlotId == dto.SlotId 
                     );
-                if (!isExistingSlot)
+                if (slot == null)
                 {
 
-                    throw new Exception("Slot không tồn tại.");
+                    throw new AppValidationException("Slot không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 var isDupWorkSlot = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
@@ -63,13 +64,32 @@ namespace AptCare.Service.Services.Implements
                     );
                 if (isDupWorkSlot)
                 {
-                    throw new Exception("Lịch làm việc đã tồn tại.");
+                    throw new AppValidationException("Lịch làm việc đã tồn tại.");
                 }
 
                 var workSlots = new List<WorkSlot>();
 
                 for (var date = dto.FromDate; date <= dto.ToDate; date = date.AddDays(1))
                 {
+                    var isSameDay = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
+                        predicate: x => x.TechnicianId == dto.TechnicianId && x.Date == date
+                        );
+                    if (isSameDay)
+                    {
+                        throw new AppValidationException($"Không thể làm 2 slot chung 1 ngày ({date}).");
+                    }
+
+                    var isContinueSlot = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
+                        predicate: x => x.TechnicianId == dto.TechnicianId &&
+                                        ((x.Date.AddDays(1) == date && slot.FromTime == x.Slot.ToTime) ||
+                                         (x.Date.AddDays(-1) == date && slot.ToTime == x.Slot.FromTime)),
+                        include: i => i.Include(x => x.Slot)
+                        );
+                    if (isContinueSlot)
+                    {
+                        throw new AppValidationException($"Không thể làm 2 slot liên tiếp 1 ngày (Slot {slot.FromTime} - {slot.ToTime} ngày {date}).");
+                    }
+
                     workSlots.Add(new WorkSlot
                     {
                         TechnicianId = dto.TechnicianId,
@@ -86,7 +106,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -100,7 +120,7 @@ namespace AptCare.Service.Services.Implements
                     );
                 if (!isExistingTechnician)
                 {
-                    throw new Exception("Kĩ thuật viên không tồn tại.");
+                    throw new AppValidationException("Kĩ thuật viên không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 var workSlots = new List<WorkSlot>();
@@ -113,7 +133,7 @@ namespace AptCare.Service.Services.Implements
                     if (slot == null)
                     {
 
-                        throw new Exception("Slot không tồn tại.");
+                        throw new AppValidationException("Slot không tồn tại.", StatusCodes.Status404NotFound);
                     }
 
                     var isDupWorkSlot = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
@@ -121,7 +141,7 @@ namespace AptCare.Service.Services.Implements
                         );
                     if (isDupWorkSlot)
                     {
-                        throw new Exception($"Lịch làm việc đã tồn tại (Slot {slot.FromTime} - {slot.ToTime} ngày {dateSlot.Date}).");
+                        throw new AppValidationException($"Lịch làm việc đã tồn tại (Slot {slot.FromTime} - {slot.ToTime} ngày {dateSlot.Date}).");
                     }
 
                     var isSameDay = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
@@ -129,7 +149,7 @@ namespace AptCare.Service.Services.Implements
                         );
                     if (isSameDay)
                     {
-                        throw new Exception($"Không thể làm 2 slot chung 1 ngày ({dateSlot.Date}).");
+                        throw new AppValidationException($"Không thể làm 2 slot chung 1 ngày ({dateSlot.Date}).");
                     }
 
                     var isContinueSlot = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
@@ -140,7 +160,7 @@ namespace AptCare.Service.Services.Implements
                         );
                     if (isContinueSlot)
                     {
-                        throw new Exception($"Không thể làm 2 slot liên tiếp 1 ngày (Slot {slot.FromTime} - {slot.ToTime} ngày {dateSlot.Date}).");
+                        throw new AppValidationException($"Không thể làm 2 slot liên tiếp 1 ngày (Slot {slot.FromTime} - {slot.ToTime} ngày {dateSlot.Date}).");
                     }
 
                     workSlots.Add(new WorkSlot
@@ -159,7 +179,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -172,7 +192,7 @@ namespace AptCare.Service.Services.Implements
                     );
                 if (workSlot == null)
                 {
-                    throw new KeyNotFoundException("lịch làm việc không tồn tại.");
+                    throw new AppValidationException("lịch làm việc không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 var isExistingTechnician = await _unitOfWork.GetRepository<User>().AnyAsync(
@@ -181,7 +201,7 @@ namespace AptCare.Service.Services.Implements
                     );
                 if (!isExistingTechnician)
                 {
-                    throw new Exception("Kĩ thuật viên không tồn tại.");
+                    throw new AppValidationException("Kĩ thuật viên không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 var isExistingSlot = await _unitOfWork.GetRepository<Slot>().AnyAsync(
@@ -190,14 +210,14 @@ namespace AptCare.Service.Services.Implements
                 if (!isExistingSlot)
                 {
 
-                    throw new Exception("Slot không tồn tại.");
+                    throw new AppValidationException("Slot không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 var isDupWorkSlot = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
                     predicate: x => x.TechnicianId == dto.TechnicianId && x.Date == dto.Date && x.SlotId == dto.SlotId);
                 if (isDupWorkSlot)
                 {
-                    throw new Exception("Lịch làm việc đã tồn tại.");
+                    throw new AppValidationException("Lịch làm việc đã tồn tại.");
                 }
 
                 _mapper.Map(dto, workSlot);
@@ -207,7 +227,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -221,7 +241,7 @@ namespace AptCare.Service.Services.Implements
 
                 if (workSlot == null)
                 {
-                    throw new KeyNotFoundException("lịch làm việc không tồn tại.");
+                    throw new AppValidationException("lịch làm việc không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 _unitOfWork.GetRepository<WorkSlot>().DeleteAsync(workSlot);
@@ -230,7 +250,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new Exception($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -244,13 +264,13 @@ namespace AptCare.Service.Services.Implements
                     );
                 if (!isExistingTechnician)
                 {
-                    throw new Exception("Kĩ thuật viên không tồn tại.");
+                    throw new AppValidationException("Kĩ thuật viên không tồn tại.", StatusCodes.Status404NotFound);
                 }
             }
 
             if (fromDate > toDate)
             {
-                throw new Exception("'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.");
+                throw new AppValidationException("'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.");
             }
 
             var workSlots = await _unitOfWork.GetRepository<WorkSlot>().GetListAsync(
@@ -290,6 +310,50 @@ namespace AptCare.Service.Services.Implements
         {
             int technicianId = _userContext.CurrentUserId;
             return await GetTechnicianScheduleAsync(technicianId, fromDate, toDate, status);
+        }
+
+        public async Task<string> CheckInAsync(DateOnly date, int slotId)
+        {
+            var userId = _userContext.CurrentUserId;
+            var workSlot = await _unitOfWork.GetRepository<WorkSlot>().SingleOrDefaultAsync(
+                predicate: x => x.Date == date && x.SlotId == slotId && x.TechnicianId == userId                
+            );
+            if (workSlot == null)
+            {
+                throw new AppValidationException("Lịch làm việc không tồn tại.", StatusCodes.Status404NotFound);
+            }
+            if (workSlot.Status != WorkSlotStatus.NotStarted)
+            {
+                throw new AppValidationException($"Trạng thái lịch làm việc là {workSlot.Status}.");
+            }
+
+            workSlot.Status = WorkSlotStatus.Working;
+
+            _unitOfWork.GetRepository<WorkSlot>().UpdateAsync(workSlot);
+            await _unitOfWork.CommitAsync();
+            return "Điểm danh đầu giờ thành công.";
+        }
+
+        public async Task<string> CheckOutAsync(DateOnly date, int slotId)
+        {
+            var userId = _userContext.CurrentUserId;
+            var workSlot = await _unitOfWork.GetRepository<WorkSlot>().SingleOrDefaultAsync(
+                predicate: x => x.Date == date && x.SlotId == slotId && x.TechnicianId == userId
+            );
+            if (workSlot == null)
+            {
+                throw new AppValidationException("lịch làm việc không tồn tại.", StatusCodes.Status404NotFound);
+            }
+            if (workSlot.Status != WorkSlotStatus.Working)
+            {
+                throw new AppValidationException($"Trạng thái lịch làm việc là {workSlot.Status}.");
+            }
+
+            workSlot.Status = WorkSlotStatus.Working;
+
+            _unitOfWork.GetRepository<WorkSlot>().UpdateAsync(workSlot);
+            await _unitOfWork.CommitAsync();
+            return "Điểm danh cuối giờ thành công.";
         }
     }
 }

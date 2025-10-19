@@ -14,7 +14,7 @@ namespace AptCare.Repository.Entities
         public int InvoiceId { get; set; }
         public TransactionType TransactionType { get; set; }
         public decimal Amount { get; set; }
-        public string Description { get; set; }
+        public string Description { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(UserId))]
