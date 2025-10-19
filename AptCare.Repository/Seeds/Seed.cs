@@ -500,22 +500,22 @@ namespace AptCare.Repository.Seeds
                 {
                     new Slot
                     {
-                        FromTime = "08:00",
-                        ToTime = "16:00",
+                        FromTime = new TimeSpan(8, 0, 0),   // 08:00
+                        ToTime = new TimeSpan(16, 0, 0),    // 16:00
                         LastUpdated = DateTime.UtcNow.AddHours(7),
                         Status = ActiveStatus.Active
                     },
                     new Slot
                     {
-                        FromTime = "16:00",
-                        ToTime = "00:00",
+                        FromTime = new TimeSpan(16, 0, 0),  // 16:00
+                        ToTime = new TimeSpan(23, 59, 00),     // 23:59
                         LastUpdated = DateTime.UtcNow.AddHours(7),
                         Status = ActiveStatus.Active
                     },
                     new Slot
                     {
-                        FromTime = "00:00",
-                        ToTime = "08:00",
+                        FromTime = new TimeSpan(0, 0, 0),   // 00:00
+                        ToTime = new TimeSpan(8, 0, 0),     // 08:00
                         LastUpdated = DateTime.UtcNow.AddHours(7),
                         Status = ActiveStatus.Active
                     }
@@ -525,6 +525,7 @@ namespace AptCare.Repository.Seeds
                 await context.SaveChangesAsync();
             }
         }
+
 
 
     }

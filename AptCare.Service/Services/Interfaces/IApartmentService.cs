@@ -15,6 +15,7 @@ namespace AptCare.Service.Services.Interfaces
         Task<string> UpdateApartmentAsync(int id, ApartmentUpdateDto dto);
         Task<string> DeleteApartmentAsync(int id);
         Task<ApartmentDto> GetApartmentByIdAsync(int id);
-        Task<IPaginate<ApartmentDto>> GetPaginateApartmentAsync(PaginateDto dto);
+        Task<IPaginate<ApartmentDto>> GetPaginateApartmentAsync(PaginateDto dto, int? floorId);
+        Task<IEnumerable<ApartmentDto>> GetApartmentsByFloorAsync(int floorId);
     }
 }

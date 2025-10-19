@@ -211,7 +211,6 @@ namespace AptCare.Repository
             // ========================= RepairRequest Flow =========================
             // User - RepairRequest (1 - n)
             // Apartment - RepairRequest (1 - n)
-            // CommonArea - RepairRequest (1 - n)
             // MaintenanceRequest - RepairRequest (1 - n)
             // Issue - RepairRequest (1 - n)
             modelBuilder.Entity<RepairRequest>(entity =>
@@ -255,7 +254,7 @@ namespace AptCare.Repository
                       .HasForeignKey(aa => aa.AppointmentId);
                 entity.HasOne(aa => aa.Technician)
                       .WithMany(a => a.AppointmentAssigns)
-                      .HasForeignKey(aa => aa.AppointmentId);
+                      .HasForeignKey(aa => aa.TechnicianId);
             });
 
             // Appointment - InspectionReport (1 - n)
@@ -267,13 +266,14 @@ namespace AptCare.Repository
             });
 
             // Appointment - RepairReport (1 - 1)
-            // RepairRequest - RepairReport (1 - n)
             modelBuilder.Entity<RepairReport>(entity =>
             {
-                entity.HasOne(rr => rr.Appointment)
-                      .WithOne(r => r.RepairReport)
-                      .HasForeignKey<Appointment>(a => a.AppointmentId);
+                entity.HasOne(rp => rp.Appointment)
+                      .WithOne(a => a.RepairReport)
+                      .HasForeignKey<RepairReport>(rp => rp.AppointmentId) 
+                      .OnDelete(DeleteBehavior.Restrict);
             });
+
 
             // RepairReport - ReportApproval (1 - n)
             modelBuilder.Entity<ReportApproval>(entity =>

@@ -9,6 +9,7 @@ using AptCare.Service.Exceptions;
 using AptCare.Service.Extensions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -35,7 +36,7 @@ namespace AptCare.Service.Services.Implements
                     );
                     if (floor == null)
                     {
-                        throw new AppValidationException("Tầng không tồn tại.");
+                        throw new AppValidationException("Tầng không tồn tại.", StatusCodes.Status404NotFound);
                     }
                     if (floor.Status == ActiveStatus.Inactive)
                     {
@@ -59,7 +60,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new AppValidationException($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -73,7 +74,7 @@ namespace AptCare.Service.Services.Implements
 
                 if (commonArea == null)
                 {
-                    throw new AppValidationException("Khu vực chung không tồn tại.");
+                    throw new AppValidationException("Khu vực chung không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 if (dto.FloorId != null)
@@ -83,7 +84,7 @@ namespace AptCare.Service.Services.Implements
                     );
                     if (floor == null)
                     {
-                        throw new AppValidationException("Tầng không tồn tại.");
+                        throw new AppValidationException("Tầng không tồn tại.", StatusCodes.Status404NotFound);
                     }
                     if (floor.Status == ActiveStatus.Inactive)
                     {
@@ -92,7 +93,7 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 var isDupCommonArea = await _unitOfWork.GetRepository<CommonArea>().AnyAsync(
-                    predicate: x => x.AreaCode == dto.AreaCode
+                    predicate: x => x.AreaCode == dto.AreaCode && x.CommonAreaId != id
                     );
                 if (isDupCommonArea)
                 {
@@ -107,7 +108,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new AppValidationException($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -129,7 +130,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
-                throw new AppValidationException($"Lỗi hệ thống: {e.Message}");
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
 
@@ -142,7 +143,7 @@ namespace AptCare.Service.Services.Implements
                 );
             if (commonArea == null)
             {
-                throw new AppValidationException("Khu vực chung không tồn tại");
+                throw new AppValidationException("Khu vực chung không tồn tại", StatusCodes.Status404NotFound);
             }
 
             return commonArea;

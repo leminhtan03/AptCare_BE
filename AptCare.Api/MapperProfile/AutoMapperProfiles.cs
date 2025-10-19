@@ -4,6 +4,7 @@ using AptCare.Repository.Enum.Apartment;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
+using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Dtos.WorkSlotDtos;
 using AutoMapper;
@@ -136,6 +137,15 @@ namespace AptCare.Api.MapperProfile
 
             CreateMap<Account, AccountForAdminDto>()
                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
+
+            //REPAIR REQUEST
+            CreateMap<RepairRequest, RepairRequestDto>();
+            CreateMap<RepairRequestNormalCreateDto, RepairRequest>()
+               .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => false))
+               .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow.AddHours(7)));
+            CreateMap<RepairRequestEmergencyCreateDto, RepairRequest>()
+               .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => true));
+
         }
     }
 }

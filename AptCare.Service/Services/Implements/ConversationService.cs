@@ -16,6 +16,7 @@ using System.Security.Cryptography.X509Certificates;
 using AptCare.Repository.Enum.AccountUserEnum;
 using Microsoft.EntityFrameworkCore;
 using AptCare.Repository.Enum;
+using AptCare.Service.Exceptions;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -39,7 +40,7 @@ namespace AptCare.Service.Services.Implements
                                 );
             if (isExistingConversation)
             {
-                throw new Exception($"Đã tồn tại cuộc trò chuyện của 2 người.");
+                throw new AppValidationException($"Đã tồn tại cuộc trò chuyện của 2 người.");
             }
 
             var names = new List<string>();
@@ -52,7 +53,7 @@ namespace AptCare.Service.Services.Implements
                 );
                 if (user == null)
                 {
-                    throw new Exception($"Người dùng có ID {userId} không tồn tại.");
+                    throw new AppValidationException($"Người dùng có ID {userId} không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
                 names.Add($"{user.FirstName} {user.LastName}");
@@ -109,11 +110,11 @@ namespace AptCare.Service.Services.Implements
                     );
             if (conversation == null)
             {
-                throw new Exception("Cuộc trò chuyện không tồn tại.");
+                throw new AppValidationException("Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
             }
             if (!conversation.Participants.Any(x => x.UserId == userId))
             {
-                throw new Exception("Bạn không sở hữu cuộc trò chuyện này.");
+                throw new AppValidationException("Bạn không sở hữu cuộc trò chuyện này.");
             }
             return conversation;
         }
@@ -126,7 +127,7 @@ namespace AptCare.Service.Services.Implements
                     );
             if (conversationParticipant == null)
             {
-                throw new Exception("Cuộc trò chuyện không tồn tại.");
+                throw new AppValidationException("Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
             }
 
             conversationParticipant.IsMuted = true;
@@ -144,7 +145,7 @@ namespace AptCare.Service.Services.Implements
                     );
             if (conversationParticipant == null)
             {
-                throw new Exception("Cuộc trò chuyện không tồn tại.");
+                throw new AppValidationException("Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
             }
 
             conversationParticipant.IsMuted = false;
