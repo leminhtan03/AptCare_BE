@@ -250,7 +250,9 @@ namespace AptCare.Service.Services.Implements
                     include: e => e.Include(i => i.Account)
                                .Include(i => i.UserApartments)
                                .ThenInclude(i => i.Apartment)
-                               .ThenInclude(i => i.Floor),
+                               .ThenInclude(i => i.Floor)
+                               .Include(i => i.TechnicianTechniques)
+                               .ThenInclude(i => i.Technique),
                     selector: e => _mapper.Map<GetOwnProfileDto>(e)
                 );
                 return existUser;
