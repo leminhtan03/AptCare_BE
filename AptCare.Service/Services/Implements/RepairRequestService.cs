@@ -27,16 +27,19 @@ namespace AptCare.Service.Services.Implements
     {
         private readonly IUserContext _userContext;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly IAppointmentAssignService _appointmentAssignService;
 
         public RepairRequestService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
             ILogger<RepairRequest> logger,
             IMapper mapper,
             IUserContext userContext,
-            ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
+            ICloudinaryService cloudinaryService,
+            IAppointmentAssignService appointmentAssignService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _cloudinaryService = cloudinaryService;
+            _appointmentAssignService = appointmentAssignService;
         }
 
         public async Task<string> CreateNormalRepairRequestAsync(RepairRequestNormalCreateDto dto)
@@ -197,25 +200,8 @@ namespace AptCare.Service.Services.Implements
 
         private async Task<bool> AssignTechnicianForNormalAppointmentAsync(Appointment appointment, Issue issue)
         {
-            var technicianidsAcceptable = await _unitOfWork.GetRepository<User>().GetListAsync(
-                    selector: s => s.UserId,
-                    predicate: p => p.Account.Role == AccountRole.Technician &&
-                                    p.TechnicianTechniques.Any(tt => tt.TechniqueId == issue.TechniqueId) &&
-                                    p.WorkSlots.Any(ws => ws.Date == DateOnly.FromDateTime(appointment.StartTime) &&
-                                        ws.Slot.FromTime <= appointment.StartTime.TimeOfDay &&
-                                        ws.Slot.ToTime >= appointment.StartTime.TimeOfDay) &&
-                                    p.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) == DateOnly.FromDateTime(appointment.StartTime)).All(aa => aa.EstimatedEndTime <= appointment.StartTime ||
-                                                                         aa.EstimatedStartTime >= appointment.EndTime),
-                    include: i => i.Include(x => x.Account)
-                                   .Include(x => x.WorkSlots)
-                                       .ThenInclude(x => x.Slot)
-                                   .Include(x => x.AppointmentAssigns)
-                                   .Include(x => x.TechnicianTechniques),
-                    orderBy: o => o.OrderBy(x => x.AppointmentAssigns.Count(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) ==
-                                                                                  DateOnly.FromDateTime(appointment.StartTime)))
-                                           .ThenBy(x => x.AppointmentAssigns.Count(aa => aa.EstimatedStartTime.Month ==
-                                                                                     appointment.StartTime.Month))
-                );
+            var techniciansAcceptable = await _appointmentAssignService.SuggestTechniciansForAppointment(appointment.AppointmentId, null);
+            var technicianidsAcceptable = techniciansAcceptable.Select(x => x.UserId).ToList();
 
             if (technicianidsAcceptable.Count < issue.RequiredTechnician)
             {
@@ -276,7 +262,6 @@ namespace AptCare.Service.Services.Implements
                         throw new AppValidationException("Người dùng không thuộc căn hộ này.", StatusCodes.Status404NotFound);
                     }
                 }
-
                
                 var issue = await _unitOfWork.GetRepository<Issue>().SingleOrDefaultAsync(
                     predicate: x => x.IssueId == dto.IssueId
@@ -358,73 +343,8 @@ namespace AptCare.Service.Services.Implements
 
         private async Task AssignTechnicianForEmergencyAppointmentAsync(Appointment appointment, Issue issue)
         {
-            //var technicianidsAcceptable = await _unitOfWork.GetRepository<User>().GetListAsync(
-            //        selector: s => s.UserId,
-            //        predicate: p => p.Account.Role == AccountRole.Technician &&
-            //                        p.TechnicianTechniques.Any(tt => tt.TechniqueId == issue.TechniqueId) &&
-            //                        p.WorkSlots.Any(ws => ws.Status == WorkSlotStatus.Working) &&
-            //                        p.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) ==
-            //                                                         DateOnly.FromDateTime(appointment.StartTime))
-            //                                            .All(aa => aa.Status != WorkOrderStatus.Working),
-            //        include: i => i.Include(x => x.Account)
-            //                       .Include(x => x.WorkSlots)
-            //                       .Include(x => x.AppointmentAssigns)
-            //                       .Include(x => x.TechnicianTechniques),
-            //        orderBy: o => o.OrderByDescending(x => x.AppointmentAssigns
-            //                                         .Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) ==
-            //                                                      DateOnly.FromDateTime(appointment.StartTime) &&
-            //                                                      aa.EstimatedStartTime > appointment.EndTime)
-            //                                         .Select(aa => 
-            //                                            (aa.EstimatedStartTime.TimeOfDay - appointment.StartTime.AddHours(issue.EstimatedDuration).TimeOfDay) > new TimeSpan(1, 0, 0) ? new TimeSpan(1, 0, 0) : (aa.EstimatedStartTime.TimeOfDay - appointment.StartTime.AddHours(issue.EstimatedDuration).TimeOfDay)))
-            //                           .ThenBy(x => x.AppointmentAssigns.Count(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) ==
-            //                                                                      DateOnly.FromDateTime(appointment.StartTime)))
-            //                               .ThenBy(x => x.AppointmentAssigns.Count(aa => aa.EstimatedStartTime.Month ==
-            //                                                                         appointment.StartTime.Month))
-            //    );
-
-            var techniciansQuery = await _unitOfWork.GetRepository<User>().GetListAsync(
-                selector: s => new
-                {
-                    s.UserId,
-                    Assigns = s.AppointmentAssigns
-                        .Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) == DateOnly.FromDateTime(appointment.StartTime)
-                                     && aa.EstimatedStartTime > appointment.EndTime)
-                        .Select(aa => aa.EstimatedStartTime)
-                        .ToList(),
-                    AssignCountToday = s.AppointmentAssigns.Count(aa =>
-                        DateOnly.FromDateTime(aa.EstimatedStartTime) == DateOnly.FromDateTime(appointment.StartTime)),
-                    AssignCountMonth = s.AppointmentAssigns.Count(aa =>
-                        aa.EstimatedStartTime.Month == appointment.StartTime.Month)
-                },
-                predicate: p => p.Account.Role == AccountRole.Technician &&
-                                p.TechnicianTechniques.Any(tt => tt.TechniqueId == issue.TechniqueId) &&
-                                p.WorkSlots.Any(ws => ws.Status == WorkSlotStatus.Working) &&
-                                p.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) ==
-                                                                 DateOnly.FromDateTime(appointment.StartTime))
-                                                                 .All(aa => aa.Status != WorkOrderStatus.Working),
-                include: i => i.Include(x => x.Account)
-                                   .Include(x => x.WorkSlots)
-                                       .ThenInclude(x => x.Slot)
-                                   .Include(x => x.AppointmentAssigns)
-                                   .Include(x => x.TechnicianTechniques)
-            );
-
-            var technicianidsAcceptable = techniciansQuery
-                .AsEnumerable()
-                .OrderByDescending(x =>
-                {                  
-                    var minGap = x.Assigns
-                        .Select(next => (next - (DateTime) appointment.EndTime).TotalMinutes)
-                        .Where(gap => gap > 0)
-                        .DefaultIfEmpty(double.MaxValue)
-                        .Min();
-                    return minGap > 60 ? 60 : minGap;
-                })
-                    .ThenBy(x => x.AssignCountToday)
-                        .ThenBy(x => x.AssignCountMonth)
-                .Select(x => x.UserId)
-                .ToList();
-
+            var techniciansAcceptable = await _appointmentAssignService.SuggestTechniciansForAppointment(appointment.AppointmentId, null);
+            var technicianidsAcceptable = techniciansAcceptable.Select(x => x.UserId).ToList();
 
             var notifications = new List<Notification>();
            

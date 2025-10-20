@@ -42,7 +42,12 @@ namespace AptCare.Service.Services.Implements
                         );
             if (!isExistingRepairRequest)
             {
-                throw new AppValidationException("Yêu cầu sửa chửa không tồn tại.", StatusCodes.Status404NotFound);
+                throw new AppValidationException("Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
+            }
+
+            if (dto.StartTime >= dto.EndTime)
+            {
+                throw new AppValidationException("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
             }
 
             var appointment = _mapper.Map<Appointment>(dto);
@@ -54,11 +59,25 @@ namespace AptCare.Service.Services.Implements
         public async Task<string> UpdateAppointmentAsync(int id, AppointmentUpdateDto dto)
         {
             var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
-                        predicate: x => x.AppointmentId == id
-                        );
+                predicate: x => x.AppointmentId == id,
+                include: i => i.Include(x => x.AppointmentAssigns)
+                );
             if (appointment == null)
             {
                 throw new AppValidationException("Lịch hẹn không tồn tại.", StatusCodes.Status404NotFound);
+            }
+
+            if (appointment.StartTime != dto.StartTime || appointment.EndTime != dto.EndTime)
+            {
+                if (appointment.AppointmentAssigns.Any())
+                {
+                    throw new AppValidationException("Không thể thay đổi thời gian lịch hẹn khi đã phân công.");
+                }
+            }
+
+            if (dto.StartTime >= dto.EndTime)
+            {
+                throw new AppValidationException("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
             }
 
             _mapper.Map(dto, appointment);
