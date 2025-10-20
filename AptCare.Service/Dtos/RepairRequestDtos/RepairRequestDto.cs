@@ -9,34 +9,39 @@ using System.Text;
 using System.Threading.Tasks;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.UserDtos;
+using AptCare.Service.Dtos.AppointmentDtos;
+using AptCare.Service.Dtos.Account;
+using AptCare.Service.Dtos.IssueDto;
 
 namespace AptCare.Service.Dtos.RepairRequestDtos
 {
     public class RepairRequestDto
     {
         public int RepairRequestId { get; set; }
-        public UserDto User { get; set; } = null!;
-        public ApartmentDto? Apartment { get; set; }
-        public RepairRequestDto? ParentRequest { get; set; }
-        public Issue? Issue { get; set; }
-        public MaintenanceRequest? MaintenanceRequest { get; set; }
         public string Object { get; set; } = null!;
         public string Description { get; set; } = null!;
         public bool IsEmergency { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? AcceptanceTime { get; set; }
-        public RequestStatus Status { get; set; }
-        public List<RepairRequestDto>? ChildRequests { get; set; }
-        public List<RequestTracking>? RequestTrackings { get; set; }
+        public int? ParentRequestId { get; set; }
+        public UserBasicDto User { get; set; } = null!;
+        public ApartmentDto? Apartment { get; set; }
+        public IssueListItemDto? Issue { get; set; }
+        public int? MaintenanceRequestId { get; set; }
+        public List<int>? ChildRequestIds { get; set; }
+        public List<MediaDto>? Medias { get; set; }
+        public List<RequestTrackingDto>? RequestTrackings { get; set; }
+        public List<AppointmentDto>? Appointments { get; set; }
     }
 
     public class RequestTrackingDto
     {
         public int RequestTrackingId { get; set; }
-        public RequestStatus Status { get; set; }
+        public string Status { get; set; } = null!;
         public string? Note { get; set; }
-        public int? UpdatedBy { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public UserDto UpdatedByUser { get; set; } = null!;
+        public UserBasicDto UpdatedByUser { get; set; } = null!;
     }
+
+    
 }
