@@ -16,6 +16,10 @@ using AptCare.Repository.Enum;
 using AptCare.Service.Exceptions;
 using Microsoft.AspNetCore.Http;
 using System.Linq.Dynamic.Core;
+using AptCare.Repository.Paginate;
+using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Dtos;
+using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -489,6 +493,84 @@ namespace AptCare.Service.Services.Implements
             }
 
             await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
+        }
+
+        public async Task<IPaginate<RepairRequestDto>> GetPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? apartmentId, int? issueId, int? maintenanceRequestId)
+        {
+            if (_userContext.IsResident)
+            {
+                return await GetGenericPaginateRepairRequestAsync(dto, isEmergency, _userContext.CurrentUserId, null, apartmentId, issueId, null);
+            }
+            else if (_userContext.IsTechnician)
+            {
+                return await GetGenericPaginateRepairRequestAsync(dto, isEmergency, null, _userContext.CurrentUserId, apartmentId, issueId, maintenanceRequestId);
+            }
+            else
+            {
+                return await GetGenericPaginateRepairRequestAsync(dto, isEmergency, null, null, apartmentId, issueId, maintenanceRequestId);
+            }
+        }
+
+        private async Task<IPaginate<RepairRequestDto>> GetGenericPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? residentId, int? technicianId, int? apartmentId, int? issueId, int? maintenanceRequestId)
+        {
+            int page = dto.page > 0 ? dto.page : 1;
+            int size = dto.size > 0 ? dto.size : 10;
+            string search = dto.search?.ToLower() ?? string.Empty;
+            string filter = dto.filter?.ToLower() ?? string.Empty;
+
+            Expression<Func<RepairRequest, bool>> predicate = p =>
+                (string.IsNullOrEmpty(search) || p.Object.Contains(search) ||
+                                                 p.Description.Contains(search)) &&
+                (string.IsNullOrEmpty(filter) ||
+                filter.Equals(p.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().ToString().ToLower())) &&
+                (isEmergency == null || p.IsEmergency == isEmergency) &&
+                (residentId == null || p.Apartment.UserApartments.Any(x => x.UserId == residentId)) &&
+                (technicianId == null || p.Appointments.Any(a => a.AppointmentAssigns.Any(aa => aa.TechnicianId == technicianId))) &&
+                (apartmentId == null || p.ApartmentId == apartmentId) &&
+                (issueId == null || p.IssueId == issueId) &&
+                (maintenanceRequestId == null || p.MaintenanceRequestId == maintenanceRequestId);
+
+            var result = await _unitOfWork.GetRepository<RepairRequest>().GetPagingListAsync(
+                selector: x => _mapper.Map<RepairRequestDto>(x),
+                predicate: predicate,
+                include: i => i.Include(x => x.RequestTrackings)
+                                    .ThenInclude(x => x.UpdatedByUser)
+                               .Include(x => x.ParentRequest)
+                               .Include(x => x.ChildRequests)
+                               .Include(x => x.Appointments)
+                                    .ThenInclude(x => x.AppointmentAssigns)
+                               .Include(x => x.User)
+                               .Include(x => x.Apartment)
+                               .Include(x => x.MaintenanceRequest)
+                               .Include(x => x.Issue),
+                orderBy: BuildOrderBy(dto.sortBy),
+                    page: page,
+                    size: size
+                );
+
+            foreach (var request in result.Items)
+            {
+                var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                    selector: s => _mapper.Map<MediaDto>(s),
+                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == request.RepairRequestId
+                    );
+                request.Medias = medias.ToList();
+            }
+            return result;
+        }
+
+        private Func<IQueryable<RepairRequest>, IOrderedQueryable<RepairRequest>> BuildOrderBy(string sortBy)
+        {
+            if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.RepairRequestId);
+
+            return sortBy.ToLower() switch
+            {
+                "apartment" => q => q.OrderBy(p => p.ApartmentId),
+                "apartment_desc" => q => q.OrderByDescending(p => p.ApartmentId),
+                "issue" => q => q.OrderBy(p => p.IssueId),
+                "issue_desc" => q => q.OrderByDescending(p => p.IssueId),
+                _ => q => q.OrderByDescending(p => p.RepairRequestId) // Default sort
+            };
         }
     }
 }
