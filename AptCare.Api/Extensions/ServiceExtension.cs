@@ -39,6 +39,7 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IAppointmentService, AppointmentService>();
             service.AddTransient<ITechniqueService, TechniqueService>();
             service.AddTransient<IIssueService, IssueService>();
+            service.AddTransient<IAppointmentAssignService, AppointmentAssignService>();
 
 
             return service;

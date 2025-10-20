@@ -11,10 +11,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Dtos\NewFolder\" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <None Include="Dtos\AuthenDto\ResetPasswordResponseDto.cs" />
 	</ItemGroup>
 

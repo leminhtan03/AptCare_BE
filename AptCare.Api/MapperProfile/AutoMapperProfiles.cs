@@ -155,7 +155,8 @@ namespace AptCare.Api.MapperProfile
                .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => false))
                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow.AddHours(7)));
             CreateMap<RepairRequestEmergencyCreateDto, RepairRequest>()
-               .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => true));
+               .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => true))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
 
             // ===== Issue =====
             CreateMap<IssueCreateDto, Issue>()
