@@ -539,6 +539,7 @@ namespace AptCare.Service.Services.Implements
                                .Include(x => x.ChildRequests)
                                .Include(x => x.Appointments)
                                     .ThenInclude(x => x.AppointmentAssigns)
+                                        .ThenInclude(x => x.Technician)
                                .Include(x => x.User)
                                .Include(x => x.Apartment)
                                .Include(x => x.MaintenanceRequest)

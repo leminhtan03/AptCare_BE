@@ -36,7 +36,7 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IAuthenticationService, AuthenticationService>();
             service.AddTransient<IOtpService, OtpService>();
             service.AddTransient<IRepairRequestService, RepairRequestService>();
-
+            service.AddTransient<IAppointmentService, AppointmentService>();
             service.AddTransient<ITechniqueService, TechniqueService>();
             service.AddTransient<IIssueService, IssueService>();
 
