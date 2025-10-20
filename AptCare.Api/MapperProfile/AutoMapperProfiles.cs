@@ -10,6 +10,8 @@ using AptCare.Service.Dtos.TechniqueDto;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Dtos.WorkSlotDtos;
 using AutoMapper;
+using AptCare.Service.Dtos.AppointmentDtos;
+using AptCare.Service.Dtos;
 
 namespace AptCare.Api.MapperProfile
 {
@@ -42,6 +44,8 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
                 .ForMember(d => d.Apartments, o => o.MapFrom(s => s.UserApartments))
                 .ForMember(d => d.AccountInfo, o => o.MapFrom(s => s.Account));
+
+            CreateMap<User, UserBasicDto>();
 
             CreateMap<User, GetOwnProfileDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
@@ -133,7 +137,15 @@ namespace AptCare.Api.MapperProfile
                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.ToString()));
 
             //REPAIR REQUEST
-            CreateMap<RepairRequest, RepairRequestDto>();
+            CreateMap<RepairRequest, RepairRequestDto>()
+                .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null));
+            CreateMap<RequestTracking, RequestTrackingDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+
+            //APOINTMENT
+            CreateMap<Appointment, AppointmentDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+
             CreateMap<RepairRequestNormalCreateDto, RepairRequest>()
                .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => false))
                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow.AddHours(7)));
@@ -155,6 +167,9 @@ namespace AptCare.Api.MapperProfile
             CreateMap<TechnicianTechnique, TechniqueResponseDto>()
                 .ForMember(e => e.TechniqueName, o => o.MapFrom(s => s.Technique.Name))
                 .ForMember(e => e.Description, o => o.MapFrom(s => s.Technique.Description));
+
+            //MEDIA
+            CreateMap<Media, MediaDto>();
         }
     }
 }

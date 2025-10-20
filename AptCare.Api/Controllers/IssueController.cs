@@ -7,11 +7,11 @@ using Microsoft.AspNetCore.Mvc;
 namespace AptCare.Api.Controllers
 {
 
-    public class IssuaController : BaseApiController
+    public class IssueController : BaseApiController
     {
         private readonly IIssueService _issueService;
 
-        public IssuaController(IIssueService issueService)
+        public IssueController(IIssueService issueService)
         {
             _issueService = issueService;
         }
