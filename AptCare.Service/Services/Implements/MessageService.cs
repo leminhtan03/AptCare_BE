@@ -19,14 +19,14 @@ using AptCare.Service.Exceptions;
 
 namespace AptCare.Service.Services.Implements
 {
-    public class MessageService : BaseService<Message>, IMessageService
+    public class MessageService : BaseService<MessageService>, IMessageService
     {
         private readonly IUserContext _userContext;
         private readonly ICloudinaryService _cloudinaryService;
 
         public MessageService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
-            ILogger<Message> logger,
+            ILogger<MessageService> logger,
             IMapper mapper,
             IUserContext userContext,
             ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)

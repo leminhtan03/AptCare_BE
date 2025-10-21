@@ -1,9 +1,11 @@
 ﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
+using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
@@ -151,6 +153,17 @@ namespace AptCare.Service.Services.Implements
                     size: size
                 );
 
+            return result;
+        }
+
+        public async Task<IEnumerable<FloorDto>> GetFloorsAsync()
+        {
+
+            var result = await _unitOfWork.GetRepository<Floor>().GetListAsync(
+                selector: x => _mapper.Map<FloorDto>(x),
+                predicate: p => p.Status == ActiveStatus.Active,
+                orderBy: o => o.OrderBy(x => x.FloorNumber)
+                );
             return result;
         }
 

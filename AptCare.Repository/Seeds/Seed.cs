@@ -496,27 +496,35 @@ namespace AptCare.Repository.Seeds
         {
             if (!context.Slots.Any())
             {
+                var now = DateTime.UtcNow.AddHours(7);
+
                 var slots = new List<Slot>
                 {
                     new Slot
                     {
+                        SlotName = "Ca sáng",
                         FromTime = new TimeSpan(8, 0, 0),   // 08:00
                         ToTime = new TimeSpan(16, 0, 0),    // 16:00
-                        LastUpdated = DateTime.UtcNow.AddHours(7),
+                        LastUpdated = now,
+                        DisplayOrder = 1,
                         Status = ActiveStatus.Active
                     },
                     new Slot
                     {
+                        SlotName = "Ca tối",
                         FromTime = new TimeSpan(16, 0, 0),  // 16:00
-                        ToTime = new TimeSpan(23, 59, 00),     // 23:59
-                        LastUpdated = DateTime.UtcNow.AddHours(7),
+                        ToTime = new TimeSpan(23, 59, 0),   // 23:59
+                        LastUpdated = now,
+                        DisplayOrder = 2,
                         Status = ActiveStatus.Active
                     },
                     new Slot
                     {
+                        SlotName = "Ca đêm",
                         FromTime = new TimeSpan(0, 0, 0),   // 00:00
                         ToTime = new TimeSpan(8, 0, 0),     // 08:00
-                        LastUpdated = DateTime.UtcNow.AddHours(7),
+                        LastUpdated = now,
+                        DisplayOrder = 3,
                         Status = ActiveStatus.Active
                     }
                 };
@@ -525,6 +533,7 @@ namespace AptCare.Repository.Seeds
                 await context.SaveChangesAsync();
             }
         }
+
 
 
 

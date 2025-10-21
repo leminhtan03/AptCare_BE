@@ -20,11 +20,11 @@ using AptCare.Service.Exceptions;
 
 namespace AptCare.Service.Services.Implements
 {
-    public class ConversationService : BaseService<Conversation>, IConversationService
+    public class ConversationService : BaseService<ConversationService>, IConversationService
     {
         private readonly IUserContext _userContext;
 
-        public ConversationService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<Conversation> logger, IMapper mapper, IUserContext userContext) : base(unitOfWork, logger, mapper)
+        public ConversationService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<ConversationService> logger, IMapper mapper, IUserContext userContext) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
         }

@@ -16,6 +16,7 @@ namespace AptCare.Service.Services.Interfaces
         Task<string> UpdateFloorAsync(int id, FloorUpdateDto dto);
         Task<string> DeleteFloorAsync(int id);
         Task<FloorDto> GetFloorByIdAsync(int id);
+        Task<IEnumerable<FloorDto>> GetFloorsAsync();
         Task<IPaginate<FloorDto>> GetPaginateFloorAsync(PaginateDto dto);
     }
 }
