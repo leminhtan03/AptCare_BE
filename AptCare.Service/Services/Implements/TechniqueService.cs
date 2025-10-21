@@ -48,7 +48,7 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<TechniqueListItemDto?> GetByIdAsync(int id)
         {
-            var technique = await _unitOfWork.GetRepository<Repository.Entities.Technique>().SingleOrDefaultAsync(predicate: t => t.TechniqueId == id, selector: e => _mapper.Map<TechniqueListItemDto>(e));
+            var technique = await _unitOfWork.GetRepository<Repository.Entities.Technique>().SingleOrDefaultAsync(predicate: t => t.TechniqueId == id, selector: e => _mapper.Map<TechniqueListItemDto>(e), include: e => e.Include(e => e.Issues));
             if (technique == null)
                 throw new ApplicationException("Technique không tồn tại");
             return technique;
@@ -70,6 +70,7 @@ namespace AptCare.Service.Services.Implements
                 return _unitOfWork.GetRepository<Technique>().GetPagingListAsync(
                     selector: x => _mapper.Map<TechniqueListItemDto>(x),
                     predicate: predicate,
+                    include: e => e.Include(e => e.Issues),
                     orderBy: orderBy,
                     page: page,
                     size: size);

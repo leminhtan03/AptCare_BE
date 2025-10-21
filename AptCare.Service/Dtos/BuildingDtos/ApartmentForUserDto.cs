@@ -8,6 +8,7 @@ namespace AptCare.Service.Dtos.BuildingDtos
 {
     public class ApartmentForUserDto
     {
+        public int ApartmentId { get; set; }
         /// <summary>
         /// Mã số căn hộ (ví dụ: "A-101")
         /// </summary>
