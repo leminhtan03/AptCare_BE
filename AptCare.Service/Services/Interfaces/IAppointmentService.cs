@@ -1,4 +1,6 @@
-﻿using AptCare.Service.Dtos.AppointmentDtos;
+﻿using AptCare.Repository.Paginate;
+using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.AppointmentDtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +14,10 @@ namespace AptCare.Service.Services.Interfaces
         Task<string> CreateAppointmentAsync(AppointmentCreateDto dto);
         Task<string> UpdateAppointmentAsync(int id, AppointmentUpdateDto dto);
         Task<string> DeleteAppointmentAsync(int id);
-        Task<IEnumerable<AppointmentScheduleDto>> GetResidentAppointmentScheduleAsync(DateOnly fromDate, DateOnly toDate);
+        Task<AppointmentDto> GetAppointmentByIdAsync(int id);
+        Task<IPaginate<AppointmentDto>> GetPaginateAppointmentAsync(PaginateDto dto, DateOnly? fromDate, DateOnly? toDate);
+        Task<IEnumerable<ResidentAppointmentScheduleDto>> GetResidentAppointmentScheduleAsync(DateOnly fromDate, DateOnly toDate);
+        Task<IEnumerable<TechnicianAppointmentScheduleDto>> GetTechnicianAppointmentScheduleAsync(int? technicianId, DateOnly fromDate, DateOnly toDate);
+        Task<IEnumerable<TechnicianAppointmentScheduleDto>> GetMyTechnicianAppointmentScheduleAsync(DateOnly fromDate, DateOnly toDate);
     }
 }

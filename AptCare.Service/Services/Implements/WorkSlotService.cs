@@ -20,6 +20,7 @@ using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Service.Dtos.UserDtos;
 using Microsoft.AspNetCore.Http;
 using AptCare.Service.Exceptions;
+using AptCare.Service.Dtos.AppointmentDtos;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -278,6 +279,8 @@ namespace AptCare.Service.Services.Implements
                                 && (!status.HasValue || x.Status == status)
                                 && (!technicianId.HasValue || x.TechnicianId == technicianId),
                 include: i => i.Include(x => x.Technician)
+                                    .ThenInclude(x => x.AppointmentAssigns)
+                                        .ThenInclude(x => x.Appointment)
                                .Include(x => x.Slot)
             );
 
@@ -291,18 +294,23 @@ namespace AptCare.Service.Services.Implements
                                 Date = dateGroup.Key,
                                 Slots = dateGroup
                                     .GroupBy(s => s.SlotId)
-                                    .Select(slotGroup => new SlotDto
+                                    .Select(slotGroup => new SlotWorkDto
                                     {
                                         SlotId = slotGroup.Key,
                                         TechnicianWorkSlots = slotGroup
-                                            .Select(ws => _mapper.Map<TechnicianWorkSlotDto>(ws))
+                                            .Select(ws => new TechnicianWorkSlotDto
+                                            {
+                                                WorkSlotId = ws.WorkSlotId,
+                                                Status = ws.Status.ToString(),
+                                                Technician = _mapper.Map<UserBasicDto>(ws.Technician),
+                                                Appointments = ws.Technician.AppointmentAssigns.Select(aa => _mapper.Map<AppointmentDto>(aa.Appointment)).Where(aa => DateOnly.FromDateTime(aa.StartTime) == dateGroup.Key).ToList()
+                                            })
                                             .ToList()
                                     })
                                     .ToList()
                             })
                             .OrderBy(x => x.Date)
                             .ToList();
-
             return result;
         }
 

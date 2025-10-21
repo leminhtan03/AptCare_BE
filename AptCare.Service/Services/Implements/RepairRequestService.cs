@@ -23,7 +23,7 @@ using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
 {
-    public class RepairRequestService : BaseService<RepairRequest>, IRepairRequestService
+    public class RepairRequestService : BaseService<RepairRequestService>, IRepairRequestService
     {
         private readonly IUserContext _userContext;
         private readonly ICloudinaryService _cloudinaryService;
@@ -31,7 +31,7 @@ namespace AptCare.Service.Services.Implements
 
         public RepairRequestService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
-            ILogger<RepairRequest> logger,
+            ILogger<RepairRequestService> logger,
             IMapper mapper,
             IUserContext userContext,
             ICloudinaryService cloudinaryService,

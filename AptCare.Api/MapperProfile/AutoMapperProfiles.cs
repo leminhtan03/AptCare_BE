@@ -12,6 +12,7 @@ using AptCare.Service.Dtos.WorkSlotDtos;
 using AutoMapper;
 using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.SlotDtos;
 
 namespace AptCare.Api.MapperProfile
 {
@@ -139,6 +140,8 @@ namespace AptCare.Api.MapperProfile
             //REPAIR REQUEST
             CreateMap<RepairRequest, RepairRequestDto>()
                 .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null));
+
+            CreateMap<RepairRequest, RepairRequestBasicDto>();
             CreateMap<RequestTracking, RequestTrackingDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
 
@@ -176,6 +179,15 @@ namespace AptCare.Api.MapperProfile
 
             //MEDIA
             CreateMap<Media, MediaDto>();
+
+            //SLOT
+            CreateMap<Slot, SlotDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<SlotCreateDto, Slot>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
+                .ForMember(d => d.LastUpdated, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+            CreateMap<SlotUpdateDto, Slot>()
+                .ForMember(d => d.LastUpdated, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
         }
     }
 }

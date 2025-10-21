@@ -43,5 +43,12 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public UserBasicDto UpdatedByUser { get; set; } = null!;
     }
 
-    
+    public class RepairRequestBasicDto
+    {
+        public int RepairRequestId { get; set; }
+        public string Object { get; set; } = null!;
+        public string Description { get; set; } = null!;
+        public bool IsEmergency { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
 }

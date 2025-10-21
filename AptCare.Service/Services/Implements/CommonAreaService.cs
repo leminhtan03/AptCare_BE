@@ -19,9 +19,9 @@ using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
 {
-    public class CommonAreaService : BaseService<CommonArea>, ICommonAreaService
+    public class CommonAreaService : BaseService<CommonAreaService>, ICommonAreaService
     {
-        public CommonAreaService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<CommonArea> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
+        public CommonAreaService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<CommonAreaService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
         {
         }
 

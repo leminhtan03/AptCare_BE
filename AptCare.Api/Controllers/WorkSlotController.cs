@@ -59,10 +59,6 @@ namespace AptCare.Api.Controllers
         /// - 03/10/2025 (Slot2)  
         /// - 05/10/2025 (Slot3)  
         ///  
-        /// **Enum SlotTime:**  
-        /// - `Slot1` — 8:00 - 16:00  
-        /// - `Slot2` — 16:00 - 24:00  
-        /// - `Slot3` — 00:00 - 8:00  
         ///  
         /// **Ràng buộc:** Mỗi kỹ thuật viên, ngày và slot chỉ có thể có 1 lịch duy nhất.
         /// 

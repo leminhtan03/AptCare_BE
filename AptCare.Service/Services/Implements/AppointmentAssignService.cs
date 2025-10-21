@@ -20,13 +20,13 @@ using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
 {
-    public class AppointmentAssignService : BaseService<AppointmentAssign>, IAppointmentAssignService
+    public class AppointmentAssignService : BaseService<AppointmentAssignService>, IAppointmentAssignService
     {
         private readonly IUserContext _userContext;
 
         public AppointmentAssignService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
-            ILogger<AppointmentAssign> logger,
+            ILogger<AppointmentAssignService> logger,
             IMapper mapper,
             IUserContext userContext) : base(unitOfWork, logger, mapper)
         {
