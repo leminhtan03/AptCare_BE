@@ -144,13 +144,19 @@ namespace AptCare.Api.MapperProfile
 
             //APOINTMENT
             CreateMap<Appointment, AppointmentDto>()
-                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.Technicians, o => o.MapFrom(s => s.AppointmentAssigns.Select(x => x.Technician)));
+            CreateMap<AppointmentCreateDto, Appointment>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => AppointmentStatus.Pending))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+            CreateMap<AppointmentUpdateDto, Appointment>();
 
             CreateMap<RepairRequestNormalCreateDto, RepairRequest>()
                .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => false))
                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow.AddHours(7)));
             CreateMap<RepairRequestEmergencyCreateDto, RepairRequest>()
-               .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => true));
+               .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => true))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
 
             // ===== Issue =====
             CreateMap<IssueCreateDto, Issue>()
