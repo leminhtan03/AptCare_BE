@@ -8,7 +8,6 @@ namespace AptCare.Repository.Entities
     {
         [Key]
         public int MediaId { get; set; }
-
         public int EntityId { get; set; }
         [Required]
         public string Entity { get; set; } = null!;
