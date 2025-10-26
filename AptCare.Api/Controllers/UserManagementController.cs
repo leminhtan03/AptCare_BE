@@ -271,7 +271,7 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> ImportResidents(IFormFile file)
+        public async Task<IActionResult> ImportResidentsorApartmentsInfo(IFormFile file)
         {
             if (file == null || file.Length == 0)
             {
@@ -402,7 +402,7 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> CreateAccountForNewUser([FromBody] CreateAccountForNewUserDto createAccountDto)
+        public async Task<IActionResult> CreateAccountForNewUser([FromBody] CreateInforWithAccount createAccountDto)
         {
             try
             {

@@ -142,13 +142,15 @@ namespace AptCare.Service.Services.Implements
                                 include: q => q.Include(x => x.User));
             if (account == null)
                 throw new AppValidationException("Tài khoản hoặc mật khẩu không đúng.");
+            if (account.MustChangePassword)
+                throw new PasswordChangeRequiredException(account.AccountId);
             if (!account.EmailConfirmed)
                 throw new AppValidationException("Email chưa xác minh. Vui lòng xác minh trước khi đăng nhập.");
             var pwdResult = _pwdHasher.VerifyHashedPassword(account, account.PasswordHash, dto.Password);
             if (pwdResult == PasswordVerificationResult.Failed)
                 throw new AppValidationException("Tài khoản hoặc mật khẩu không đúng.");
-            if (account.MustChangePassword)
-                throw new PasswordChangeRequiredException(account.AccountId);
+
+
             if (pwdResult == PasswordVerificationResult.SuccessRehashNeeded)
             {
                 account.PasswordHash = _pwdHasher.HashPassword(account, dto.Password);

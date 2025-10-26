@@ -37,7 +37,6 @@ namespace AptCare.Repository.Entities
         public ActiveStatus Status { get; set; }
 
         public Account? Account { get; set; }
-
         public ICollection<UserApartment>? UserApartments { get; set; }
         public ICollection<Report>? Reports { get; set; }
         public ICollection<Notification>? Notifications { get; set; }

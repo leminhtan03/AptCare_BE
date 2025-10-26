@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AptCare.Service.Dtos.Account
 {
-    public class CreateAccountForNewUserDto
+    public class CreateInforWithAccount
     {
         public string? Password { get; set; }
         public string AccountRole { get; set; }

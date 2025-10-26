@@ -473,7 +473,7 @@ namespace AptCare.Service.Services.Implements
             await _unitOfWork.CommitAsync();
         }
 
-        public async Task<UserDto> CreateAccountForNewUserAsync(CreateAccountForNewUserDto createAccountDto)
+        public async Task<UserDto> CreateAccountForNewUserAsync(CreateInforWithAccount createAccountDto)
         {
             try
             {
