@@ -112,6 +112,7 @@ namespace AptCare.Service.Services.Implements
                 include: i => i.Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                                 .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.Apartment)
                 );
 
             if (appointment == null)
@@ -143,7 +144,8 @@ namespace AptCare.Service.Services.Implements
                 predicate: predicate,
                 include: i => i.Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
-                                .Include(x => x.RepairRequest),
+                                .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.Apartment),
                 orderBy: BuildOrderBy(dto.sortBy),
                     page: page,
                     size: size
@@ -185,6 +187,7 @@ namespace AptCare.Service.Services.Implements
                                 DateOnly.FromDateTime(p.StartTime) <= toDate &&
                                 (technicianId == null || p.AppointmentAssigns.Any(ua => ua.TechnicianId == technicianId)),
                 include: i => i.Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.Apartment)
                                 .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                 );

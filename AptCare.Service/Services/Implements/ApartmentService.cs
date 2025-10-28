@@ -40,7 +40,7 @@ namespace AptCare.Service.Services.Implements
 
             // kiểm tra trùng phòng (nên kèm FloorId để không đụng tầng khác)
             var isDup = await _unitOfWork.GetRepository<Apartment>().AnyAsync(
-                x => x.FloorId == dto.FloorId && x.RoomNumber == dto.RoomNumber);
+                x => x.FloorId == dto.FloorId && x.Room == dto.Room);
 
             if (isDup)
                 throw new AppValidationException("Số phòng đã tồn tại.", StatusCodes.Status409Conflict);
@@ -72,7 +72,7 @@ namespace AptCare.Service.Services.Implements
             var isDup = await _unitOfWork.GetRepository<Apartment>().AnyAsync(
                 x => x.ApartmentId != id &&
                      x.FloorId == dto.FloorId &&
-                     x.RoomNumber == dto.RoomNumber);
+                     x.Room == dto.Room);
 
             if (isDup)
                 throw new AppValidationException("Số phòng đã tồn tại.", StatusCodes.Status409Conflict);
@@ -127,7 +127,7 @@ namespace AptCare.Service.Services.Implements
             
 
             Expression<Func<Apartment, bool>> predicate = p =>
-                (string.IsNullOrEmpty(search) || p.RoomNumber.ToString().Contains(search) ||
+                (string.IsNullOrEmpty(search) || p.Room.ToString().Contains(search) ||
                                                  p.Description.Contains(search)) &&
                 (string.IsNullOrEmpty(filter) ||
                 filter.Equals(p.Status.ToString().ToLower()) &&
@@ -152,7 +152,7 @@ namespace AptCare.Service.Services.Implements
             var result = await _unitOfWork.GetRepository<Apartment>().GetListAsync(
                 selector: s => _mapper.Map<ApartmentDto>(s),
                 predicate: p => p.FloorId == floorId,
-                orderBy: o => o.OrderBy(x => x.RoomNumber)
+                orderBy: o => o.OrderBy(x => x.Room)
                 );
 
             return result;
@@ -164,9 +164,9 @@ namespace AptCare.Service.Services.Implements
 
             return sortBy.ToLower() switch
             {
-                "room" => q => q.OrderBy(p => p.RoomNumber),
-                "room_desc" => q => q.OrderByDescending(p => p.RoomNumber),
-                _ => q => q.OrderByDescending(p => p.RoomNumber) // Default sort
+                "room" => q => q.OrderBy(p => p.Room),  
+                "room_desc" => q => q.OrderByDescending(p => p.Room),
+                _ => q => q.OrderByDescending(p => p.Room) // Default sort
             };
         }
     }

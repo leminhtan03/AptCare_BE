@@ -26,5 +26,7 @@ namespace AptCare.Repository.Entities
         public string? RelationshipToOwner { get; set; }
 
         public ActiveStatus Status { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? DisableAt { get; set; }
     }
 }

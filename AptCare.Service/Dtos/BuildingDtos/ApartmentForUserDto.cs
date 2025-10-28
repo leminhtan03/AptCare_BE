@@ -12,7 +12,7 @@ namespace AptCare.Service.Dtos.BuildingDtos
         /// <summary>
         /// Mã số căn hộ (ví dụ: "A-101")
         /// </summary>
-        public string RoomNumber { get; set; }
+        public string Room { get; set; }
 
         /// <summary>
         /// Vai trò của người dùng trong căn hộ này (ví dụ: "Owner")

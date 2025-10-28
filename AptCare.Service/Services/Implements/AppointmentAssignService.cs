@@ -177,6 +177,9 @@ namespace AptCare.Service.Services.Implements
                                        .Include(x => x.WorkSlots)
                                            .ThenInclude(x => x.Slot)
                                        .Include(x => x.AppointmentAssigns)
+                                           .ThenInclude(x => x.Appointment)
+                                                .ThenInclude(x => x.RepairRequest)
+                                                    .ThenInclude(x => x.Apartment)
                                        .Include(x => x.TechnicianTechniques)                     
                     );
 
