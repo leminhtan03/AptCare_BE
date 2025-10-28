@@ -21,5 +21,6 @@ namespace AptCare.Service.Dtos.Account
         public List<TechniqueResponseDto>? Techniques { get; set; }
         public string Role { get; set; } = string.Empty;
         public string Status { get; set; }
+        public string? profileUrl { get; set; }
     }
 }

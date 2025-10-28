@@ -124,6 +124,13 @@ namespace AptCare.Service.Services.Implements
             {
                 throw new AppValidationException("Tầng không tồn tại", StatusCodes.Status404NotFound);
             }
+            if (floor.Apartments != null)
+            {
+                foreach (var apartment in floor.Apartments)
+                {
+                    await LoadUserProfileImagesAsync(apartment);
+                }
+            }
 
             return floor;
         }
@@ -146,13 +153,22 @@ namespace AptCare.Service.Services.Implements
                 predicate: predicate,
                 include: i => i.Include(x => x.Apartments)
                                     .ThenInclude(x => x.UserApartments)
-                                        .ThenInclude(x => x.User)
+                                    .ThenInclude(x => x.User)
                                .Include(x => x.CommonAreas),
                 orderBy: BuildOrderBy(dto.sortBy),
                     page: page,
                     size: size
                 );
-
+            foreach (var floor in result.Items)
+            {
+                if (floor.Apartments != null)
+                {
+                    foreach (var apartment in floor.Apartments)
+                    {
+                        await LoadUserProfileImagesAsync(apartment);
+                    }
+                }
+            }
             return result;
         }
 
@@ -177,6 +193,30 @@ namespace AptCare.Service.Services.Implements
                 "floor_desc" => q => q.OrderByDescending(p => p.FloorNumber),
                 _ => q => q.OrderByDescending(p => p.FloorNumber) // Default sort
             };
+        }
+        private async Task LoadUserProfileImagesAsync(ApartmentDto apartment)
+        {
+            var userIds = apartment.Users?.Select(ua => ua.User.UserId).ToList() ?? new List<int>();
+
+            if (!userIds.Any())
+                return;
+
+            var profileImages = await _unitOfWork.GetRepository<Media>()
+                .GetListAsync(
+                    predicate: m => userIds.Contains(m.EntityId)
+                        && m.Entity == nameof(User)
+                        && m.Status == ActiveStatus.Active
+                );
+
+            var imageDict = profileImages.ToDictionary(m => m.EntityId, m => m.FilePath);
+
+            foreach (var userApartment in apartment.Users)
+            {
+                if (userApartment.User != null && imageDict.TryGetValue(userApartment.User.UserId, out var imagePath))
+                {
+                    userApartment.User.ProfileImageUrl = imagePath;
+                }
+            }
         }
     }
 }
