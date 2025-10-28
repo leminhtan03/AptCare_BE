@@ -11,6 +11,7 @@ namespace AptCare.Service.Dtos.ChatDtos
     {
         public int ConversationId { get; set; }
         public string Title { get; set; } = null!;
+        public string Slug { get; set; } = null!;
         public bool IsMuted { get; set; }
         public string LastMessage { get; set; } = null!;
         public List<ParticipantDto> Participants { get; set; } = null!;

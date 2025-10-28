@@ -1,18 +1,22 @@
 ﻿using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos.ChatDtos;
+using AptCare.Service.Hub;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace AptCare.Api.Controllers
 {
     public class MessageController : BaseApiController
     {
         private readonly IMessageService _messageService;
+        private readonly IHubContext<ChatHub> _hubContext;
 
-        public MessageController(IMessageService messageService)
+        public MessageController(IMessageService messageService, IHubContext<ChatHub> hubContext)
         {
             _messageService = messageService;
+            _hubContext = hubContext;
         }
 
         /// <summary>
@@ -29,12 +33,13 @@ namespace AptCare.Api.Controllers
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpPost("text")]
         [Authorize]
-        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(MessageDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> CreateTextMessage([FromBody] TextMessageCreateDto dto)
         {
             var result = await _messageService.CreateTextMessageAsync(dto);
+            await _hubContext.Clients.Group(result.Slug).SendAsync("ReceiveMessage", result);
             return Created(string.Empty, result);
         }
 
@@ -54,12 +59,13 @@ namespace AptCare.Api.Controllers
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpPost("file")]
         [Authorize]
-        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(MessageDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> CreateFileMessage(int conversationId, IFormFile file)
         {
             var result = await _messageService.CreateFileMessageAsync(conversationId, file);
+            await _hubContext.Clients.Group(result.Slug).SendAsync("ReceiveMessage", result);
             return Created(string.Empty, result);
         }
 

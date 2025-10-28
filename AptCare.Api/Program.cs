@@ -5,6 +5,7 @@ using AptCare.Api.Middleware;
 using AptCare.Repository;
 using AptCare.Repository.Repositories;
 using AptCare.Repository.Seeds;
+using AptCare.Service.Hub;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -33,6 +34,8 @@ namespace AptCare.Api
             builder.Services.AddRouting(options => options.LowercaseUrls = true);
 
             builder.Services.AddHttpContextAccessor();
+
+            builder.Services.AddSignalR();
 
             var allowed = new[]
 {
@@ -121,6 +124,8 @@ namespace AptCare.Api
             app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();
+
+            app.MapHub<ChatHub>("/chatHub");
 
             app.MapControllers();
             app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
