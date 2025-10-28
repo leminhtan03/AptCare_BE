@@ -20,6 +20,7 @@ namespace AptCare.Service.Dtos.UserDtos
         public List<ApartmentForUserDto>? Apartments { get; set; }
         public AccountForAdminDto? AccountInfo { get; set; }
         public string Status { get; set; } = null!;
+        public string? ProfileImageUrl { get; set; }
     }
 
     public class UserBasicDto

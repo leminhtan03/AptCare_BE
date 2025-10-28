@@ -2,6 +2,7 @@
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.AuthenDto;
 using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
@@ -16,8 +17,10 @@ namespace AptCare.Api.Controllers
     public class AuthController : BaseApiController
     {
         private readonly IAuthenticationService _authenService;
+        private readonly IUserService _userService;
+        private readonly IUserContext _iuc;
 
-        public AuthController(IAuthenticationService registration) => _authenService = registration;
+        public AuthController(IAuthenticationService registration, IUserService userService, IUserContext userContext) { _authenService = registration; _userService = userService; _iuc = userContext; }
 
         /// <summary>
         /// Đăng ký tài khoản mới cho người dùng.
@@ -324,5 +327,22 @@ namespace AptCare.Api.Controllers
             var tokens = await _authenService.FirstLoginChangePasswordAsync(dto);
             return Ok(tokens);
         }
+        [HttpPost("change-profile-image")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> ChangeProfileImage(IFormFile dto)
+        {
+            var userId = _iuc.CurrentUserId;
+            var newdto = new UpdateUserImageProfileDto
+            {
+                UserId = userId,
+                ImageProfileUrl = dto
+            };
+            await _userService.UpdateUserProfileImageAsync(newdto);
+            return Ok("Cập nhật ảnh đại diện thành công!!");
+        }
+
     }
 }

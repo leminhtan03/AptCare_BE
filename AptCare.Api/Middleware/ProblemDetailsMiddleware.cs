@@ -18,7 +18,6 @@ namespace AptCare.Api.Middleware
             IConfiguration config)
         {
             _next = next; _log = log; _env = env;
-            // Bật/tắt mức detail ở Prod qua cấu hình
             _exposeDetailInProd = config.GetValue("Errors:ExposeDetail", false);
         }
 
@@ -39,8 +38,6 @@ namespace AptCare.Api.Middleware
             catch (Exception ex)
             {
                 _log.LogError(ex, "Unhandled exception");
-
-                // Cho mọi 500 đều có body. Ở Prod chỉ hiển thị message cơ bản (có thể bật chi tiết qua config).
                 var detail = _env.IsDevelopment() || _exposeDetailInProd
                     ? ex.Message
                     : "Unexpected error occurred. Please contact support with the traceId.";
@@ -48,7 +45,6 @@ namespace AptCare.Api.Middleware
                 return;
             }
 
-            // Với các 4xx/5xx KHÔNG có body do controller tự đặt → thêm ProblemDetails tối thiểu
             if (!ctx.Response.HasStarted &&
                 ctx.Response.ContentLength is null &&
                 ctx.Response.StatusCode >= 400)

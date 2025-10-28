@@ -25,10 +25,12 @@ namespace AptCare.Service.Services.Implements
     {
         private readonly IMailSenderService _mailSender;
         private readonly IPasswordHasher<Account> _pwdHasher;
-        public UserService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IPasswordHasher<Account> pwdHasher, IMailSenderService mailSenderService, ILogger<UserService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
+        private readonly ICloudinaryService _cloudinaryService;
+        public UserService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IPasswordHasher<Account> pwdHasher, IMailSenderService mailSenderService, ILogger<UserService> logger, ICloudinaryService cloudinaryService, IMapper mapper) : base(unitOfWork, logger, mapper)
         {
             _mailSender = mailSenderService;
             _pwdHasher = pwdHasher;
+            _cloudinaryService = cloudinaryService;
         }
 
 
@@ -105,6 +107,10 @@ namespace AptCare.Service.Services.Implements
             {
                 throw new KeyNotFoundException("Người dùng không tồn tại.");
             }
+            var media = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                predicate: m => m.EntityId == userId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
+            if (media != null)
+                user.ProfileImageUrl = media.FilePath;
             return _mapper.Map<UserDto>(user);
         }
         public async Task<IPaginate<UserDto>> GetReSidentDataPageAsync(string searchQuery, string status, int page, int pageSize)
@@ -135,13 +141,29 @@ namespace AptCare.Service.Services.Implements
                 include: source => source
                     .Include(u => u.Account)
                     .Include(u => u.UserApartments)
-                    .ThenInclude(ua => ua.Apartment),
+                        .ThenInclude(ua => ua.Apartment),
                 orderBy: users => users.OrderBy(u => u.UserId),
                 page: page,
                 size: pageSize
             );
+            var userIds = users.Items.Select(u => u.UserId).ToList();
+            var profileImages = await _unitOfWork.GetRepository<Media>()
+                .GetListAsync(
+                    predicate: m => userIds.Contains(m.EntityId)
+                        && m.Entity == nameof(User)
+                        && m.Status == ActiveStatus.Active
+                );
+            var imageDict = profileImages.ToDictionary(m => m.EntityId, m => m.FilePath);
+            foreach (var user in users.Items)
+            {
+                if (imageDict.TryGetValue(user.UserId, out var imagePath))
+                {
+                    user.ProfileImageUrl = imagePath;
+                }
+            }
             return users;
         }
+
         public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto)
         {
             var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.UserId == userId,
@@ -211,7 +233,12 @@ namespace AptCare.Service.Services.Implements
                 _unitOfWork.GetRepository<User>().UpdateAsync(user);
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
-                return _mapper.Map<UserDto>(user);
+                var resultUser = _mapper.Map<UserDto>(user);
+                var media = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                    predicate: m => m.EntityId == userId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
+                if (media != null)
+                    resultUser.ProfileImageUrl = media.FilePath;
+                return resultUser;
             }
             catch (Exception ex)
             {
@@ -280,6 +307,7 @@ namespace AptCare.Service.Services.Implements
             }
 
         }
+
         public async Task<IPaginate<UserDto>> GetSystemUserPageAsync(string searchQuery, string role, string status, int page, int pageSize)
         {
             AccountRole? roleEnum = null;
@@ -325,8 +353,25 @@ namespace AptCare.Service.Services.Implements
                page: page,
                size: pageSize
            );
+            var userIds = users.Items.Select(u => u.UserId).ToList();
+            var profileImages = await _unitOfWork.GetRepository<Media>()
+                .GetListAsync(
+                    predicate: m => userIds.Contains(m.EntityId)
+                        && m.Entity == nameof(User)
+                        && m.Status == ActiveStatus.Active
+                );
+            var imageDict = profileImages.ToDictionary(m => m.EntityId, m => m.FilePath);
+            foreach (var user in users.Items)
+            {
+                if (imageDict.TryGetValue(user.UserId, out var imagePath))
+                {
+                    user.ProfileImageUrl = imagePath;
+                }
+            }
             return users;
         }
+
+
         public async Task<ImportResultDto> ImportResidentsFromExcelAsync(Stream fileStream)
         {
             var result = new ImportResultDto();
@@ -337,15 +382,15 @@ namespace AptCare.Service.Services.Implements
                 ExcelPackage.License.SetNonCommercialPersonal("Internal project");
                 using (var package = new ExcelPackage(fileStream))
                 {
-                    var usersSheet = package.Workbook.Worksheets["Users"];
-                    if (usersSheet == null) throw new AppValidationException("Không tìm thấy sheet 'Users' trong file Excel.");
+                    var usersSheet = package.Workbook.Worksheets["ResidentsProfile"];
+                    if (usersSheet == null) throw new AppValidationException("Không tìm thấy sheet 'ResidentsProfile' trong file Excel.");
 
-                    var userMap = await ProcessUsersSheet(usersSheet, result);
+                    await ProcessUsersSheet(usersSheet, result);
 
-                    var relationsSheet = package.Workbook.Worksheets["UserApartments"];
-                    if (relationsSheet == null) throw new AppValidationException("Không tìm thấy sheet 'UserApartments' trong file Excel.");
+                    var relationsSheet = package.Workbook.Worksheets["ApartmentRelation"];
+                    if (relationsSheet == null) throw new AppValidationException("Không tìm thấy sheet 'ApartmentRelation' trong file Excel.");
 
-                    await ProcessUserApartmentsSheet(relationsSheet, userMap, result);
+                    await ProcessUserApartmentsSheet(relationsSheet, result);
 
                     if (result.IsSuccess)
                     {
@@ -365,9 +410,9 @@ namespace AptCare.Service.Services.Implements
             return result;
 
         }
-        private async Task<Dictionary<string, User>> ProcessUsersSheet(ExcelWorksheet worksheet, ImportResultDto result)
+
+        private async Task ProcessUsersSheet(ExcelWorksheet worksheet, ImportResultDto result)
         {
-            var userMap = new Dictionary<string, User>();
             var rowCount = worksheet.Dimension.Rows;
 
             for (int row = 2; row <= rowCount; row++)
@@ -422,56 +467,173 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 await _unitOfWork.CommitAsync();
-                userMap[phoneNumber] = user;
             }
-            return userMap;
+
         }
-        private async Task ProcessUserApartmentsSheet(ExcelWorksheet worksheet, Dictionary<string, User> userMap, ImportResultDto result)
+
+        private async Task ProcessUserApartmentsSheet(ExcelWorksheet worksheet, ImportResultDto result)
         {
             var rowCount = worksheet.Dimension.Rows;
+            var userRepo = _unitOfWork.GetRepository<User>();
+            var aptRepo = _unitOfWork.GetRepository<Apartment>();
+            var uaRepo = _unitOfWork.GetRepository<UserApartment>();
+
+            var validRows = new List<UserApartmentRow>();
 
             for (int row = 2; row <= rowCount; row++)
             {
                 var userPhoneNumber = worksheet.Cells[row, 1].Value?.ToString()?.Trim();
                 var apartmentCode = worksheet.Cells[row, 2].Value?.ToString()?.Trim();
                 var roleStr = worksheet.Cells[row, 3].Value?.ToString()?.Trim();
-                var relationshipToOwner = worksheet.Cells[row, 4].Value?.ToString()?.Trim();
+                var relationshipToOwn = worksheet.Cells[row, 4].Value?.ToString()?.Trim();
 
-                // Validation
-                if (!userMap.TryGetValue(userPhoneNumber, out var user))
-                {
-                    result.Errors.Add($"[UserApartments] Dòng {row}: Không tìm thấy người dùng với SĐT '{userPhoneNumber}' trong Users.");
-                    continue;
-                }
-                var apartment = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(predicate: a => a.Room == apartmentCode);
+                if (string.IsNullOrWhiteSpace(userPhoneNumber) || string.IsNullOrWhiteSpace(apartmentCode) || string.IsNullOrWhiteSpace(roleStr))
+                { result.Errors.Add($"[UserApartments] Dòng {row}: Thiếu dữ liệu bắt buộc (SĐT/ Mã căn/ Vai trò)."); continue; }
+
+                var user = await userRepo.SingleOrDefaultAsync(predicate: u => u.PhoneNumber == userPhoneNumber);
+                if (user == null)
+                { result.Errors.Add($"[UserApartments] Dòng {row}: Không tìm thấy người dùng với SĐT '{userPhoneNumber}'."); continue; }
+
+                var apartment = await aptRepo.SingleOrDefaultAsync(predicate: a => a.Room == apartmentCode);
                 if (apartment == null)
-                {
-                    result.Errors.Add($"[UserApartments] Dòng {row}: Không tìm thấy căn hộ với mã '{apartmentCode}'.");
-                    continue;
-                }
+                { result.Errors.Add($"[UserApartments] Dòng {row}: Không tìm thấy căn hộ với mã '{apartmentCode}'."); continue; }
+
                 if (!Enum.TryParse<RoleInApartmentType>(roleStr, true, out var roleEnum))
-                {
-                    result.Errors.Add($"[UserApartments] Dòng {row}: Vai trò '{roleStr}' không hợp lệ.");
-                    continue;
-                }
+                { result.Errors.Add($"[UserApartments] Dòng {row}: Vai trò '{roleStr}' không hợp lệ."); continue; }
 
-                var relationExists = await _unitOfWork.GetRepository<UserApartment>().AnyAsync(ua => ua.UserId == user.UserId && ua.ApartmentId == apartment.ApartmentId);
-                if (!relationExists)
+                validRows.Add(new UserApartmentRow
                 {
-                    var newRelation = new UserApartment
-                    {
-                        UserId = user.UserId,
-                        ApartmentId = apartment.ApartmentId,
-                        RoleInApartment = roleEnum,
-                        RelationshipToOwner = relationshipToOwner,
-
-                    };
-                    await _unitOfWork.GetRepository<UserApartment>().InsertAsync(newRelation);
-                }
+                    RowIndex = row,
+                    UserId = user.UserId,
+                    ApartmentId = apartment.ApartmentId,
+                    Role = roleEnum,
+                    RelationshipToOwner = relationshipToOwn
+                });
             }
-            // Lưu tất cả các mối quan hệ mới
+            if (!validRows.Any()) return;
+
+            var apartmentIds = validRows.Select(v => v.ApartmentId).Distinct().ToList();
+
+            //var aptList = await aptRepo.GetListAsync(predicate: a => apartmentIds.Contains(a.ApartmentId));
+            //var aptLimitMap = aptList.ToDictionary(a => a.ApartmentId, a => a.Limit);
+
+            var uaList = await uaRepo.GetListAsync(predicate: ua => apartmentIds.Contains(ua.ApartmentId));
+
+            var hasOwnerInDbMap = uaList
+                .GroupBy(x => x.ApartmentId)
+                .ToDictionary(g => g.Key, g => g.Any(x => x.RoleInApartment == RoleInApartmentType.Owner));
+
+            var existingUsersMap = uaList
+                .GroupBy(x => x.ApartmentId)
+                .ToDictionary(g => g.Key, g => new HashSet<int>(g.Select(x => x.UserId)));
+
+            var existingCountMap = uaList
+                .GroupBy(x => x.ApartmentId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var rejectedRowIndexes = new HashSet<int>();
+
+            foreach (var group in validRows.GroupBy(v => v.ApartmentId))
+            {
+                var aptId = group.Key;
+                var rowsForApt = group.ToList();
+                var ownersInBatch = rowsForApt.Where(r => r.Role == RoleInApartmentType.Owner).ToList();
+
+                var hasOwnerInApt = hasOwnerInDbMap.TryGetValue(aptId, out var yes) && yes;
+
+                if (hasOwnerInApt)
+                {
+                    if (ownersInBatch.Any())
+                    {
+                        foreach (var r in ownersInBatch)
+                        {
+                            rejectedRowIndexes.Add(r.RowIndex);
+                            result.Errors.Add($"[UserApartments] Dòng {r.RowIndex}: Căn hộ đã có chủ sở hữu; không thể thêm thêm Owner.");
+                        }
+                    }
+                }
+                else
+                {
+                    if (ownersInBatch.Count != 1)
+                    {
+                        foreach (var r in rowsForApt) rejectedRowIndexes.Add(r.RowIndex);
+
+                        var lineList = string.Join(", ", rowsForApt.Select(r => r.RowIndex));
+                        var msg = ownersInBatch.Count == 0
+                            ? $"[UserApartments] Các dòng {lineList}: Căn hộ chưa có Owner trong hệ thống và batch không cung cấp Owner."
+                            : $"[UserApartments] Các dòng {lineList}: Batch cung cấp {ownersInBatch.Count} Owner cho cùng một căn (yêu cầu đúng 1).";
+                        result.Errors.Add(msg);
+                        continue;
+                    }
+                }
+
+                //var limit = aptLimitMap.TryGetValue(aptId, out var lm) ? lm : int.MaxValue;
+
+                var existingUsers = existingUsersMap.TryGetValue(aptId, out var set)
+                    ? set
+                    : (existingUsersMap[aptId] = new HashSet<int>());
+
+                var existingCount = existingCountMap.TryGetValue(aptId, out var cnt) ? cnt : 0;
+                //var freeSlots = Math.Max(0, limit - existingCount);
+
+                var survivors = rowsForApt.Where(r => !rejectedRowIndexes.Contains(r.RowIndex)).ToList();
+
+                var newAdds = survivors.Where(r => !existingUsers.Contains(r.UserId)).ToList();
+
+                IEnumerable<UserApartmentRow> ordered;
+                if (!hasOwnerInApt)
+                    ordered = newAdds.OrderByDescending(r => r.Role == RoleInApartmentType.Owner).ThenBy(r => r.RowIndex);
+                else
+                    ordered = newAdds.OrderBy(r => r.RowIndex);
+
+                //var toKeep = ordered.Take(freeSlots).ToList();
+                //var toReject = ordered.Skip(freeSlots).ToList();
+
+                //if (toReject.Count > 0)
+                //{
+                //    foreach (var r in toReject) rejectedRowIndexes.Add(r.RowIndex);
+
+                //    var lines = string.Join(", ", toReject.Select(r => r.RowIndex).OrderBy(i => i));
+                //    result.Errors.Add(
+                //        $"[UserApartments] Các dòng {lines}: Vượt giới hạn thành viên (Limit={limit}) của căn hộ. " +
+                //        $"Hiện có {existingCount}, thêm tối đa {freeSlots} trong batch này."
+                //    );
+                //}
+
+                //foreach (var r in toKeep)
+                //{
+                //    if (existingUsers.Add(r.UserId))
+                //        existingCount++;
+                //}
+                existingCountMap[aptId] = existingCount;
+            }
+
+            // ---------- Chèn các dòng hợp lệ còn lại ----------
+            foreach (var row in validRows.Where(r => !rejectedRowIndexes.Contains(r.RowIndex)))
+            {
+                var exists = await uaRepo.AnyAsync(ua => ua.UserId == row.UserId && ua.ApartmentId == row.ApartmentId);
+                if (exists)
+                { result.Errors.Add($"[UserApartments] Dòng {row.RowIndex}: Quan hệ đã tồn tại, bỏ qua."); continue; }
+
+                if (row.Role == RoleInApartmentType.Owner)
+                {
+                    var ownerDup = await uaRepo.AnyAsync(ua => ua.ApartmentId == row.ApartmentId && ua.RoleInApartment == RoleInApartmentType.Owner);
+                    if (ownerDup)
+                    { result.Errors.Add($"[UserApartments] Dòng {row.RowIndex}: Căn hộ đã có Owner khác (xảy ra do đồng thời)."); continue; }
+                }
+
+                await uaRepo.InsertAsync(new UserApartment
+                {
+                    UserId = row.UserId,
+                    ApartmentId = row.ApartmentId,
+                    RoleInApartment = row.Role,
+                    RelationshipToOwner = row.RelationshipToOwner
+                });
+            }
+
             await _unitOfWork.CommitAsync();
         }
+
 
         public async Task<UserDto> CreateAccountForNewUserAsync(CreateInforWithAccount createAccountDto)
         {
@@ -503,7 +665,7 @@ namespace AptCare.Service.Services.Implements
 
                 if (!Enum.TryParse<AccountRole>(createAccountDto.AccountRole, true, out var roleEnum))
                 {
-                    throw new Exception($"Vai trò '{createAccountDto.AccountRole}'của user không hợp lệ.");
+                    throw new Exception($"Vai trò '{createAccountDto.AccountRole}'của userExist không hợp lệ.");
                 }
                 if (roleEnum != AccountRole.Resident)
                 {
@@ -589,6 +751,7 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception("Lỗi khi tạo tài khoản: " + ex.Message);
             }
         }
+
         private string GenerateRandomPassword(int length = 12)
         {
             const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -617,6 +780,51 @@ namespace AptCare.Service.Services.Implements
             }
 
             return new string(passwordArray);
+        }
+
+        public async Task UpdateUserProfileImageAsync(UpdateUserImageProfileDto dto)
+        {
+            try
+            {
+
+                var userRepo = _unitOfWork.GetRepository<User>();
+                var mediaRepo = _unitOfWork.GetRepository<Media>();
+                var imagePath = await _cloudinaryService.UploadImageAsync(dto.ImageProfileUrl);
+                var userOldMedia = await mediaRepo.SingleOrDefaultAsync(predicate: m => m.EntityId == dto.UserId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
+                await _unitOfWork.BeginTransactionAsync();
+                if (userOldMedia != null)
+                {
+                    userOldMedia.Status = ActiveStatus.Inactive;
+                    mediaRepo.UpdateAsync(userOldMedia);
+                    await _unitOfWork.CommitAsync();
+                }
+                var newMedia = new Media
+                {
+                    EntityId = dto.UserId,
+                    Entity = nameof(User),
+                    FilePath = imagePath,
+                    FileName = "Ảnh đại diện của userExist" + dto.UserId,
+                    ContentType = dto.ImageProfileUrl.ContentType,
+                    CreatedAt = DateTime.UtcNow,
+                    Status = ActiveStatus.Active
+                };
+                await mediaRepo.InsertAsync(newMedia);
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new Exception("Lỗi khi cập nhật ảnh đại diện: " + ex.Message);
+            }
+        }
+        private sealed class UserApartmentRow
+        {
+            public int RowIndex { get; init; }
+            public int UserId { get; init; }
+            public int ApartmentId { get; init; }
+            public RoleInApartmentType Role { get; init; }
+            public string? RelationshipToOwner { get; init; }
         }
     }
 

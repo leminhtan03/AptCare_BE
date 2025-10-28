@@ -8,6 +8,7 @@ using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
+using CloudinaryDotNet;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -108,6 +109,8 @@ namespace AptCare.Service.Services.Implements
             if (apt is null)
                 throw new AppValidationException("Căn hộ không tồn tại.", StatusCodes.Status404NotFound);
 
+            await LoadUserProfileImagesAsync(apt);
+
             return apt;
         }
 
@@ -124,11 +127,11 @@ namespace AptCare.Service.Services.Implements
                 if (!isExistingFloor)
                     throw new AppValidationException("Tầng không tồn tại.", StatusCodes.Status404NotFound);
             }
-            
+
 
             Expression<Func<Apartment, bool>> predicate = p =>
-                (string.IsNullOrEmpty(search) || p.Room.ToString().Contains(search) ||
-                                                 p.Description.Contains(search)) &&
+                (string.IsNullOrEmpty(search) || p.RoomNumber.ToString().Contains(search) ||
+                                         (p.Description != null && p.Description.Contains(search))) &&
                 (string.IsNullOrEmpty(filter) ||
                 filter.Equals(p.Status.ToString().ToLower()) &&
                 floorId == null || p.FloorId == floorId);
@@ -136,14 +139,15 @@ namespace AptCare.Service.Services.Implements
             var result = await _unitOfWork.GetRepository<Apartment>().GetPagingListAsync(
                 selector: s => _mapper.Map<ApartmentDto>(s),
                 predicate: predicate,
-                include: i => i.Include(x => x.UserApartments)
-                                    .ThenInclude(x => x.User)
-                                        .ThenInclude(x => x.Account),
-                orderBy: BuildOrderBy(dto.sortBy),
+                include: i => i.Include(x => x.UserApartments!)
+                                .ThenInclude(x => x.User)
+                                .ThenInclude(x => x.Account),
+                orderBy: BuildOrderBy(dto.sortBy ?? string.Empty),
                     page: page,
                     size: size
                 );
-
+            foreach (var apartment in result.Items)
+                await LoadUserProfileImagesAsync(apartment);
             return result;
         }
 
@@ -154,7 +158,6 @@ namespace AptCare.Service.Services.Implements
                 predicate: p => p.FloorId == floorId,
                 orderBy: o => o.OrderBy(x => x.Room)
                 );
-
             return result;
         }
 
@@ -168,6 +171,31 @@ namespace AptCare.Service.Services.Implements
                 "room_desc" => q => q.OrderByDescending(p => p.Room),
                 _ => q => q.OrderByDescending(p => p.Room) // Default sort
             };
+        }
+
+        private async Task LoadUserProfileImagesAsync(ApartmentDto apartment)
+        {
+            var userIds = apartment.Users?.Select(ua => ua.User.UserId).ToList() ?? new List<int>();
+
+            if (!userIds.Any())
+                return;
+
+            var profileImages = await _unitOfWork.GetRepository<Media>()
+                .GetListAsync(
+                    predicate: m => userIds.Contains(m.EntityId)
+                        && m.Entity == nameof(User)
+                        && m.Status == ActiveStatus.Active
+                );
+
+            var imageDict = profileImages.ToDictionary(m => m.EntityId, m => m.FilePath);
+
+            foreach (var userApartment in apartment.Users)
+            {
+                if (userApartment.User != null && imageDict.TryGetValue(userApartment.User.UserId, out var imagePath))
+                {
+                    userApartment.User.ProfileImageUrl = imagePath;
+                }
+            }
         }
     }
 }
