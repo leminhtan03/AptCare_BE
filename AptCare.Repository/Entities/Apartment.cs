@@ -20,7 +20,11 @@ namespace AptCare.Repository.Entities
 
         [Required]
         [MaxLength(50)]
-        public string RoomNumber { get; set; } = null!;
+        public string Room { get; set; } = null!;
+
+        public double Area { get; set; }
+
+        public int Limit { get; set; } 
 
         public ApartmentStatus Status { get; set; }
 

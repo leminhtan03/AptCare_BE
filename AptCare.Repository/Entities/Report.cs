@@ -28,7 +28,7 @@ namespace AptCare.Repository.Entities
 
         [MaxLength(1000)]
         public string? Description { get; set; }
-        //Thay đổi sau
+        public DateTime CreatedAt { get; set; }
         public ActiveStatus Status { get; set; }
     }
 }

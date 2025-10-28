@@ -30,12 +30,12 @@ namespace AptCare.Api.MapperProfile
 
             // ===== UserApartment -> ApartmentForUser* (map con, dùng lại) =====
             CreateMap<UserApartment, ApartmentForUserDto>()
-                .ForMember(d => d.RoomNumber, o => o.MapFrom(s => s.Apartment.RoomNumber))
+                .ForMember(d => d.Room, o => o.MapFrom(s => s.Apartment.Room))
                 .ForMember(d => d.RoleInApartment, o => o.MapFrom(s => s.RoleInApartment.ToString()))
                 .ForMember(d => d.RelationshipToOwner, o => o.MapFrom(s => s.RelationshipToOwner));
 
             CreateMap<UserApartment, ApartmentForUserProfileDto>()
-                .ForMember(d => d.RoomNumber, o => o.MapFrom(s => s.Apartment.RoomNumber))
+                .ForMember(d => d.Room, o => o.MapFrom(s => s.Apartment.Room))
                 .ForMember(d => d.RoleInApartment, o => o.MapFrom(s => s.RoleInApartment.ToString()))
                 .ForMember(d => d.RelationshipToOwner, o => o.MapFrom(s => s.RelationshipToOwner))
                 .ForMember(d => d.Floor, o => o.MapFrom(s => s.Apartment.Floor.FloorNumber));

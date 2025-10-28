@@ -14,11 +14,7 @@ namespace AptCare.Repository.Entities
         [Key]
         public int FloorId { get; set; }
 
-        [Required]
-        [MaxLength(50)]
-        public string BuildingCode { get; set; }
-
-        public int FloorNumber { get; set; } // Đổi tên để tránh trùng với tên class
+        public int FloorNumber { get; set; }
 
         public ActiveStatus Status { get; set; }
 

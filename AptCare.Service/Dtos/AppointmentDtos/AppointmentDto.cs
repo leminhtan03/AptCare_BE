@@ -1,4 +1,5 @@
 ﻿using AptCare.Repository.Enum;
+using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Dtos.UserDtos;
 using System;

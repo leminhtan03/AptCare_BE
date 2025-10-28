@@ -61,10 +61,10 @@ namespace AptCare.Service.Services.Implements
                     {
                         if (!Enum.TryParse<RoleInApartmentType>(aptDto.RoleInApartment, true, out var roleEnum))
                         {
-                            throw new Exception($"Vai trò '{aptDto.RoleInApartment}'của userExist trong '{aptDto.RoomNumber}' không hợp lệ.");
+                            throw new Exception($"Vai trò '{aptDto.RoleInApartment}'của user trong '{aptDto.Room}' không hợp lệ.");
                         }
                         var apartment = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(
-                            predicate: a => a.RoomNumber == aptDto.RoomNumber && a.Status == ApartmentStatus.Active);
+                            predicate: a => a.Room == aptDto.Room && a.Status == ApartmentStatus.Active);
                         if (apartment != null)
                         {
                             var userApartment = new UserApartment
@@ -78,7 +78,7 @@ namespace AptCare.Service.Services.Implements
                         }
                         else
                         {
-                            throw new AppValidationException($"Apartment with RoomNumber '{aptDto.RoomNumber}' not found.");
+                            throw new AppValidationException($"Apartment with RoomNumber '{aptDto.Room}' not found.");
                         }
                     }
                 }
@@ -249,10 +249,10 @@ namespace AptCare.Service.Services.Implements
         }
         private async Task SyncUserApartments(User user, List<ApartmentForUserDto> newApartmentsDto)
         {
-            var newApartmentsMap = newApartmentsDto.ToDictionary(dto => dto.RoomNumber, dto => dto);
-            var currentRoomNumbers = user.UserApartments.Select(ua => ua.Apartment.RoomNumber).ToHashSet();
+            var newApartmentsMap = newApartmentsDto.ToDictionary(dto => dto.Room, dto => dto);
+            var currentRoomNumbers = user.UserApartments.Select(ua => ua.Apartment.Room).ToHashSet();
             var relationsToRemove = await _unitOfWork.GetRepository<UserApartment>().GetListAsync(
-                predicate: ua => ua.UserId == user.UserId && !newApartmentsMap.ContainsKey(ua.Apartment.RoomNumber),
+                predicate: ua => ua.UserId == user.UserId && !newApartmentsMap.ContainsKey(ua.Apartment.Room),
                 include: source => source.Include(ua => ua.Apartment)
             );
             if (relationsToRemove.Any())
@@ -266,11 +266,11 @@ namespace AptCare.Service.Services.Implements
             {
                 if (!Enum.TryParse<RoleInApartmentType>(dto.RoleInApartment, true, out var roleEnum))
                 {
-                    throw new Exception($"Vai trò '{dto.RoleInApartment}'của userExist trong '{dto.RoomNumber}' không hợp lệ.");
+                    throw new Exception($"Vai trò '{dto.RoleInApartment}'của user trong '{dto.Room}' không hợp lệ.");
                 }
 
                 var existingRelation = user.UserApartments
-                    .FirstOrDefault(ua => ua.Apartment.RoomNumber == dto.RoomNumber);
+                    .FirstOrDefault(ua => ua.Apartment.Room == dto.Room);
                 if (existingRelation != null)
                 {
                     if (existingRelation.RoleInApartment != roleEnum || existingRelation.RelationshipToOwner != dto.RelationshipToOwner)
@@ -285,7 +285,7 @@ namespace AptCare.Service.Services.Implements
                 else
                 {
                     var apartment = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(
-                        predicate: a => a.RoomNumber == dto.RoomNumber && a.Status == ApartmentStatus.Active);
+                        predicate: a => a.Room == dto.Room && a.Status == ApartmentStatus.Active);
                     if (apartment != null)
                     {
                         var newRelation = new UserApartment
@@ -301,7 +301,7 @@ namespace AptCare.Service.Services.Implements
                     }
                     else
                     {
-                        throw new AppValidationException($"Apartment with RoomNumber '{dto.RoomNumber}' not found.");
+                        throw new AppValidationException($"Apartment with RoomNumber '{dto.Room}' not found.");
                     }
                 }
             }
@@ -494,7 +494,7 @@ namespace AptCare.Service.Services.Implements
                 if (user == null)
                 { result.Errors.Add($"[UserApartments] Dòng {row}: Không tìm thấy người dùng với SĐT '{userPhoneNumber}'."); continue; }
 
-                var apartment = await aptRepo.SingleOrDefaultAsync(predicate: a => a.RoomNumber == apartmentCode);
+                var apartment = await aptRepo.SingleOrDefaultAsync(predicate: a => a.Room == apartmentCode);
                 if (apartment == null)
                 { result.Errors.Add($"[UserApartments] Dòng {row}: Không tìm thấy căn hộ với mã '{apartmentCode}'."); continue; }
 
@@ -677,10 +677,10 @@ namespace AptCare.Service.Services.Implements
                         {
                             if (!Enum.TryParse<RoleInApartmentType>(aptDto.RoleInApartment, true, out var roleInAptEnum))
                             {
-                                throw new Exception($"Vai trò '{aptDto.RoleInApartment}'của userExist trong '{aptDto.RoomNumber}' không hợp lệ.");
+                                throw new Exception($"Vai trò '{aptDto.RoleInApartment}'của user trong '{aptDto.Room}' không hợp lệ.");
                             }
                             var apartment = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(
-                                predicate: a => a.RoomNumber == aptDto.RoomNumber && a.Status == ApartmentStatus.Active);
+                                predicate: a => a.Room == aptDto.Room && a.Status == ApartmentStatus.Active);
                             if (apartment != null)
                             {
                                 var userApartment = new UserApartment
@@ -694,7 +694,7 @@ namespace AptCare.Service.Services.Implements
                             }
                             else
                             {
-                                throw new AppValidationException($"Căn hộ với mã '{aptDto.RoomNumber}' không tồn tại.");
+                                throw new AppValidationException($"Căn hộ với mã '{aptDto.Room}' không tồn tại.");
                             }
                         }
                         await _unitOfWork.GetRepository<UserApartment>().InsertRangeAsync(user.UserApartments);
