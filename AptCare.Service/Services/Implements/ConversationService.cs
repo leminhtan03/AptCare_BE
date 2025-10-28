@@ -76,6 +76,7 @@ namespace AptCare.Service.Services.Implements
             var conversation = new Conversation
             {
                 Title = title,
+                Slug = Guid.NewGuid().ToString(),
                 ConversationParticipants = conversationParticipants
             };
 

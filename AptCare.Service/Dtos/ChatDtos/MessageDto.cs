@@ -11,6 +11,7 @@ namespace AptCare.Service.Dtos.ChatDtos
     {
         public int MessageId { get; set; }
         public int ConversationId { get; set; }
+        public string Slug { get; set; } = null!;
         public int SenderId { get; set; }
         public string SenderName { get; set; } = null!;
         public string? SenderAvatar { get; set; } // nếu có avatar người gửi

@@ -124,6 +124,7 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
 
             CreateMap<Message, MessageDto>()
+                .ForMember(d => d.Slug, o => o.MapFrom(s => s.Conversation.Slug))
                 .ForMember(d => d.SenderName, o => o.MapFrom(s => s.Sender.FirstName + " " + s.Sender.LastName))
                 .ForMember(d => d.Type, o => o.MapFrom(s => s.Type.ToString()))
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))

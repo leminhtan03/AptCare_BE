@@ -16,6 +16,7 @@ using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
 using Microsoft.EntityFrameworkCore;
 using AptCare.Service.Exceptions;
+using AptCare.Service.Hub;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -35,7 +36,7 @@ namespace AptCare.Service.Services.Implements
             _cloudinaryService = cloudinaryService;
         }
 
-        public async Task<string> CreateTextMessageAsync(TextMessageCreateDto dto)
+        public async Task<MessageDto> CreateTextMessageAsync(TextMessageCreateDto dto)
         {
             try
             {
@@ -70,7 +71,16 @@ namespace AptCare.Service.Services.Implements
                 await PushMessageNotificationAsync(message);
                 await _unitOfWork.CommitTransactionAsync();
 
-                return "Đã gửi tin nhắn.";
+                var result = await _unitOfWork.GetRepository<Message>().ProjectToSingleOrDefaultAsync<MessageDto>(
+                    configuration: _mapper.ConfigurationProvider,
+                    //parameters: new { CurrentUserId = userId },
+                    predicate: m => m.MessageId == message.MessageId,
+                    include: i => i.Include(x => x.Sender)
+                                   .Include(x => x.ReplyMessage)
+                                       .ThenInclude(x => x.Sender)
+                                   .Include(x => x.Conversation)
+                );
+                return result;
             }
             catch (Exception e)
             {
@@ -79,7 +89,7 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-        public async Task<string> CreateFileMessageAsync(int conversationId, IFormFile file)
+        public async Task<MessageDto> CreateFileMessageAsync(int conversationId, IFormFile file)
         {
             try
             {
@@ -129,7 +139,16 @@ namespace AptCare.Service.Services.Implements
                 await PushMessageNotificationAsync(message);
                 await _unitOfWork.CommitTransactionAsync();
 
-                return "Đã gửi tin nhắn.";
+                var result = await _unitOfWork.GetRepository<Message>().ProjectToSingleOrDefaultAsync<MessageDto>(
+                    configuration: _mapper.ConfigurationProvider,
+                    //parameters: new { CurrentUserId = userId },
+                    predicate: m => m.MessageId == message.MessageId,
+                    include: i => i.Include(x => x.Sender)
+                                   .Include(x => x.ReplyMessage)
+                                       .ThenInclude(x => x.Sender)
+                                   .Include(x => x.Conversation)
+                );
+                return result;
             }
             catch (Exception e)
             {
@@ -222,7 +241,10 @@ namespace AptCare.Service.Services.Implements
                     configuration: _mapper.ConfigurationProvider,
                     //parameters: new { CurrentUserId = userId },
                     predicate: m => m.ConversationId == conversationId && (before == null || m.CreatedAt < before),
-                    include: i => i.Include(x => x.Sender).Include(x => x.ReplyMessage),
+                    include: i => i.Include(x => x.Sender)
+                                   .Include(x => x.ReplyMessage)
+                                       .ThenInclude(x => x.Sender)
+                                   .Include(x => x.Conversation),
                     orderBy: q => q.OrderByDescending(m => m.CreatedAt),
                     page: 1,
                     size: pageSize
@@ -246,6 +268,7 @@ namespace AptCare.Service.Services.Implements
                     include: i => i.Include(x => x.Sender)
                                    .Include(x => x.ReplyMessage)
                                        .ThenInclude(x => x.Sender)
+                                   .Include(x => x.Conversation)
                 );
             if (message == null)
             {
