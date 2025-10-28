@@ -257,6 +257,11 @@ namespace AptCare.Service.Services.Implements
                                .ThenInclude(i => i.Technique),
                     selector: e => _mapper.Map<GetOwnProfileDto>(e)
                 );
+                var userprofileImagepath = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                    predicate: m => m.EntityId == userID && m.Entity == nameof(User),
+                    selector: m => m.FilePath
+                );
+                existUser.profileUrl = userprofileImagepath;
                 return existUser;
             }
             catch (Exception ex)

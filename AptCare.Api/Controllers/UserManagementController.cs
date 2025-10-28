@@ -414,5 +414,23 @@ namespace AptCare.Api.Controllers
                 return StatusCode(500, "An error occurred while processing your request." + ex.Message);
             }
         }
+        [HttpPut("update-user-profile-image")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> UpdateUserProfileImage([FromBody] UpdateUserImageProfileDto dto)
+        {
+            try
+            {
+                await _userService.UpdateUserProfileImageAsync(dto);
+                return Ok("Cập nhật ảnh đại diện thành công.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred while processing your request." + ex.Message);
+            }
+        }
     }
 }
