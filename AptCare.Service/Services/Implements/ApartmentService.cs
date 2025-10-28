@@ -130,7 +130,7 @@ namespace AptCare.Service.Services.Implements
 
 
             Expression<Func<Apartment, bool>> predicate = p =>
-                (string.IsNullOrEmpty(search) || p.RoomNumber.ToString().Contains(search) ||
+                (string.IsNullOrEmpty(search) || p.Room.ToString().Contains(search) ||
                                          (p.Description != null && p.Description.Contains(search))) &&
                 (string.IsNullOrEmpty(filter) ||
                 filter.Equals(p.Status.ToString().ToLower()) &&
