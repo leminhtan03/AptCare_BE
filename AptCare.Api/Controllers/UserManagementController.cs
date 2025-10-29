@@ -1,15 +1,11 @@
-﻿using AptCare.Repository.Entities;
-using AptCare.Repository.Enum.AccountUserEnum;
+﻿using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.UserDtos;
-using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OfficeOpenXml;
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace AptCare.Api.Controllers
@@ -43,19 +39,12 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> GetUserById(int id)
         {
-            try
+            var result = await _userService.GetUserByIdAsync(id);
+            if (result == null)
             {
-                var result = await _userService.GetUserByIdAsync(id);
-                if (result == null)
-                {
-                    return NotFound();
-                }
-                return Ok(result);
+                return NotFound();
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while processing your request." + ex.Message);
-            }
+            return Ok(result);
         }
         /// <summary>
         /// Cập nhật thông tin người dùng theo ID được chỉ định.
@@ -107,19 +96,12 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> UpdateUser(int id, [FromBody] UpdateUserDto updateUserDto)
         {
-            try
+            var result = await _userService.UpdateUserAsync(id, updateUserDto);
+            if (result == null)
             {
-                var result = await _userService.UpdateUserAsync(id, updateUserDto);
-                if (result == null)
-                {
-                    return NotFound();
-                }
-                return Ok(result);
+                return NotFound();
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while processing your request." + ex.Message);
-            }
+            return Ok(result);
         }
         /// <summary>
         /// Lấy danh sách dữ liệu cư dân theo trang với khả năng lọc và tìm kiếm. Nó sẽ lấy tất cả thông tin của cư dân bao gồm dữ liệu cá nhân, căn hộ được phân công và trạng thái tài khoản. (Ko có các thông tin của nhân viên)
@@ -164,75 +146,10 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult> GetResidentDataPage([FromQuery] GetResidentDataFilterDto getResidentDataFilterDto)
         {
-            try
-            {
-                var result = await _userService.GetReSidentDataPageAsync(getResidentDataFilterDto.SearchQuery, getResidentDataFilterDto.Status, getResidentDataFilterDto.Page, getResidentDataFilterDto.PageSize);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while processing your request." + ex.Message);
-            }
+            var result = await _userService.GetReSidentDataPageAsync(getResidentDataFilterDto.SearchQuery, getResidentDataFilterDto.Status, getResidentDataFilterDto.Page, getResidentDataFilterDto.PageSize);
+            return Ok(result);
         }
-        /// <summary>
-        /// Lấy danh sách dữ liệu người dùng hệ thống theo trang với khả năng lọc và tìm kiếm. Nó sẽ lấy tất cả thông tin của nhân viên và quản lý hệ thống bao gồm dữ liệu cá nhân, vai trò và trạng thái tài khoản. (Ko có tất cả thông tin của cư dân, chỉ có các thông tin đã liên kết tk)
-        /// </summary>
-        /// <remarks>
-        /// <para>Endpoint này trả về danh sách người dùng hệ thống (nhân viên, quản lý) được phân trang với các tùy chọn lọc và tìm kiếm.</para>
-        /// <para>Hỗ trợ tìm kiếm theo tên, email, số điện thoại và lọc theo vai trò, trạng thái người dùng.</para>
-        /// <para><strong>Lưu ý:</strong> Endpoint này yêu cầu quyền Manager.</para>
-        /// 
-        /// <para><strong>Ví dụ query parameters:</strong></para>
-        /// <code>
-        /// GET /api/usermanagement/system_users?searchQuery=Admin&role=Manager&status=Active&page=1&pageSize=10
-        /// </code>
-        /// </remarks>
-        /// <param name="getSystemUserPageDto">Đối tượng chứa các tham số lọc và phân trang.
-        /// <para><strong>Các thuộc tính bao gồm:</strong></para>
-        /// <list type="bullet">
-        /// <item><description><strong>SearchQuery:</strong> Từ khóa tìm kiếm (tìm trong tên, email, số điện thoại) - tùy chọn</description></item>
-        /// <item><description><strong>Role:</strong> Vai trò người dùng để lọc (Enum: "Manager", "Resident", "Receptionist", "Technician","TechnicianLead") - tùy chọn</description></item>
-        /// <item><description><strong>Status:</strong> Trạng thái người dùng để lọc (Enum: "Active", "Inactive") - tùy chọn</description></item>
-        /// <item><description><strong>Page:</strong> Số trang hiện tại (mặc định: 1, tối thiểu: 1)</description></item>
-        /// <item><description><strong>PageSize:</strong> Số lượng bản ghi trên mỗi trang (mặc định: 10, tối đa: 100)</description></item>
-        /// </list>
-        /// </param>
-        /// <returns>
-        /// <para><strong>Các trường hợp trả về:</strong></para>
-        /// <list type="table">
-        /// <item><term>200 OK</term><description>Trả về IPaginate&lt;UserDto&gt; chứa:
-        ///   <list type="bullet">
-        ///   <item><description><strong>Items:</strong> Danh sách UserDto của người dùng hệ thống</description></item>
-        ///   <item><description><strong>Page:</strong> Trang hiện tại</description></item>
-        ///   <item><description><strong>Size:</strong> Kích thước trang</description></item>
-        ///   <item><description><strong>Total:</strong> Tổng số bản ghi</description></item>
-        ///   <item><description><strong>TotalPages:</strong> Tổng số trang</description></item>
-        ///   </list>
-        /// </description></item>
-        /// <item><term>400 Bad Request</term><description>Tham số đầu vào không hợp lệ (page < 1, pageSize > 100)</description></item>
-        /// <item><term>500 Internal Server Error</term><description>Lỗi hệ thống trong quá trình xử lý</description></item>
-        /// </list>
-        /// </returns>
-        /// <exception cref="ArgumentException">Ném khi các tham số phân trang không hợp lệ</exception>
-        /// <exception cref="InvalidOperationException">Ném khi có lỗi trong quá trình truy vấn dữ liệu</exception>
-        [HttpGet("system_users")]
-        [ProducesResponseType(typeof(IPaginate<UserDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult> GetSystemUserPage([FromQuery] GetSystemUserFilterDto getSystemUserPageDto)
-        {
-            try
-            {
-                var result = await _userService.GetSystemUserPageAsync(getSystemUserPageDto.SearchQuery, getSystemUserPageDto.Role, getSystemUserPageDto.Status, getSystemUserPageDto.Page, getSystemUserPageDto.PageSize);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while processing your request." + ex.Message);
-            }
-        }
+
         /// <summary>
         /// Nhập dữ liệu cư dân từ file Excel với xác thực và xử lý lỗi chi tiết.
         /// </summary>
@@ -282,23 +199,16 @@ namespace AptCare.Api.Controllers
                 return BadRequest("Chỉ hỗ trợ file Excel (.xlsx).");
             }
 
-            try
+            await using var stream = file.OpenReadStream();
+
+            var result = await _userService.ImportResidentsFromExcelAsync(stream);
+
+            if (!result.IsSuccess)
             {
-                await using var stream = file.OpenReadStream();
-
-                var result = await _userService.ImportResidentsFromExcelAsync(stream);
-
-                if (!result.IsSuccess)
-                {
-                    return BadRequest(result);
-                }
-
-                return Ok(result);
+                return BadRequest(result);
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi hệ thống: {ex.Message}");
-            }
+
+            return Ok(result);
         }
         /// <summary>
         /// Tạo mới một người dùng trong hệ thống với thông tin được cung cấp.
@@ -352,68 +262,45 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
         {
-            try
-            {
-                var result = await _userService.CreateUserAsync(createUserDto);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while processing your request." + ex.Message);
-            }
+
+            var result = await _userService.CreateUserAsync(createUserDto);
+            return Ok(result);
         }
+
         /// <summary>
-        /// Tạo tài khoản mới cho người dùng với thông tin đầy đủ cá nhân và phân quyền.
+        /// Cập nhật ảnh đại diện của người dùng theo ID được chỉ định.
         /// </summary>
         /// <remarks>
-        /// <para>Endpoint này cho phép tạo đồng thời cả thông tin người dùng và tài khoản đăng nhập trong một thao tác.</para>
-        /// <para>Thông tin cá nhân của người dùng và phân công căn hộ (nếu có) được cung cấp cùng với thông tin tài khoản.</para>
-        /// <para>Mật khẩu sẽ được mã hóa và lưu trữ an toàn trong hệ thống.</para>
-        /// <para><strong>Lưu ý:</strong> Endpoint này yêu cầu quyền Manager và tạo được tất cả các loại tài khoản trong hệ thống.</para>
-        /// <para><strong>Validation rules:</strong></para>
+        /// <para>Endpoint này cho phép cập nhật ảnh đại diện cho người dùng bằng cách upload file ảnh mới.</para>
+        /// <para>File ảnh sẽ được validate và lưu trữ trong hệ thống, sau đó URL ảnh mới sẽ được cập nhật vào thông tin người dùng.</para>
+        /// <para><strong>Lưu ý:</strong> Endpoint này yêu cầu quyền Manager.</para>
+        /// 
+        /// <para><strong>Yêu cầu file ảnh:</strong></para>
         /// <list type="bullet">
-        /// <item><description>Thông tin người dùng cần tuân theo các quy tắc xác thực của CreateUserDto</description></item>
-        /// <item><description>Mật khẩu phải đáp ứng chính sách bảo mật của hệ thống</description></item>
-        /// <item><description>AccountRole phải là một trong các vai trò hợp lệ của hệ thống</description></item>
+        /// <item><description>Định dạng hỗ trợ: JPG, JPEG, PNG, GIF</description></item>
+        /// <item><description>Kích thước tối đa: tùy theo cấu hình hệ thống</description></item>
+        /// <item><description>File không được null hoặc rỗng</description></item>
         /// </list>
         /// </remarks>
-        /// <param name="createAccountDto">Đối tượng chứa thông tin tài khoản và người dùng cần tạo.
+        /// <param name="dto">Đối tượng chứa thông tin cập nhật ảnh đại diện.
         /// <para><strong>Các thuộc tính bao gồm:</strong></para>
         /// <list type="bullet">
-        /// <item><description><strong>Password:</strong> Mật khẩu cho tài khoản mới</description></item>
-        /// <item><description><strong>AccountRole:</strong> Vai trò của tài khoản (Enum: "Manager", "Resident", "Receptionist", "Technician", "TechnicianLead")</description></item>
-        /// <item><description><strong>UserData:</strong> Thông tin chi tiết của người dùng (CreateUserDto) bao gồm thông tin cá nhân và phân công căn hộ</description></item>
+        /// <item><description><strong>UserId:</strong> ID của người dùng cần cập nhật ảnh (bắt buộc)</description></item>
+        /// <item><description><strong>ImageProfileUrl:</strong> File ảnh đại diện mới (IFormFile, bắt buộc)</description></item>
         /// </list>
         /// </param>
         /// <returns>
         /// <para><strong>Các trường hợp trả về:</strong></para>
         /// <list type="table">
-        /// <item><term>200 OK</term><description>Tạo thành công, trả về UserDto của người dùng mới được tạo với thông tin tài khoản</description></item>
-        /// <item><term>400 Bad Request</term><description>Dữ liệu đầu vào không hợp lệ (model validation failed, email đã tồn tại)</description></item>
-        /// <item><term>500 Internal Server Error</term><description>Lỗi hệ thống trong quá trình tạo người dùng hoặc tài khoản</description></item>
+        /// <item><term>200 OK</term><description>Cập nhật thành công, trả về thông báo "Cập nhật ảnh đại diện thành công."</description></item>
+        /// <item><term>400 Bad Request</term><description>Dữ liệu đầu vào không hợp lệ (UserId không tồn tại, file ảnh không hợp lệ hoặc null)</description></item>
+        /// <item><term>404 Not Found</term><description>Không tìm thấy người dùng với ID được chỉ định</description></item>
+        /// <item><term>500 Internal Server Error</term><description>Lỗi hệ thống trong quá trình xử lý hoặc lưu trữ file</description></item>
         /// </list>
         /// </returns>
-        /// <exception cref="ValidationException">Ném khi dữ liệu đầu vào vi phạm validation rules</exception>
-        /// <exception cref="InvalidOperationException">Ném khi email đã tồn tại trong hệ thống</exception>
-        /// <exception cref="ArgumentException">Ném khi thông tin tài khoản không hợp lệ hoặc vai trò không được hỗ trợ</exception>
-        [HttpPost("create-account-for-new-user")]
-        [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> CreateAccountForNewUser([FromBody] CreateInforWithAccount createAccountDto)
-        {
-            try
-            {
-                var result = await _userService.CreateAccountForNewUserAsync(createAccountDto);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while processing your request." + ex.Message);
-            }
-        }
+        /// <exception cref="ArgumentException">Ném khi UserId không hợp lệ hoặc file ảnh không đúng định dạng</exception>
+        /// <exception cref="InvalidOperationException">Ném khi không thể lưu trữ file ảnh</exception>
+        /// <exception cref="IOException">Ném khi có lỗi đọc hoặc ghi file</exception>
         [HttpPut("update-user-profile-image")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -422,15 +309,9 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UpdateUserProfileImage([FromBody] UpdateUserImageProfileDto dto)
         {
-            try
-            {
-                await _userService.UpdateUserProfileImageAsync(dto);
-                return Ok("Cập nhật ảnh đại diện thành công.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "An error occurred while processing your request." + ex.Message);
-            }
+            await _userService.UpdateUserProfileImageAsync(dto);
+            return Ok("Cập nhật ảnh đại diện thành công.");
         }
+
     }
 }
