@@ -30,8 +30,7 @@ namespace AptCare.Service.Dtos.UserDtos
         [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
         [MaxLength(256, ErrorMessage = "Email không được vượt quá 256 ký tự.")]
         public string? Email { get; set; }
-        public List<ApartmentForUserDto>? Apartments { get; set; }
+        //public List<ApartmentForUserDto>? Apartments { get; set; }
 
-        public string? AccountRole { get; set; }
     }
 }
