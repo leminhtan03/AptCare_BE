@@ -59,13 +59,13 @@ namespace AptCare.Service.Services.Implements
                 user.Status = ActiveStatus.Active;
                 await _unitOfWork.GetRepository<User>().InsertAsync(user);
                 await _unitOfWork.CommitAsync();
-                if (createUserDto.Apartments != null)
-                {
-                    user.UserApartments = new List<UserApartment>();
-                    //await SyncUserApartments(user, createUserDto.Apartments);
-                    userRepo.UpdateAsync(user);
-                    await _unitOfWork.CommitAsync();
-                }
+                //if (createUserDto.Apartments != null)
+                //{
+                //    user.UserApartments = new List<UserApartment>();
+                //    await SyncUserApartments(user, createUserDto.Apartments);
+                //    userRepo.UpdateAsync(user);
+                //    await _unitOfWork.CommitAsync();
+                //}
 
                 await _unitOfWork.CommitTransactionAsync();
 
@@ -225,7 +225,7 @@ namespace AptCare.Service.Services.Implements
         //            var owners = g.Where(x => x.Status == ActiveStatus.Active
         //                                   && x.RoleInApartment == RoleInApartmentType.Owner).ToList();
         //            if (owners.Count == 1 && owners[0].UserId == user.UserId)
-        //                throw new AppValidationException($"Không thể gỡ Owner khỏi căn '{owners[0].Apartment!.RoomNumber}' vì sẽ khiến căn không có chủ sở hữu.");
+        //                throw new AppValidationException($"Không thể gỡ Owner khỏi căn '{owners[0].Apartment!.Room}' vì sẽ khiến căn không có chủ sở hữu.");
         //        }
 
         //        foreach (var ua in current)
@@ -242,16 +242,16 @@ namespace AptCare.Service.Services.Implements
         //    foreach (var dto in newApartmentsDto)
         //    {
         //        if (!Enum.TryParse<RoleInApartmentType>(dto.RoleInApartment, true, out var roleEnum))
-        //            throw new AppValidationException($"Vai trò '{dto.RoleInApartment}' của user trong căn '{dto.RoomNumber}' không hợp lệ.");
-        //        wantedByRoom[dto.RoomNumber] = (dto, roleEnum);
+        //            throw new AppValidationException($"Vai trò '{dto.RoleInApartment}' của user trong căn '{dto.Room}' không hợp lệ.");
+        //        wantedByRoom[dto.Room] = (dto, roleEnum);
         //    }
 
-        //    var allRooms = current.Select(x => x.Apartment!.RoomNumber)
+        //    var allRooms = current.Select(x => x.Apartment!.Room)
         //                          .Concat(wantedByRoom.Keys)
         //                          .Distinct(StringComparer.OrdinalIgnoreCase)
         //                          .ToList();
-        //    var apartments = await aptRepo.GetListAsync(predicate: a => allRooms.Contains(a.RoomNumber) && a.Status == ApartmentStatus.Active);
-        //    var aptByRoom = apartments.Items.ToDictionary(a => a.RoomNumber, a => a, StringComparer.OrdinalIgnoreCase);
+        //    var apartments = await aptRepo.GetListAsync(predicate: a => allRooms.Contains(a.Room) && a.Status == ApartmentStatus.Active);
+        //    var aptByRoom = apartments.ToDictionary(a => a.Room, a => a, StringComparer.OrdinalIgnoreCase);
 
         //    var missing = wantedByRoom.Keys.Where(r => !aptByRoom.ContainsKey(r)).ToList();
         //    if (missing.Any())
@@ -280,7 +280,7 @@ namespace AptCare.Service.Services.Implements
 
         //    foreach (var ua in current)
         //    {
-        //        var room = ua.Apartment!.RoomNumber;
+        //        var room = ua.Apartment!.Room;
         //        if (wantedByRoom.ContainsKey(room)) continue;
 
         //        if (ua.Status == ActiveStatus.Active && ua.RoleInApartment == RoleInApartmentType.Owner && !snap[ua.ApartmentId].HasOwner)
@@ -436,18 +436,18 @@ namespace AptCare.Service.Services.Implements
                 {
                     throw new Exception($"Vai trò '{createAccountDto.AccountRole}'của userExist không hợp lệ.");
                 }
-                if (roleEnum != AccountRole.Resident)
-                {
+                //if (roleEnum != AccountRole.Resident)
+                //{
 
 
-                    if (createAccountDto.UserData.Apartments != null)
-                    {
-                        user.UserApartments = new List<UserApartment>();
-                        //await SyncUserApartments(user, createAccountDto.UserData.Apartments);
-                        userRepo.UpdateAsync(user);
-                        await _unitOfWork.CommitAsync();
-                    }
-                }
+                //    if (createAccountDto.UserData.Apartments != null)
+                //    {
+                //        user.UserApartments = new List<UserApartment>();
+                //        await SyncUserApartments(user, createAccountDto.UserData.Apartments);
+                //        userRepo.UpdateAsync(user);
+                //        await _unitOfWork.CommitAsync();
+                //    }
+                //}
 
                 if (string.IsNullOrEmpty(createAccountDto.Password))
                 {
