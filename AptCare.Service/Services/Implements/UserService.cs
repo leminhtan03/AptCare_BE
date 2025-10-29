@@ -619,7 +619,7 @@ namespace AptCare.Service.Services.Implements
                 if (user == null)
                 { result.Errors.Add($"[UserApartments] Dòng {row}: Không tìm thấy người dùng với SĐT '{userPhoneNumber}'."); continue; }
 
-                var apartment = await aptRepo.SingleOrDefaultAsync(predicate: a => a.RoomNumber == apartmentCode);
+                var apartment = await aptRepo.SingleOrDefaultAsync(predicate: a => a.Room == apartmentCode);
                 if (apartment == null)
                 { result.Errors.Add($"[UserApartments] Dòng {row}: Không tìm thấy căn hộ với mã '{apartmentCode}'."); continue; }
 

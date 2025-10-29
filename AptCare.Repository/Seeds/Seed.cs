@@ -38,7 +38,6 @@ namespace AptCare.Repository.Seeds
                 {
                     floors.Add(new Floor
                     {
-                        BuildingCode = "Building",
                         FloorNumber = i,
                         Status = ActiveStatus.Active,
                         Description = $"Tầng {i}"
@@ -48,7 +47,6 @@ namespace AptCare.Repository.Seeds
                 await context.SaveChangesAsync();
             }
         }
-
 
         private static async Task SeedApartments(AptCareSystemDBContext context)
         {
@@ -61,12 +59,18 @@ namespace AptCare.Repository.Seeds
                     for (int p = 1; p <= 10; p++)
                     {
                         string roomNumber = $"P{floor.FloorNumber}{p:D2}";
+
+                        // Chia loại căn hộ: 1-5 là loại A (4 người), 6-10 là loại B (6 người)
+                        bool isLarge = p > 5;
+
                         apartments.Add(new Apartment
                         {
-                            RoomNumber = roomNumber,
+                            Room = roomNumber,
                             FloorId = floor.FloorId,
+                            Area = isLarge ? 110 : 70,
+                            Limit = isLarge ? 6 : 4,
                             Status = ApartmentStatus.Active,
-                            Description = $"Căn hộ {roomNumber} thuộc tầng {floor.FloorNumber}"
+                            Description = $"Căn hộ {roomNumber} thuộc tầng {floor.FloorNumber}, loại {(isLarge ? "lớn" : "nhỏ")}"
                         });
                     }
                 }
@@ -299,10 +303,10 @@ namespace AptCare.Repository.Seeds
                 int residentIndex = 1;
                 foreach (var apartment in apartments)
                 {
-                    for (int u = 1; u <= 4; u++)
+                    for (int u = 1; u <= 2; u++)
                     {
                         string firstName = u == 1 ? "Chủ" : "Cư Dân";
-                        string lastName = $"{apartment.RoomNumber}_{u}";
+                        string lastName = $"{apartment.Room}_{u}";
                         string email = $"resident{residentIndex}@aptcare.vn";
                         string phone = $"0{phoneResident + residentIndex:D9}";
                         string cccd = $"{cccdResident + residentIndex}";
@@ -358,7 +362,8 @@ namespace AptCare.Repository.Seeds
                         {
                             UserId = user.UserId,
                             ApartmentId = apartment.ApartmentId,
-                            RoleInApartment = u == 1 ? RoleInApartmentType.Owner : RoleInApartmentType.Member
+                            RoleInApartment = u == 1 ? RoleInApartmentType.Owner : RoleInApartmentType.Member,
+                            CreatedAt = DateTime.UtcNow.AddHours(7)
                         });
                         userIdx++;
                     }

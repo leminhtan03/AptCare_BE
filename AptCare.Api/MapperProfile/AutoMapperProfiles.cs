@@ -30,12 +30,12 @@ namespace AptCare.Api.MapperProfile
 
             // ===== UserApartment -> ApartmentForUser* (map con, dùng lại) =====
             CreateMap<UserApartment, ApartmentForUserDto>()
-                .ForMember(d => d.RoomNumber, o => o.MapFrom(s => s.Apartment.RoomNumber))
+                .ForMember(d => d.Room, o => o.MapFrom(s => s.Apartment.Room))
                 .ForMember(d => d.RoleInApartment, o => o.MapFrom(s => s.RoleInApartment.ToString()))
                 .ForMember(d => d.RelationshipToOwner, o => o.MapFrom(s => s.RelationshipToOwner));
 
             CreateMap<UserApartment, ApartmentForUserProfileDto>()
-                .ForMember(d => d.RoomNumber, o => o.MapFrom(s => s.Apartment.RoomNumber))
+                .ForMember(d => d.Room, o => o.MapFrom(s => s.Apartment.Room))
                 .ForMember(d => d.RoleInApartment, o => o.MapFrom(s => s.RoleInApartment.ToString()))
                 .ForMember(d => d.RelationshipToOwner, o => o.MapFrom(s => s.RelationshipToOwner))
                 .ForMember(d => d.Floor, o => o.MapFrom(s => s.Apartment.Floor.FloorNumber));
@@ -125,6 +125,7 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
 
             CreateMap<Message, MessageDto>()
+                .ForMember(d => d.Slug, o => o.MapFrom(s => s.Conversation.Slug))
                 .ForMember(d => d.SenderName, o => o.MapFrom(s => s.Sender.FirstName + " " + s.Sender.LastName))
                 .ForMember(d => d.Type, o => o.MapFrom(s => s.Type.ToString()))
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))

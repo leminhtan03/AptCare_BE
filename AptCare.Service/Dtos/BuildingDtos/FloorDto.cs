@@ -12,7 +12,6 @@ namespace AptCare.Service.Dtos.BuildingDtos
     public class FloorDto
     {
         public int FloorId { get; set; }
-        public string BuildingCode { get; set; } = null!;
         public int FloorNumber { get; set; } 
         public string Status { get; set; } = null!;
         public string Description { get; set; } = null!;

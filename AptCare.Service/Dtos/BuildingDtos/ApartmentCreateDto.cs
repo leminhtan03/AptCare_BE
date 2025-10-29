@@ -15,8 +15,10 @@ namespace AptCare.Service.Dtos.BuildingDtos
         public int FloorId { get; set; }
 
         [Required(ErrorMessage = "Số phòng không được để trống.")]
-        public string RoomNumber { get; set; } = null!;
+        public string Room { get; set; } = null!;
 
         public string? Description { get; set; }
+        public double Area { get; set; }
+        public int Limit { get; set; }
     }
 }
