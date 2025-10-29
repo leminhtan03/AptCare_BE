@@ -14,4 +14,12 @@ namespace AptCare.Service.Dtos
         public string? search { get; set; }
         public string? filter { get; set; }
     }
+    public class InspectionReportFilterDto : PaginateDto
+    {
+        public string? FaultType { get; set; }
+        public string? SolutionType { get; set; }
+
+        public DateOnly? Fromdate { get; set; }
+        public DateOnly? Todate { get; set; }
+    }
 }

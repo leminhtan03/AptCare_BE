@@ -4,23 +4,13 @@ using AptCare.Repository;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using AptCare.Service.Dtos.AppointmentDtos;
-using Org.BouncyCastle.Asn1.Ocsp;
 using AptCare.Service.Exceptions;
 using Microsoft.AspNetCore.Http;
 using AptCare.Repository.Paginate;
-using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
-using CloudinaryDotNet;
-using AptCare.Service.Dtos.UserDtos;
-using AptCare.Service.Dtos.WorkSlotDtos;
 using AptCare.Repository.Enum;
 
 namespace AptCare.Service.Services.Implements
@@ -135,7 +125,7 @@ namespace AptCare.Service.Services.Implements
 
             Expression<Func<Appointment, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.Note.Contains(search)) &&
-                (string.IsNullOrEmpty(filter) ||filter.Equals(p.Status.ToString().ToLower())) &&
+                (string.IsNullOrEmpty(filter) || filter.Equals(p.Status.ToString().ToLower())) &&
                 (fromDate == null || DateOnly.FromDateTime(p.StartTime) >= fromDate) &&
                 (toDate == null || DateOnly.FromDateTime(p.StartTime) <= toDate);
 
@@ -157,19 +147,19 @@ namespace AptCare.Service.Services.Implements
         public async Task<IEnumerable<ResidentAppointmentScheduleDto>> GetResidentAppointmentScheduleAsync(DateOnly fromDate, DateOnly toDate)
         {
             var userId = _userContext.CurrentUserId;
-           
+
             var appointments = await _unitOfWork.GetRepository<Appointment>().GetListAsync(
                 selector: x => _mapper.Map<AppointmentDto>(x),
-                predicate: p => DateOnly.FromDateTime(p.StartTime) >= fromDate && 
+                predicate: p => DateOnly.FromDateTime(p.StartTime) >= fromDate &&
                                 DateOnly.FromDateTime(p.StartTime) <= toDate &&
-                                p.RepairRequest.Apartment.UserApartments.Any(ua => ua.UserId == userId),                  
+                                p.RepairRequest.Apartment.UserApartments.Any(ua => ua.UserId == userId),
                 include: i => i.Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
                                         .ThenInclude(x => x.UserApartments)
                                 .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                 );
-           
+
             var result = appointments.GroupBy(a => DateOnly.FromDateTime(a.StartTime))
                                    .Select(x => new ResidentAppointmentScheduleDto
                                    {
@@ -200,7 +190,7 @@ namespace AptCare.Service.Services.Implements
                             {
                                 Date = dateGroup.Key,
                                 Slots = dateGroup
-                                    .GroupBy(x => slots.FirstOrDefault(s => s.FromTime <= x.StartTime.TimeOfDay && 
+                                    .GroupBy(x => slots.FirstOrDefault(s => s.FromTime <= x.StartTime.TimeOfDay &&
                                                                             s.ToTime > x.StartTime.TimeOfDay).SlotId)
                                     .Select(slotGroup => new SlotAppointmentDto
                                     {
@@ -233,5 +223,5 @@ namespace AptCare.Service.Services.Implements
                 _ => q => q.OrderByDescending(p => p.AppointmentId) // Default sort
             };
         }
-    } 
+    }
 }

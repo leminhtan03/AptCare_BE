@@ -13,6 +13,8 @@ using AutoMapper;
 using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.SlotDtos;
+using System.ComponentModel.DataAnnotations.Schema;
+using AptCare.Service.Dtos.InspectionReporDtos;
 
 namespace AptCare.Api.MapperProfile
 {
@@ -63,6 +65,13 @@ namespace AptCare.Api.MapperProfile
             // ===== Floor =====
             CreateMap<Floor, FloorDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<Floor, GetAllFloorsDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.ApartmentCount, o => o.MapFrom(s => s.Apartments.Count))
+                .ForMember(d => d.CommonAreaCount, o => o.MapFrom(s => s.CommonAreas.Count))
+                .ForMember(d => d.ResidentCount, o => o.MapFrom(s => s.Apartments.Sum(a => a.UserApartments.Count)))
+                .ForMember(d => d.Apartments, o => o.Ignore())
+                .ForMember(d => d.CommonAreas, o => o.Ignore());
             CreateMap<FloorCreateDto, Floor>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
             CreateMap<FloorUpdateDto, Floor>()
@@ -101,6 +110,12 @@ namespace AptCare.Api.MapperProfile
             CreateMap<ApartmentCreateDto, Apartment>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ApartmentStatus.Active));
             CreateMap<ApartmentUpdateDto, Apartment>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<UpdateApartmentWithResidentDataDto, Apartment>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<ResidentOfApartmentDto, UserApartment>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)))
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             // ===== CommonArea =====
@@ -190,6 +205,34 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.LastUpdated, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
             CreateMap<SlotUpdateDto, Slot>()
                 .ForMember(d => d.LastUpdated, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+
+
+            //InspectionReport
+            CreateMap<InspectionReport, InspectionReportDto>()
+                .ForMember(d => d.Technican, o => o.MapFrom(s => s.User))
+                .ForMember(d => d.AreaName, o => o.MapFrom(s => s.Appointment.RepairRequest.MaintenanceRequest != null
+                    ? s.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name
+                    : s.Appointment.RepairRequest.Apartment != null
+                        ? s.Appointment.RepairRequest.Apartment.Room
+                        : string.Empty));
+
+            CreateMap<CreateInspectionReporDto, InspectionReport>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ReportStatus.Pending))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+
+            CreateMap<UpdateInspectionReporDto, InspectionReport>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            CreateMap<User, TechnicanDto>()
+                .ForMember(d => d.workStatus, o => o.Ignore())
+                .ForMember(d => d.Techniques, o => o.MapFrom(s => s.TechnicianTechniques.Select(tt => tt.Technique.Name)))
+                .AfterMap((src, dest) =>
+                {
+                    var todayWorkSlot = src.WorkSlots != null
+                        ? src.WorkSlots.FirstOrDefault(ws => ws.Date == DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)))
+                        : null;
+                    dest.workStatus = todayWorkSlot?.Status ?? WorkSlotStatus.Off;
+                });
         }
     }
 }

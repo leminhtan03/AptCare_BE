@@ -33,6 +33,7 @@ namespace AptCare.Service.Services.Implements
                 }
                 var technique = _mapper.Map<Technique>(dto);
                 await _unitOfWork.GetRepository<Technique>().InsertAsync(technique);
+                await _unitOfWork.CommitAsync();
                 return _mapper.Map<TechniqueListItemDto>(technique);
 
             }

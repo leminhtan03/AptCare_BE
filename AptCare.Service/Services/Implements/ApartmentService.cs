@@ -39,7 +39,6 @@ namespace AptCare.Service.Services.Implements
             if (floor.Status == ActiveStatus.Inactive)
                 throw new AppValidationException("Tầng đã ngưng hoạt động.");
 
-            // kiểm tra trùng phòng (nên kèm FloorId để không đụng tầng khác)
             var isDup = await _unitOfWork.GetRepository<Apartment>().AnyAsync(
                 x => x.FloorId == dto.FloorId && x.Room == dto.Room);
 
@@ -167,7 +166,7 @@ namespace AptCare.Service.Services.Implements
 
             return sortBy.ToLower() switch
             {
-                "room" => q => q.OrderBy(p => p.Room),  
+                "room" => q => q.OrderBy(p => p.Room),
                 "room_desc" => q => q.OrderByDescending(p => p.Room),
                 _ => q => q.OrderByDescending(p => p.Room) // Default sort
             };
@@ -195,6 +194,73 @@ namespace AptCare.Service.Services.Implements
                 {
                     userApartment.User.ProfileImageUrl = imagePath;
                 }
+            }
+        }
+
+        public async Task<ApartmentDto> UpadteUserDataForAptAsync(int AptId, UpdateApartmentWithResidentDataDto dto)
+        {
+            var aptRepo = _unitOfWork.GetRepository<Apartment>();
+            var uaRepo = _unitOfWork.GetRepository<UserApartment>();
+            var floorRepo = _unitOfWork.GetRepository<Floor>();
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                var apartment = await aptRepo.SingleOrDefaultAsync(
+                    predicate: a => a.ApartmentId == AptId,
+                    include: inc => inc.Include(a => a.UserApartments)
+                                      .ThenInclude(ua => ua.User)
+                );
+                var floor = await floorRepo.SingleOrDefaultAsync(
+                    predicate: f => f.FloorId == dto.FloorId
+                );
+                if (apartment == null)
+                {
+                    throw new AppValidationException("Căn hộ không tồn tại.", StatusCodes.Status404NotFound);
+                }
+                if (floor == null)
+                {
+                    throw new AppValidationException("Tầng không tồn tại.", StatusCodes.Status404NotFound);
+                }
+
+
+                _mapper.Map(dto, apartment);
+                aptRepo.UpdateAsync(apartment);
+
+                var existingUserIds = apartment.UserApartments.Select(ua => ua.UserId).ToHashSet();
+                var newUserIds = dto.Residents?.Select(r => r.UserId).ToHashSet() ?? new HashSet<int>();
+
+                foreach (var userApartment in apartment.UserApartments.ToList())
+                {
+                    if (!newUserIds.Contains(userApartment.UserId))
+                    {
+                        userApartment.Status = ActiveStatus.Inactive;
+                        userApartment.DisableAt = DateTime.UtcNow;
+                        uaRepo.UpdateAsync(userApartment);
+                    }
+                }
+
+                if (dto.Residents != null)
+                {
+                    foreach (var residentDto in dto.Residents)
+                    {
+                        if (!existingUserIds.Contains(residentDto.UserId))
+                        {
+                            var newUserApartment = _mapper.Map<UserApartment>(residentDto);
+                            await uaRepo.InsertAsync(newUserApartment);
+                        }
+                    }
+                }
+
+                await _unitOfWork.CommitAsync();
+                var updatedApartmentDto = _mapper.Map<ApartmentDto>(apartment);
+                await LoadUserProfileImagesAsync(updatedApartmentDto);
+                return updatedApartmentDto;
+
+            }
+            catch
+            (Exception ex)
+            {
+                throw new Exception("Cập nhật dữ liệu cư dân cho căn hộ thất bại: " + ex.Message);
             }
         }
     }

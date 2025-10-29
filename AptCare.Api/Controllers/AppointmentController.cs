@@ -157,7 +157,7 @@ namespace AptCare.Api.Controllers
         /// - `page`: Trang hiện tại (bắt đầu từ 1).  
         /// - `size`: Số bản ghi mỗi trang.  
         /// - `search`: Từ khóa tìm kiếm theo ghi chú.  
-        /// - `filter`: Lọc theo trạng thái (ví dụ: pending, completed, canceled).  
+        /// - `filter`: Lọc theo trạng thái (ví dụ: pending, assigned, confirmed, completed, canceled).  
         /// - `fromDate`: Ngày bắt đầu (định dạng `yyyy-MM-dd`).  
         /// - `toDate`: Ngày kết thúc (định dạng `yyyy-MM-dd`).  
         /// - `sortBy`: Tiêu chí sắp xếp (`starttime`, `starttime_desc`, v.v.).  
@@ -307,4 +307,4 @@ namespace AptCare.Api.Controllers
         }
     }
 }
-    
+
