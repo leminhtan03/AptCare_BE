@@ -30,7 +30,7 @@ namespace AptCare.Service.Dtos.UserDtos
 
         [MaxLength(50, ErrorMessage = "CCCD không được vượt quá 50 ký tự.")]
         public string? CitizenshipIdentity { get; set; }
-        public List<ApartmentForUserDto>? Apartments { get; set; }
+        //public List<ApartmentForUserDto>? Apartments { get; set; }
         public DateTime? Birthday { get; set; }
     }
 }

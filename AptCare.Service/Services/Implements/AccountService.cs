@@ -180,7 +180,7 @@ namespace AptCare.Service.Services.Implements
                 account.LockoutEnabled = !account.LockoutEnabled;
                 _unitOfWork.GetRepository<Account>().UpdateAsync(account);
                 _unitOfWork.Commit();
-                return account.LockoutEnabled ? "Đã khóa tài khoản thành công." : "Đã mở khóa tài khoản thành công.");
+                return account.LockoutEnabled ? "Đã khóa tài khoản thành công." : "Đã mở khóa tài khoản thành công.";
 
             }
             catch (Exception ex)
