@@ -10,7 +10,6 @@ namespace AptCare.Repository.Entities
     {
         [Key]
         public int ReportApprovalId { get; set; }
-
         public int InspectionReportId { get; set; }
         public int RepairReportId { get; set; }
         public int UserId { get; set; }

@@ -9,5 +9,6 @@ namespace AptCare.Repository.Enum.AccountUserEnum
         Technician = 3,
         TechnicianLead = 4,
         Manager = 5,
+        Admin = 6,
     }
 }

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace AptCare.Service.Services.Interfaces
 {
     public interface IUserContext
@@ -15,6 +10,7 @@ namespace AptCare.Service.Services.Interfaces
         bool IsTechnician { get; }
         bool IsTechnicianLead { get; }
         bool IsReceptionist { get; }
+        bool IsAdmin { get; }
     }
 
 }

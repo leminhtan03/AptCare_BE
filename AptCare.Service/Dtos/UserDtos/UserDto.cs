@@ -1,10 +1,6 @@
-﻿using AptCare.Service.Dtos.Account;
+﻿using AptCare.Repository.Enum;
+using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AptCare.Service.Dtos.UserDtos
 {
@@ -31,5 +27,11 @@ namespace AptCare.Service.Dtos.UserDtos
         public string PhoneNumber { get; set; } = null!;
         public string Email { get; set; } = null!;
         public DateTime? Birthday { get; set; }
+    }
+    public class TechnicanDto : UserBasicDto
+    {
+        public List<string>? Techniques { get; set; }
+        public WorkSlotStatus workStatus { get; set; }
+
     }
 }

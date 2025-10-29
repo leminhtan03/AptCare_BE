@@ -173,5 +173,17 @@ namespace AptCare.Api.Controllers
             var result = await _apartmentService.DeleteApartmentAsync(id);
             return Ok(result);
         }
+        [HttpPut("with-resident/{aptId}")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [ProducesResponseType(typeof(ApartmentDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult> UpdateApartmentWithResidentData(int aptId, UpdateApartmentWithResidentDataDto dto)
+        {
+            var result = await _apartmentService.UpadteUserDataForAptAsync(aptId, dto);
+            return Ok(result);
+        }
     }
 }

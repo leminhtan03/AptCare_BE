@@ -22,4 +22,8 @@ namespace AptCare.Service.Dtos.BuildingDtos
 
         public ApartmentStatus Status { get; set; }
     }
+    public class UpdateApartmentWithResidentDataDto : ApartmentUpdateDto
+    {
+        public ICollection<ResidentOfApartmentDto>? Residents { get; set; }
+    }
 }

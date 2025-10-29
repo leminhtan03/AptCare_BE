@@ -135,7 +135,7 @@ namespace AptCare.Service.Services.Implements
             return floor;
         }
 
-        public async Task<IPaginate<FloorDto>> GetPaginateFloorAsync(PaginateDto dto)
+        public async Task<IPaginate<GetAllFloorsDto>> GetPaginateFloorAsync(PaginateDto dto)
         {
             int page = dto.page > 0 ? dto.page : 1;
             int size = dto.size > 0 ? dto.size : 10;
@@ -148,26 +148,19 @@ namespace AptCare.Service.Services.Implements
                 (string.IsNullOrEmpty(filter) ||
                 filter.Equals(p.Status.ToString().ToLower()));
 
-            var result = await _unitOfWork.GetRepository<Floor>().GetPagingListAsync(
-                selector: x => _mapper.Map<FloorDto>(x),
+            var result = await _unitOfWork.GetRepository<Floor>().ProjectToPagingListAsync<GetAllFloorsDto>(
+                configuration: _mapper.ConfigurationProvider,
                 predicate: predicate,
                 include: i => i.Include(x => x.Apartments)
-                                    .ThenInclude(x => x.UserApartments)
-                                    .ThenInclude(x => x.User)
-                               .Include(x => x.CommonAreas),
+                .ThenInclude(x => x.UserApartments)
+                .Include(x => x.CommonAreas),
                 orderBy: BuildOrderBy(dto.sortBy),
                     page: page,
                     size: size
                 );
             foreach (var floor in result.Items)
             {
-                if (floor.Apartments != null)
-                {
-                    foreach (var apartment in floor.Apartments)
-                    {
-                        await LoadUserProfileImagesAsync(apartment);
-                    }
-                }
+
             }
             return result;
         }
