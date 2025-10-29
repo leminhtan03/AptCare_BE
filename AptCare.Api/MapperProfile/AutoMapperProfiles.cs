@@ -13,6 +13,7 @@ using AutoMapper;
 using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.SlotDtos;
+using AptCare.Service.Dtos.InvoiceDtos;
 using System.ComponentModel.DataAnnotations.Schema;
 using AptCare.Service.Dtos.InspectionReporDtos;
 
@@ -205,6 +206,29 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.LastUpdated, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
             CreateMap<SlotUpdateDto, Slot>()
                 .ForMember(d => d.LastUpdated, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+
+            //INVOICE
+            CreateMap<Invoice, InvoiceDto>()
+            .ForMember(d => d.Type, o => o.MapFrom(s => s.Type.ToString()))
+            .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+            .ForMember(d => d.Accessories, o => o.MapFrom(s => s.InvoiceAccessories))
+            .ForMember(d => d.Services, o => o.MapFrom(s => s.InvoiceServices));
+            CreateMap<InvoiceAccessory, InvoiceAccessoryDto>();
+            CreateMap<InvoiceService, InvoiceServiceDto>();
+
+            CreateMap<InvoiceInternalCreateDto, Invoice>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
+                .ForMember(d => d.Type, o => o.MapFrom(s => InvoiceType.InternalRepair))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)))
+            .ForMember(d => d.InvoiceAccessories, o => o.MapFrom(s => new List<InvoiceAccessory>()))
+            .ForMember(d => d.InvoiceServices, o => o.MapFrom(s => new List<InvoiceService>()));
+            CreateMap<InvoiceExternalCreateDto, Invoice>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
+                .ForMember(d => d.Type, o => o.MapFrom(s => InvoiceType.ExternalContractor))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)))
+                .ForMember(d => d.InvoiceAccessories, o => o.MapFrom(s => new List<InvoiceAccessory>()))
+                .ForMember(d => d.InvoiceServices, o => o.MapFrom(s => new List<InvoiceService>()));
+            CreateMap<InvoiceUpdateDto, Invoice>();
 
 
             //InspectionReport

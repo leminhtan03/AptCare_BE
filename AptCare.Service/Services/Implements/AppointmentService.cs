@@ -15,13 +15,13 @@ using AptCare.Repository.Enum;
 
 namespace AptCare.Service.Services.Implements
 {
-    public class AppointmentService : BaseService<Appointment>, IAppointmentService
+    public class AppointmentService : BaseService<AppointmentService>, IAppointmentService
     {
         private readonly IUserContext _userContext;
 
         public AppointmentService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
-            ILogger<Appointment> logger,
+            ILogger<AppointmentService> logger,
             IMapper mapper,
             IUserContext userContext) : base(unitOfWork, logger, mapper)
         {

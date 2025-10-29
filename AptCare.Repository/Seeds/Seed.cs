@@ -26,7 +26,8 @@ namespace AptCare.Repository.Seeds
             await SeedUserApartments(context);
             await SeedCommonAreas(context);
             await SeedCommonAreaObjects(context);
-            await SeedSlots(context);            
+            await SeedSlots(context);
+            await SeedAccessories(context);
         }
 
         private static async Task SeedFloors(AptCareSystemDBContext context)
@@ -539,7 +540,98 @@ namespace AptCare.Repository.Seeds
             }
         }
 
+        private static async Task SeedAccessories(AptCareSystemDBContext context)
+        {
+            if (!context.Accessories.Any())
+            {
+                var accessories = new List<Accessory>
+                {
+                    new Accessory
+                    {
+                        Name = "Bóng đèn LED 9W",
+                        Descrption = "Bóng đèn LED tiết kiệm điện, dùng cho chiếu sáng căn hộ.",
+                        Price = 35000,
+                        Quantity = 200,
+                        Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Ổ cắm điện 3 chấu",
+                        Descrption = "Ổ cắm điện 3 chấu tiêu chuẩn, an toàn cho thiết bị.",
+                        Price = 45000,
+                        Quantity = 150,
+                        Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Khóa cửa tay gạt",
+                        Descrption = "Khóa cửa tay gạt bằng hợp kim, dùng cho cửa phòng.",
+                        Price = 120000,
+                        Quantity = 50,
+                        Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Ống nước PVC 21mm",
+                        Descrption = "Ống nước PVC chịu áp lực, đường kính 21mm.",
+                        Price = 25000,
+                        Quantity = 300,
+                        Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Cảm biến khói",
+                        Descrption = "Thiết bị cảm biến khói dùng cho hệ thống báo cháy.",
+                        Price = 180000,
+                        Quantity = 30,
+                        Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Công tắc điện",
+                        Descrption = "Công tắc điện âm tường, phù hợp cho mọi loại phòng.",
+                        Price = 20000,
+                        Quantity = 100,
+                        Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Quạt hút gió nhà tắm",
+                        Descrption = "Quạt hút gió gắn tường, giảm ẩm mốc cho nhà tắm.",
+                        Price = 220000,
+                        Quantity = 40,
+                        Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Van nước 1 chiều",
+                        Descrption = "Van nước 1 chiều bằng đồng, chống rò rỉ.",
+                        Price = 35000,
+                        Quantity = 80,
+                        Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Bản lề cửa inox",
+                        Descrption = "Bản lề cửa bằng inox 304, chống gỉ sét.",
+                        Price = 15000,
+                        Quantity = 120,
+                        Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Dây điện đôi 2x1.5mm",
+                        Descrption = "Dây điện đôi lõi đồng, cách điện PVC, tiết diện 2x1.5mm.",
+                        Price = 12000,
+                        Quantity = 500,
+                        Status = ActiveStatus.Active
+                    }
+                };
 
+                context.Accessories.AddRange(accessories);
+                await context.SaveChangesAsync();
+            }
+        }
 
 
     }

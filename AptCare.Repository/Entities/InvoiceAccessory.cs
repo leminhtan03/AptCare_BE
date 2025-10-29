@@ -13,8 +13,8 @@ namespace AptCare.Repository.Entities
         public Invoice Invoice { get; set; } = null!;
 
         [ForeignKey("Accessory")]
-        public int AccessoryId { get; set; }
-        public Accessory Accessory { get; set; } = null!;
+        public int? AccessoryId { get; set; }
+        public Accessory? Accessory { get; set; } = null!;
 
         [Required]
         [MaxLength(256)]

@@ -42,6 +42,7 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IIssueService, IssueService>();
             service.AddTransient<IAppointmentAssignService, AppointmentAssignService>();
             service.AddTransient<ISlotService, SlotService>();
+            service.AddTransient<IInvoiceService, Service.Services.Implements.InvoiceService>();
             service.AddTransient<IInspectionReporService, InspectionReporService>();
             service.AddTransient<IReportApprovalService, ReportApprovalService>();
 
