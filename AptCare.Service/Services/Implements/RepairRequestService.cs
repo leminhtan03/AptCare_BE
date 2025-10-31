@@ -218,7 +218,7 @@ namespace AptCare.Service.Services.Implements
                     TechnicianId = technicianId,
                     AssignedAt = DateTime.UtcNow.AddHours(7),
                     EstimatedStartTime = appointment.StartTime,
-                    EstimatedEndTime = (DateTime) appointment.EndTime,
+                    EstimatedEndTime = (DateTime)appointment.EndTime,
                     Status = WorkOrderStatus.Pending
                 });
 
@@ -262,7 +262,7 @@ namespace AptCare.Service.Services.Implements
                         throw new AppValidationException("Người dùng không thuộc căn hộ này.", StatusCodes.Status404NotFound);
                     }
                 }
-               
+
                 var issue = await _unitOfWork.GetRepository<Issue>().SingleOrDefaultAsync(
                     predicate: x => x.IssueId == dto.IssueId
                     );
@@ -328,8 +328,8 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.GetRepository<Appointment>().InsertAsync(appointment);
                 await _unitOfWork.CommitAsync();
-              
-                await AssignTechnicianForEmergencyAppointmentAsync(appointment, issue);                
+
+                await AssignTechnicianForEmergencyAppointmentAsync(appointment, issue);
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
                 return "Tạo yêu cầu sửa chữa khẩn cấp thành công";
@@ -347,7 +347,7 @@ namespace AptCare.Service.Services.Implements
             var technicianidsAcceptable = techniciansAcceptable.Select(x => x.UserId).ToList();
 
             var notifications = new List<Notification>();
-           
+
             if (technicianidsAcceptable.Count != 0)
             {
                 var technicianIds = technicianidsAcceptable.Take(issue.RequiredTechnician);
@@ -360,7 +360,7 @@ namespace AptCare.Service.Services.Implements
                         TechnicianId = technicianId,
                         AssignedAt = DateTime.UtcNow.AddHours(7),
                         EstimatedStartTime = appointment.StartTime,
-                        EstimatedEndTime = (DateTime) appointment.EndTime,
+                        EstimatedEndTime = (DateTime)appointment.EndTime,
                         Status = WorkOrderStatus.Working
                     });
 
@@ -460,6 +460,10 @@ namespace AptCare.Service.Services.Implements
                                .Include(x => x.Appointments)
                                     .ThenInclude(x => x.AppointmentAssigns)
                                         .ThenInclude(x => x.Technician)
+                               .Include(x => x.Appointments)
+                                    .ThenInclude(x => x.InspectionReports)
+                               .Include(x => x.Appointments)
+                                    .ThenInclude(x => x.RepairReport)
                                .Include(x => x.User)
                                .Include(x => x.Apartment)
                                .Include(x => x.MaintenanceRequest)

@@ -98,7 +98,7 @@ namespace AptCare.Service.Services.Implements
             return _mapper.Map<UserDto>(user);
         }
 
-        public async Task<IPaginate<UserDto>> GetReSidentDataPageAsync(string searchQuery, string status, int page, int pageSize)
+        public async Task<IPaginate<UserGetAllDto>> GetReSidentDataPageAsync(string searchQuery, string status, int page, int pageSize)
         {
 
             ActiveStatus? statusEnum = null;
@@ -110,11 +110,11 @@ namespace AptCare.Service.Services.Implements
                 }
                 else
                 {
-                    return new Paginate<UserDto>();
+                    return new Paginate<UserGetAllDto>();
                 }
             }
             var users = await _unitOfWork.GetRepository<User>().GetPagingListAsync(
-                selector: u => _mapper.Map<UserDto>(u),
+                selector: u => _mapper.Map<UserGetAllDto>(u),
                 predicate: u =>
                     (string.IsNullOrEmpty(searchQuery) ||
                         ((u.FirstName + " " + u.LastName).ToLower().Contains(searchQuery) ||

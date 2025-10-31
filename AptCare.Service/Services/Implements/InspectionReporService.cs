@@ -8,8 +8,10 @@ using AptCare.Service.Dtos.InspectionReporDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Asn1.Ocsp;
 using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
@@ -17,17 +19,21 @@ namespace AptCare.Service.Services.Implements
     public class InspectionReporService : BaseService<InspectionReporService>, IInspectionReporService
     {
         private readonly IUserContext _userContext;
-        public InspectionReporService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InspectionReporService> logger, IMapper mapper, IUserContext userContext) : base(unitOfWork, logger, mapper)
+        private readonly ICloudinaryService _cloudinaryService;
+        public InspectionReporService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InspectionReporService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
+            _cloudinaryService = cloudinaryService;
         }
 
-        public async Task<string> GenerateInspectionReportAsync(CreateInspectionReporDto dto)
+        public async Task<InspectionReportDto> GenerateInspectionReportAsync(CreateInspectionReporDto dto)
         {
             try
             {
                 var InspecRepo = _unitOfWork.GetRepository<InspectionReport>();
                 var appoRepo = _unitOfWork.GetRepository<Appointment>();
+                var mediaRepo = _unitOfWork.GetRepository<Media>();
+                await _unitOfWork.BeginTransactionAsync();
                 if (await appoRepo.AnyAsync(predicate: e => e.AppointmentId == dto.AppointmentId && e.Status == AppointmentStatus.Pending))
                     throw new AppValidationException("Cuộc hẹn không tồn tại hoặc đang trong quá trình phân công nhân lực");
                 var newInsReport = _mapper.Map<InspectionReport>(dto);
@@ -35,10 +41,41 @@ namespace AptCare.Service.Services.Implements
                 await InspecRepo.InsertAsync(newInsReport);
                 await _unitOfWork.CommitAsync();
 
-                return "Tạo báo cáo kiểm tra thành công";
+
+                if (dto.Files != null)
+                {
+
+                    foreach (var file in dto.Files)
+                    {
+                        if (file == null || file.Length == 0)
+                            throw new AppValidationException("File không hợp lệ.");
+
+                        var filePath = await _cloudinaryService.UploadImageAsync(file);
+                        if (string.IsNullOrEmpty(filePath))
+                        {
+                            throw new AppValidationException("Có lỗi xảy ra khi gửi file.", StatusCodes.Status500InternalServerError);
+                        }
+                        await _unitOfWork.GetRepository<Media>().InsertAsync(new Media
+                        {
+                            Entity = nameof(InspectionReport),
+                            EntityId = newInsReport.InspectionReportId,
+                            FileName = file.FileName,
+                            FilePath = filePath,
+                            ContentType = file.ContentType,
+                            CreatedAt = DateTime.UtcNow.AddHours(7),
+                            Status = ActiveStatus.Active
+
+                        });
+                    }
+                }
+                await _unitOfWork.CommitTransactionAsync();
+                var result = _mapper.Map<InspectionReportDto>(newInsReport);
+
+                return result;
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new Exception("GenerateInspectionReportAsync", ex);
             }
         }
@@ -68,6 +105,11 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Báo cáo kiểm tra không tồn tại");
 
                 var result = _mapper.Map<InspectionReportDto>(inspectionReport);
+                var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                    selector: s => _mapper.Map<MediaDto>(s),
+                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == result.InspectionReportId
+                    );
+                result.Medias = medias.ToList();
                 return result;
             }
             catch (Exception ex)
@@ -75,7 +117,7 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception("GetInspectionReportByIdAsync", ex);
             }
         }
-        public async Task<IPaginate<InspectionReportDto>> GetPaginateInspectionReportsAsync(InspectionReportFilterDto filterDto)
+        public async Task<IPaginate<InspectionBasicReportDto>> GetPaginateInspectionReportsAsync(InspectionReportFilterDto filterDto)
         {
             try
             {
@@ -110,7 +152,6 @@ namespace AptCare.Service.Services.Implements
 
                 var InspecRepo = _unitOfWork.GetRepository<InspectionReport>();
 
-                // Get the paginated entity list first
                 var paginateEntityResult = await InspecRepo.GetPagingListAsync(
                     page: page,
                     size: size,
@@ -127,28 +168,26 @@ namespace AptCare.Service.Services.Implements
                                         .ThenInclude(a => a.RepairRequest)
                                             .ThenInclude(rr => rr.MaintenanceRequest)
                                                 .ThenInclude(mr => mr.CommonAreaObject),
-                    orderBy: BuildOrderBy(filterDto.sortBy ?? string.Empty)
+                    orderBy: BuildOrderBy(filterDto.sortBy ?? string.Empty),
+                    selector: s => _mapper.Map<InspectionBasicReportDto>(s)
                 );
 
-                var mappedItems = _mapper.Map<List<InspectionReportDto>>(paginateEntityResult.Items);
-
-                var paginateResult = new Paginate<InspectionReportDto>
+                foreach (var item in paginateEntityResult.Items)
                 {
-                    Page = paginateEntityResult.Page,
-                    Size = paginateEntityResult.Size,
-                    Total = paginateEntityResult.Total,
-                    Items = mappedItems
-                };
+                    var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                        selector: s => _mapper.Map<MediaDto>(s),
+                        predicate: p => p.Entity == nameof(InspectionReport) && p.EntityId == item.InspectionReportId
+                    );
+                    item.Medias = medias.ToList();
+                }
 
-                return paginateResult;
+                return paginateEntityResult;
             }
             catch (Exception ex)
             {
                 throw new Exception("GetPaginateInspectionReportsAsync", ex);
             }
         }
-
-
         public async Task<string> UpdateInspectionReportAsync(int id, UpdateInspectionReporDto dto)
         {
             try

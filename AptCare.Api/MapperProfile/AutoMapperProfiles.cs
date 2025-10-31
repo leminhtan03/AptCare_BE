@@ -16,6 +16,7 @@ using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
 using System.ComponentModel.DataAnnotations.Schema;
 using AptCare.Service.Dtos.InspectionReporDtos;
+using AptCare.Repository.Enum.AccountUserEnum;
 
 namespace AptCare.Api.MapperProfile
 {
@@ -48,6 +49,13 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
                 .ForMember(d => d.Apartments, o => o.MapFrom(s => s.UserApartments))
                 .ForMember(d => d.AccountInfo, o => o.MapFrom(s => s.Account));
+
+            CreateMap<User, UserGetAllDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.Apartments, o => o.MapFrom(o => (List<ApartmentForUserDto>?)null))
+                .ForMember(d => d.AccountInfo, o => o.MapFrom(o => (AccountForAdminDto?)null))
+                .ForMember(d => d.IshaveAccount, o => o.MapFrom(s => s.Account != null))
+                .ForMember(d => d.Role, o => o.MapFrom(s => s.Account != null ? s.Account.Role.ToString() : "NULL"));
 
             CreateMap<User, UserBasicDto>();
 
@@ -157,7 +165,29 @@ namespace AptCare.Api.MapperProfile
 
             //REPAIR REQUEST
             CreateMap<RepairRequest, RepairRequestDto>()
-                .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null));
+                .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null))
+                .ForMember(d => d.RepairReportId, o => o.MapFrom(s =>
+                    s.Appointments != null
+                        ? s.Appointments
+                            .Where(a => a.RepairReport != null)
+                            .Select(a => a.RepairReport)
+                            .FirstOrDefault() != null
+                                ? s.Appointments
+                                    .Where(a => a.RepairReport != null)
+                                    .Select(a => a.RepairReport.RepairReportId)
+                                    .FirstOrDefault()
+                                : (int?)null
+                        : (int?)null
+                ))
+                .ForMember(d => d.InspectionReportIds, o => o.MapFrom(s =>
+                    s.Appointments != null
+                        ? s.Appointments
+                            .Where(a => a.InspectionReports != null && a.InspectionReports.Count > 0)
+                            .SelectMany(a => a.InspectionReports)
+                            .Select(ir => ir.InspectionReportId)
+                            .ToList()
+                        : null
+                ));
 
             CreateMap<RepairRequest, RepairRequestBasicDto>();
             CreateMap<RequestTracking, RequestTrackingDto>()
@@ -233,6 +263,13 @@ namespace AptCare.Api.MapperProfile
 
             //InspectionReport
             CreateMap<InspectionReport, InspectionReportDto>()
+                .ForMember(d => d.Technican, o => o.MapFrom(s => s.User))
+                .ForMember(d => d.AreaName, o => o.MapFrom(s => s.Appointment.RepairRequest.MaintenanceRequest != null
+                    ? s.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name
+                    : s.Appointment.RepairRequest.Apartment != null
+                        ? s.Appointment.RepairRequest.Apartment.Room
+                        : string.Empty));
+            CreateMap<InspectionReport, InspectionBasicReportDto>()
                 .ForMember(d => d.Technican, o => o.MapFrom(s => s.User))
                 .ForMember(d => d.AreaName, o => o.MapFrom(s => s.Appointment.RepairRequest.MaintenanceRequest != null
                     ? s.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name

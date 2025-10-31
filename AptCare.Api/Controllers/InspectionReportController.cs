@@ -77,7 +77,7 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin))]
+        [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin) + "," + nameof(AccountRole.Resident))]
         public async Task<IActionResult> GetInspectionReportByIdAsync([FromRoute] int id)
         {
             var result = await _inspectionReporService.GetInspectionReportByIdAsync(id);
@@ -107,12 +107,12 @@ namespace AptCare.Api.Controllers
         /// - `Page`: Trang hiện tại
         /// - `Total`: Tổng số bản ghi
         /// - `TotalPages`: Tổng số trang
-        /// - `Items`: Danh sách báo cáo kiểm tra (InspectionReportDto[])
+        /// - `Items`: Danh sách báo cáo kiểm tra (InspectionBasicReportDto[])
         /// </remarks>
         /// <param name="filterDto">Tham số phân trang và lọc dữ liệu</param>
         /// <returns>Danh sách báo cáo kiểm tra có phân trang</returns>
         [HttpGet("get-paginate-inspection-reports")]
-        [ProducesResponseType(typeof(IPaginate<InspectionReportDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IPaginate<InspectionBasicReportDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
