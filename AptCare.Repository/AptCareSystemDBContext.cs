@@ -87,13 +87,6 @@ namespace AptCare.Repository
                 .HasForeignKey(n => n.ReceiverId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Message - Notification (1 - 1)
-            modelBuilder.Entity<Notification>()
-                .HasOne(n => n.Message)
-                .WithOne(m => m.Notification)
-                .HasForeignKey<Notification>(n => n.MessageId)
-                .OnDelete(DeleteBehavior.Cascade);
-
             // ========================= Building =========================
             // Floor - Apartment (1 - n)
             modelBuilder.Entity<Apartment>()

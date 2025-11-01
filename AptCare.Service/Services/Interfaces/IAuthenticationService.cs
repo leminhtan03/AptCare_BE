@@ -23,5 +23,7 @@ namespace AptCare.Service.Services.Interfaces
         Task<GetOwnProfileDto> GetOwnProfile();
         Task<TokenResponseDto> FirstLoginChangePasswordAsync(FirstLoginChangePasswordDto dto);
         Task<TokenResponseDto> RefreshTokensAsync(RefreshRequestDto dto);
+        Task<string> RegisterFCMTokenAsync(FCMRequestDto dto);
+        Task<string> RefreshFCMTokenAsync(FCMRequestDto dto);
     }
 }

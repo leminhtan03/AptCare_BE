@@ -72,5 +72,4 @@ public class AppointmentAssignController : BaseApiController
         var result = await _appointmentAssignService.SuggestTechniciansForAppointment(appointmentId, techniqueId);
         return Ok(result);
     }
-
 }

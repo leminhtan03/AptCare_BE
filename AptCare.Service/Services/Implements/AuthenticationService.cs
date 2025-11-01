@@ -2,6 +2,7 @@
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.OTPEnum;
+using AptCare.Repository.Enum.TokenEnum;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.AuthenDto;
@@ -9,6 +10,7 @@ using AptCare.Service.Exceptions;
 using AptCare.Service.Extensions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -317,6 +319,60 @@ namespace AptCare.Service.Services.Implements
         {
             var result = await _tokenService.RefreshTokensAsync(dto.RefreshToken);
             return result;
+        }
+
+        public async Task<string> RegisterFCMTokenAsync(FCMRequestDto dto)
+        {
+            var userId = _providerContext.CurrentUserId;
+            var isExistingToken = await _unitOfWork.GetRepository<AccountToken>().AnyAsync(
+                predicate: u => u.TokenType == TokenType.FCMToken && u.Token == dto.FcmToken && u.Status == TokenStatus.Active 
+            );
+            if (!isExistingToken)
+            {
+                await _unitOfWork.GetRepository<AccountToken>().InsertAsync(new AccountToken
+                {
+                    AccountId = userId,
+                    Token = dto.FcmToken,
+                    CreatedAt = DateTime.UtcNow.AddHours(7),
+                    DeviceInfo = dto.DeviceInfo,
+                    Status = TokenStatus.Active,
+                    TokenType = TokenType.FCMToken
+                });
+
+                await _unitOfWork.CommitAsync();
+            }
+            return "Thành công";
+        }
+
+        public async Task<string> RefreshFCMTokenAsync(FCMRequestDto dto)
+        {
+            var userId = _providerContext.CurrentUserId;
+            
+            var tokenExpired = await _unitOfWork.GetRepository<AccountToken>().SingleOrDefaultAsync(
+                predicate: u => u.TokenType == TokenType.FCMToken && u.DeviceInfo == dto.DeviceInfo && u.Status == TokenStatus.Active
+            );
+            if (tokenExpired == null)
+            {
+                throw new AppValidationException("Fcm Token cũ không tồn tại.", StatusCodes.Status404NotFound);
+            }
+
+            tokenExpired.ExpiresAt = DateTime.UtcNow.AddHours(7);
+            tokenExpired.Status = TokenStatus.Expired;
+
+            _unitOfWork.GetRepository<AccountToken>().UpdateAsync(tokenExpired);
+
+            await _unitOfWork.GetRepository<AccountToken>().InsertAsync(new AccountToken
+            {
+                AccountId = userId,
+                Token = dto.FcmToken,
+                CreatedAt = DateTime.UtcNow.AddHours(7),
+                DeviceInfo = dto.DeviceInfo,
+                Status = TokenStatus.Active,
+                TokenType = TokenType.FCMToken
+            });
+
+            await _unitOfWork.CommitAsync();
+            return "Thành công";
         }
     }
 }

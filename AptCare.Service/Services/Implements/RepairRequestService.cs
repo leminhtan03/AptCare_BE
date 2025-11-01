@@ -96,10 +96,16 @@ namespace AptCare.Service.Services.Implements
                         throw new AppValidationException("Đây là Vấn đề khẩn cấp.");
                     }
 
+                    if (issue.EstimatedDuration > 5)
+                    {
+                        issue.EstimatedDuration = 5;
+                    }
+
                     var isSuitableTimeSlot = await _unitOfWork.GetRepository<Slot>().AnyAsync(
                         predicate: p => p.FromTime <= dto.PreferredAppointment.TimeOfDay &&
                                         p.ToTime >= dto.PreferredAppointment.AddHours(issue.EstimatedDuration).TimeOfDay
                         );
+                   
                     if (!isSuitableTimeSlot)
                     {
                         throw new AppValidationException("Thời gian sửa chữa không nằm trong ca làm việc của kỹ thuật viên, vui lòng chọn thời gian khác.");

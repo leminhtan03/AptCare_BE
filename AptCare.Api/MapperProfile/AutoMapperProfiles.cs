@@ -16,6 +16,7 @@ using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
 using System.ComponentModel.DataAnnotations.Schema;
 using AptCare.Service.Dtos.InspectionReporDtos;
+using AptCare.Service.Dtos.NotificationDtos;
 
 namespace AptCare.Api.MapperProfile
 {
@@ -257,6 +258,14 @@ namespace AptCare.Api.MapperProfile
                         : null;
                     dest.workStatus = todayWorkSlot?.Status ?? WorkSlotStatus.Off;
                 });
+
+            //NOTIFICATION
+            CreateMap<NotificationCreateDto, NotificationPushRequestDto>();
+            CreateMap<NotificationPushRequestDto, Notification>()
+                .ForMember(d => d.IsRead, o => o.MapFrom(s => false))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+            CreateMap<Notification, NotificationDto>()
+                .ForMember(d => d.Type, o => o.MapFrom(s => s.Type.ToString()));
         }
     }
 }

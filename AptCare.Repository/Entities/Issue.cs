@@ -28,7 +28,7 @@ namespace AptCare.Repository.Entities
 
         public bool IsEmergency { get; set; }
         public int RequiredTechnician { get; set; } 
-        public int EstimatedDuration { get; set; }
+        public double EstimatedDuration { get; set; }
         public ActiveStatus Status { get; set; }
 
         public ICollection<RepairRequest>? RepairRequests { get; set; }
