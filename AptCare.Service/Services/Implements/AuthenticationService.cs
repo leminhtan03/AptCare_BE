@@ -290,6 +290,7 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException("Mật khẩu hiện tại không đúng.");
             account.PasswordHash = _pwdHasher.HashPassword(account, dto.NewPassword);
             if (account.MustChangePassword) account.MustChangePassword = false;
+            if (!account.EmailConfirmed) account.EmailConfirmed = true;
             accRepo.UpdateAsync(account);
             await _unitOfWork.CommitAsync();
             if (account.User?.Email != null)

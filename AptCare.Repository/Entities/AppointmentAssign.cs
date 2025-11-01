@@ -16,13 +16,12 @@ namespace AptCare.Repository.Entities
         [ForeignKey("Appointment")]
         public int AppointmentId { get; set; }
         public Appointment Appointment { get; set; } = null!;
-    
+
         public DateTime AssignedAt { get; set; }
         public DateTime EstimatedStartTime { get; set; }
         public DateTime EstimatedEndTime { get; set; }
         public DateTime? ActualStartTime { get; set; }
         public DateTime? ActualEndTime { get; set; }
         public WorkOrderStatus Status { get; set; }
-
     }
 }

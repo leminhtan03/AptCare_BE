@@ -3,6 +3,7 @@ using System;
 using AptCare.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     [DbContext(typeof(AptCareSystemDBContext))]
-    partial class AptCareSystemDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251101110321_FixAppointmentTrackingRelationship")]
+    partial class FixAppointmentTrackingRelationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -220,6 +223,9 @@ namespace AptCare.Repository.Migrations
 
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.HasKey("AppointmentId");
 
@@ -666,8 +672,8 @@ namespace AptCare.Repository.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<double>("EstimatedDuration")
-                        .HasColumnType("double precision");
+                    b.Property<int>("EstimatedDuration")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("IsEmergency")
                         .HasColumnType("boolean");
@@ -830,9 +836,6 @@ namespace AptCare.Repository.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("NotificationId")
-                        .HasColumnType("integer");
-
                     b.Property<int?>("ReplyMessageId")
                         .HasColumnType("integer");
 
@@ -848,8 +851,6 @@ namespace AptCare.Repository.Migrations
                     b.HasKey("MessageId");
 
                     b.HasIndex("ConversationId");
-
-                    b.HasIndex("NotificationId");
 
                     b.HasIndex("ReplyMessageId");
 
@@ -876,12 +877,11 @@ namespace AptCare.Repository.Migrations
                     b.Property<bool>("IsRead")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("ReceiverId")
+                    b.Property<int?>("MessageId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("ReceiverId")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -890,6 +890,9 @@ namespace AptCare.Repository.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("NotificationId");
+
+                    b.HasIndex("MessageId")
+                        .IsUnique();
 
                     b.HasIndex("ReceiverId");
 
@@ -1631,10 +1634,6 @@ namespace AptCare.Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AptCare.Repository.Entities.Notification", "Notification")
-                        .WithMany()
-                        .HasForeignKey("NotificationId");
-
                     b.HasOne("AptCare.Repository.Entities.Message", "ReplyMessage")
                         .WithMany("ReplyMessages")
                         .HasForeignKey("ReplyMessageId");
@@ -1647,8 +1646,6 @@ namespace AptCare.Repository.Migrations
 
                     b.Navigation("Conversation");
 
-                    b.Navigation("Notification");
-
                     b.Navigation("ReplyMessage");
 
                     b.Navigation("Sender");
@@ -1656,6 +1653,11 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.Notification", b =>
                 {
+                    b.HasOne("AptCare.Repository.Entities.Message", "Message")
+                        .WithOne("Notification")
+                        .HasForeignKey("AptCare.Repository.Entities.Notification", "MessageId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("AptCare.Repository.Entities.Account", "Receiver")
                         .WithMany("Notifications")
                         .HasForeignKey("ReceiverId")
@@ -1665,6 +1667,8 @@ namespace AptCare.Repository.Migrations
                     b.HasOne("AptCare.Repository.Entities.User", null)
                         .WithMany("Notifications")
                         .HasForeignKey("UserId");
+
+                    b.Navigation("Message");
 
                     b.Navigation("Receiver");
                 });
@@ -1971,6 +1975,8 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.Message", b =>
                 {
+                    b.Navigation("Notification");
+
                     b.Navigation("ReplyMessages");
                 });
 

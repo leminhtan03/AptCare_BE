@@ -9,7 +9,7 @@ namespace AptCare.Repository.Enum
     public enum RequestStatus
     {
         Pending = 1,
-        Approved = 2,
+        Approved = 2, // đã gán kỹ thuật viên
         InProgress = 3,
         Diagnosed = 4,
         CompletedPendingVerify = 5,

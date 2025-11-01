@@ -210,22 +210,20 @@ namespace AptCare.Service.Services.Implements
                     break;
             }
 
-            var notifications = new List<Notification>();
+            //var notifications = new List<Notification>();
 
-            foreach (var receiverId in receiverIds)
-            {
-                notifications.Add(new Notification
-                {
-                    MessageId = message.MessageId,
-                    ReceiverId = message.SenderId,
-                    Description = descrption,
-                    Type = NotificationType.Message,
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow.AddHours(7)
-                });
-            }
+            //foreach (var receiverId in receiverIds)
+            //{
+            //    notifications.Add(new Notification
+            //    {
+            //        ReceiverId = message.SenderId,
+            //        Description = descrption,
+            //        IsRead = false,
+            //        CreatedAt = DateTime.UtcNow.AddHours(7)
+            //    });
+            //}
 
-            await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
+            //await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
             await _unitOfWork.CommitAsync();
         }
 
