@@ -72,5 +72,24 @@ public class AppointmentAssignController : BaseApiController
         var result = await _appointmentAssignService.SuggestTechniciansForAppointment(appointmentId, techniqueId);
         return Ok(result);
     }
+    /// <summary>
+    /// Xác nhận hoặc hủy xác nhận việc phân công kỹ thuật viên cho lịch hẹn.
+    /// </summary>
+    /// <remarks>
+    /// **Chỉ role:** TechnicianLead  
+    /// - Cho phép xác nhận hoặc hủy xác nhận các lịch phân công đã được tạo cho một appointment.  
+    /// - Thường dùng sau khi đã phân công xong và cần confirm lại trước khi technician bắt đầu làm việc.  
+    /// </remarks>
+    /// <param name="appointmentId">ID lịch hẹn cần xác nhận phân công</param>
+    /// <param name="isConfirmed">True để xác nhận, False để hủy xác nhận</param>
+    /// <returns>Thông báo kết quả xác nhận</returns>                                                                                                                                                                                                                                                                                                                                                                                                 
+    [HttpPut("confirm-assigned/{appointmentId}")]
+    [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}")]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ConfirmAssignment(int appointmentId, [FromQuery] bool isConfirmed)
+    {
+        var result = await _appointmentAssignService.ConfirmAssignmentAsync(appointmentId, isConfirmed);
+        return Ok(result);
+    }
 
 }

@@ -48,7 +48,7 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Tạo yêu cầu sửa chữa thông thường.
+        /// Tạo yêu cầu sửa chữa Khẩn cấp.
         /// </summary>
         /// <remarks>
         /// **Chỉ role:** cư dân hoặc lễ tân.  

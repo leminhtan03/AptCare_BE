@@ -291,17 +291,19 @@ namespace AptCare.Repository
                       .WithMany(rr => rr.RequestTrackings)
                       .HasForeignKey(rt => rt.RepairRequestId);
                 entity.HasOne(rt => rt.UpdatedByUser)
-                      .WithMany(rr => rr.RequestTrackings)
+                      .WithMany()
                       .HasForeignKey(rt => rt.UpdatedBy);
             });
+
+            // Appointment - AppointmentTracking (1 - n)
             modelBuilder.Entity<AppointmentTracking>(entity =>
             {
-                entity.HasOne(rt => rt.UpdatedByUser)
-                      .WithMany(rr => rr.AppointmentTrackings)
-                      .HasForeignKey(rt => rt.UpdatedByUser);
                 entity.HasOne(rt => rt.Appointment)
-                      .WithMany(rr => rr.AppointmentTrackings)
-                      .HasForeignKey(rt => rt.Appointment);
+                      .WithMany(a => a.AppointmentTrackings)
+                      .HasForeignKey(rt => rt.AppointmentId);
+                entity.HasOne(rt => rt.UpdatedByUser)
+                      .WithMany(u => u.AppointmentTrackings)
+                      .HasForeignKey(rt => rt.UpdatedBy);
             });
 
             // RepairRequest - Feedback (1 - n)
