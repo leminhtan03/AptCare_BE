@@ -46,6 +46,7 @@ namespace AptCare.Repository.Entities
         public ICollection<ConversationParticipant>? ConversationParticipants { get; set; }
         public ICollection<RepairRequest>? RepairRequests { get; set; }
         public ICollection<AppointmentAssign>? AppointmentAssigns { get; set; }
-
+        public ICollection<AppointmentTracking>? AppointmentTrackings { get; set; }
+        public ICollection<RequestTracking>? RequestTrackings { get; set; }
     }
 }

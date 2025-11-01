@@ -1,4 +1,5 @@
 ﻿using AptCare.Repository.Enum;
+using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
 
@@ -17,6 +18,12 @@ namespace AptCare.Service.Dtos.UserDtos
         public AccountForAdminDto? AccountInfo { get; set; }
         public string Status { get; set; } = null!;
         public string? ProfileImageUrl { get; set; }
+    }
+
+    public class UserGetAllDto : UserDto
+    {
+        public bool IshaveAccount { get; set; }
+        public string? Role { get; set; }
     }
 
     public class UserBasicDto

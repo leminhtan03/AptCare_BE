@@ -139,7 +139,7 @@ namespace AptCare.Api.Controllers
         /// <exception cref="ArgumentException">Ném khi các tham số phân trang không hợp lệ</exception>
         /// <exception cref="InvalidOperationException">Ném khi có lỗi trong quá trình truy vấn dữ liệu</exception>
         [HttpGet("residents_data")]
-        [ProducesResponseType(typeof(IPaginate<UserDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IPaginate<UserGetAllDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

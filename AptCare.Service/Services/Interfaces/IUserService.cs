@@ -15,7 +15,7 @@ namespace AptCare.Service.Services.Interfaces
         Task<UserDto> GetUserByIdAsync(int userId);
         Task<UserDto> CreateUserAsync(CreateUserDto createUserDto);
         Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto);
-        Task<IPaginate<UserDto>> GetReSidentDataPageAsync(string searchQuery, string status, int page, int pageSize);
+        Task<IPaginate<UserGetAllDto>> GetReSidentDataPageAsync(string searchQuery, string status, int page, int pageSize);
         Task<ImportResultDto> ImportResidentsFromExcelAsync(Stream fileStream);
         Task<UserDto> CreateAccountForNewUserAsync(CreateInforWithAccount createAccountDto);
         Task UpdateUserProfileImageAsync(UpdateUserImageProfileDto dto);
