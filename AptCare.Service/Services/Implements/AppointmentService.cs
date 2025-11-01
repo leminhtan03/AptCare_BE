@@ -125,7 +125,7 @@ namespace AptCare.Service.Services.Implements
 
             Expression<Func<Appointment, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.Note.Contains(search)) &&
-                (string.IsNullOrEmpty(filter) || filter.Equals(p.Status.ToString().ToLower())) &&
+                (string.IsNullOrEmpty(filter) || filter.Equals(p.AppointmentTrackings.LastOrDefault().Status.ToString().ToLower())) &&
                 (fromDate == null || DateOnly.FromDateTime(p.StartTime) >= fromDate) &&
                 (toDate == null || DateOnly.FromDateTime(p.StartTime) <= toDate);
 
@@ -135,7 +135,9 @@ namespace AptCare.Service.Services.Implements
                 include: i => i.Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                                 .Include(x => x.RepairRequest)
-                                    .ThenInclude(x => x.Apartment),
+                                    .ThenInclude(x => x.Apartment)
+                                .Include(x => x.AppointmentTrackings),
+
                 orderBy: BuildOrderBy(dto.sortBy),
                     page: page,
                     size: size

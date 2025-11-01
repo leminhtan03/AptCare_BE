@@ -34,7 +34,10 @@ namespace AptCare.Service.Services.Implements
                 var appoRepo = _unitOfWork.GetRepository<Appointment>();
                 var mediaRepo = _unitOfWork.GetRepository<Media>();
                 await _unitOfWork.BeginTransactionAsync();
-                if (await appoRepo.AnyAsync(predicate: e => e.AppointmentId == dto.AppointmentId && e.Status == AppointmentStatus.Pending))
+                if (await appoRepo.AnyAsync(
+                    predicate: e => e.AppointmentId == dto.AppointmentId &&
+                    e.AppointmentTrackings.LastOrDefault().Status == AppointmentStatus.Pending,
+                    include: i => i.Include(o => o.AppointmentTrackings)))
                     throw new AppValidationException("Cuộc hẹn không tồn tại hoặc đang trong quá trình phân công nhân lực");
                 var newInsReport = _mapper.Map<InspectionReport>(dto);
                 newInsReport.UserId = _userContext.CurrentUserId;

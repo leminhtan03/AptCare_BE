@@ -3,12 +3,7 @@ using AptCare.Repository.UnitOfWork;
 using AptCare.Repository;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.Extensions.Logging; 
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Repository.Enum.AccountUserEnum;
 using Microsoft.EntityFrameworkCore;
@@ -17,7 +12,6 @@ using AptCare.Service.Exceptions;
 using Microsoft.AspNetCore.Http;
 using System.Linq.Dynamic.Core;
 using AptCare.Repository.Paginate;
-using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos;
 using System.Linq.Expressions;
 
@@ -154,11 +148,21 @@ namespace AptCare.Service.Services.Implements
                     StartTime = dto.PreferredAppointment,
                     EndTime = issue == null ? null : dto.PreferredAppointment.AddHours(issue.EstimatedDuration),
                     Note = dto.Note,
-                    CreatedAt = DateTime.UtcNow.AddHours(7),
-                    Status = AppointmentStatus.Pending
+                    CreatedAt = DateTime.UtcNow.AddHours(7)
                 };
 
                 await _unitOfWork.GetRepository<Appointment>().InsertAsync(appointment);
+                await _unitOfWork.CommitAsync();
+
+                var newAppoTracking = new AppointmentTracking
+                {
+                    AppointmentId = appointment.AppointmentId,
+                    UpdatedBy = userId,
+                    UpdatedAt = DateTime.UtcNow.AddHours(7),
+                    Status = AppointmentStatus.Pending,
+                    Note = "Cuộc hẹn mong muốn của khách hàng chờ được phân công"
+                };
+                await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(newAppoTracking);
                 await _unitOfWork.CommitAsync();
 
                 bool isAssigned = false;
@@ -166,6 +170,19 @@ namespace AptCare.Service.Services.Implements
                 if (issue != null)
                 {
                     isAssigned = await AssignTechnicianForNormalAppointmentAsync(appointment, issue);
+                    if (isAssigned)
+                    {
+                        await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(new AppointmentTracking
+                        {
+                            AppointmentId = appointment.AppointmentId,
+                            UpdatedBy = userId,
+                            Status = AppointmentStatus.Assigned,
+                            UpdatedAt = DateTime.UtcNow.AddHours(7),
+                            Note = "Tự động phân công cho lịch hẹn với Id: " + appointment.AppointmentId.ToString()
+
+                        });
+                        await _unitOfWork.CommitAsync();
+                    }
                 }
 
 
@@ -231,8 +248,6 @@ namespace AptCare.Service.Services.Implements
                     CreatedAt = DateTime.UtcNow.AddHours(7)
                 });
             }
-
-            appointment.Status = AppointmentStatus.Assigned;
             return true;
         }
 

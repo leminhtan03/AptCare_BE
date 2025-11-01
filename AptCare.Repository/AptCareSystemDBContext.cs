@@ -37,6 +37,7 @@ namespace AptCare.Repository
         public DbSet<AppointmentAssign> AppointmentAssigns { get; set; }
         public DbSet<ReportApproval> ReportApprovals { get; set; }
         public DbSet<RequestTracking> RequestTrackings { get; set; }
+        public DbSet<AppointmentTracking> AppointmentTrackings { get; set; }
         public DbSet<Feedback> Feedbacks { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceAccessory> InvoiceAccessories { get; set; }
@@ -270,7 +271,7 @@ namespace AptCare.Repository
             {
                 entity.HasOne(rp => rp.Appointment)
                       .WithOne(a => a.RepairReport)
-                      .HasForeignKey<RepairReport>(rp => rp.AppointmentId) 
+                      .HasForeignKey<RepairReport>(rp => rp.AppointmentId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -289,6 +290,18 @@ namespace AptCare.Repository
                 entity.HasOne(rt => rt.RepairRequest)
                       .WithMany(rr => rr.RequestTrackings)
                       .HasForeignKey(rt => rt.RepairRequestId);
+                entity.HasOne(rt => rt.UpdatedByUser)
+                      .WithMany(rr => rr.RequestTrackings)
+                      .HasForeignKey(rt => rt.UpdatedBy);
+            });
+            modelBuilder.Entity<AppointmentTracking>(entity =>
+            {
+                entity.HasOne(rt => rt.UpdatedByUser)
+                      .WithMany(rr => rr.AppointmentTrackings)
+                      .HasForeignKey(rt => rt.UpdatedByUser);
+                entity.HasOne(rt => rt.Appointment)
+                      .WithMany(rr => rr.AppointmentTrackings)
+                      .HasForeignKey(rt => rt.Appointment);
             });
 
             // RepairRequest - Feedback (1 - n)
