@@ -3,7 +3,7 @@ using AptCare.Repository.UnitOfWork;
 using AptCare.Repository;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
-using Microsoft.Extensions.Logging; 
+using Microsoft.Extensions.Logging;
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Repository.Enum.AccountUserEnum;
 using Microsoft.EntityFrameworkCore;
@@ -337,12 +337,20 @@ namespace AptCare.Service.Services.Implements
                     RepairRequestId = request.RepairRequestId,
                     StartTime = DateTime.UtcNow.AddHours(7),
                     EndTime = DateTime.UtcNow.AddHours(7).AddHours(issue.EstimatedDuration),
-                    CreatedAt = DateTime.UtcNow.AddHours(7),
-                    Status = AppointmentStatus.Pending
+                    CreatedAt = DateTime.UtcNow.AddHours(7)
                 };
 
                 await _unitOfWork.GetRepository<Appointment>().InsertAsync(appointment);
                 await _unitOfWork.CommitAsync();
+                var newAppoTracking = new AppointmentTracking
+                {
+                    AppointmentId = appointment.AppointmentId,
+                    UpdatedBy = userId,
+                    UpdatedAt = DateTime.UtcNow.AddHours(7),
+                    Status = AppointmentStatus.Pending,
+                    Note = "Cuộc hẹn sửa chữa khẩn cấp chờ được phân công"
+                };
+                await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(newAppoTracking);
 
                 await AssignTechnicianForEmergencyAppointmentAsync(appointment, issue);
                 await _unitOfWork.CommitAsync();
@@ -412,8 +420,16 @@ namespace AptCare.Service.Services.Implements
             }
             else
             {
-                appointment.Status = AppointmentStatus.Assigned;
-
+                var newAppoTracking = new AppointmentTracking
+                {
+                    AppointmentId = appointment.AppointmentId,
+                    UpdatedBy = _userContext.CurrentUserId,
+                    UpdatedAt = DateTime.UtcNow.AddHours(7),
+                    Status = AppointmentStatus.Assigned,
+                    Note = "Cuộc hẹn sửa chữa khẩn cấp đã được phân công"
+                };
+                await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(newAppoTracking);
+                await _unitOfWork.CommitAsync();
                 foreach (var id in ids)
                 {
                     notifications.Add(new Notification
@@ -511,6 +527,27 @@ namespace AptCare.Service.Services.Implements
                 "issue_desc" => q => q.OrderByDescending(p => p.IssueId),
                 _ => q => q.OrderByDescending(p => p.RepairRequestId) // Default sort
             };
+        }
+
+        public async Task<string> ToggleStatusAsync(int repairRequestId, RequestStatus requestStatus)
+        {
+            try
+            {
+                var request = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                    predicate: x => x.RepairRequestId == repairRequestId,
+                    include: i => i.Include(x => x.RequestTrackings)
+                    );
+                if (request == null)
+                    throw new AppValidationException("Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
+                var userId = _userContext.CurrentUserId;
+
+
+            }
+            catch (Exception ex)
+            {
+                throw new AppValidationException($"Lỗi hệ thống: {ex.Message}", StatusCodes.Status500InternalServerError);
+
+            }
         }
     }
 }
