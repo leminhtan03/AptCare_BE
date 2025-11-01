@@ -10,7 +10,6 @@ namespace AptCare.Repository.Enum
     {
         Internal = 1,
         General = 2,
-        Individual = 3,
-        Message = 4
+        Individual = 3
     }
 }

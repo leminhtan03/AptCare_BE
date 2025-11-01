@@ -2,26 +2,19 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AptCare.Repository.Entities
+namespace AptCare.Service.Dtos.NotificationDtos
 {
-    public class Notification
+    public class NotificationDto
     {
-        [Key]
         public int NotificationId { get; set; }
-        public int ReceiverId { get; set; }
-        [Required]
         public string Title { get; set; } = null!;
-        [Required]
         public string Description { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
         public bool IsRead { get; set; }
-        public NotificationType Type { get; set; }
-        [ForeignKey("ReceiverId")]
-        public Account Receiver { get; set; } = null!;
+        public string Type { get; set; } = null!;
     }
 }

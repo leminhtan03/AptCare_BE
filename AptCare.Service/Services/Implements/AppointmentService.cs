@@ -114,7 +114,7 @@ namespace AptCare.Service.Services.Implements
         }
 
         public async Task<IPaginate<AppointmentDto>> GetPaginateAppointmentAsync(PaginateDto dto, DateOnly? fromDate, DateOnly? toDate)
-        {
+        { 
             if (fromDate != null && toDate != null && fromDate > toDate)
                 throw new AppValidationException("Ngày bắt đầu không thể sau ngày kết thúc");
 
@@ -221,7 +221,7 @@ namespace AptCare.Service.Services.Implements
             return sortBy.ToLower() switch
             {
                 "start_time" => q => q.OrderBy(p => p.StartTime),
-                "fstart_time_desc" => q => q.OrderByDescending(p => p.StartTime),
+                "start_time_desc" => q => q.OrderByDescending(p => p.StartTime),
                 _ => q => q.OrderByDescending(p => p.AppointmentId) // Default sort
             };
         }

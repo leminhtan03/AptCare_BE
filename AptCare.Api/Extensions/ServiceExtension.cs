@@ -45,6 +45,8 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IInvoiceService, Service.Services.Implements.InvoiceService>();
             service.AddTransient<IInspectionReporService, InspectionReporService>();
             service.AddTransient<IReportApprovalService, ReportApprovalService>();
+            service.AddTransient<INotificationService, NotificationService>();
+            service.AddHttpClient<IFCMService, FCMService>();
 
             return service;
         }

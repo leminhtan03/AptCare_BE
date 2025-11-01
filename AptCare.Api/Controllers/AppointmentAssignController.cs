@@ -91,5 +91,4 @@ public class AppointmentAssignController : BaseApiController
         var result = await _appointmentAssignService.ConfirmAssignmentAsync(appointmentId, isConfirmed);
         return Ok(result);
     }
-
 }

@@ -1,5 +1,6 @@
 ﻿using AptCare.Repository;
 using AptCare.Repository.Cloudinary;
+using AptCare.Repository.FCM;
 using AptCare.Repository.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,7 @@ namespace AptCare.Api.Extensions
 
             service.Configure<CloudinarySettings>(configuration.GetSection("CloudinarySettings"));
             service.Configure<MailSettings>(configuration.GetSection("MailSettings"));
+            service.Configure<FCMSettings>(configuration.GetSection("FCMSettings"));
 
             return service;
         }

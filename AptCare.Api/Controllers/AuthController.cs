@@ -344,5 +344,72 @@ namespace AptCare.Api.Controllers
             return Ok("Cập nhật ảnh đại diện thành công!!");
         }
 
+        /// <summary>
+        /// Đăng ký FCM Token cho thiết bị hiện tại.
+        /// </summary>
+        /// <remarks>
+        /// **Role:** Tất cả người dùng đã đăng nhập.  
+        /// 
+        /// Dùng để đăng ký token FCM khi người dùng đăng nhập lần đầu hoặc thay đổi thiết bị.  
+        /// Hệ thống sẽ lưu token cùng thông tin thiết bị (`DeviceInfo`).
+        /// 
+        /// **Yêu cầu body mẫu:**
+        /// ```json
+        /// {
+        ///   "fcmToken": "abc123xyz...",
+        ///   "deviceInfo": "Samsung S22 / Android 14"
+        /// }
+        /// ```
+        /// </remarks>
+        /// <param name="dto">Thông tin FCM token và thiết bị.</param>
+        /// <returns>Thông báo thành công.</returns>
+        /// <response code="200">Đăng ký token thành công.</response>
+        /// <response code="401">Chưa đăng nhập.</response>
+        /// <response code="500">Lỗi hệ thống.</response>
+        [HttpPost("register-fcm")]
+        [Authorize]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> RegisterFCMToken([FromBody] FCMRequestDto dto)
+        {
+            var result = await _authenService.RegisterFCMTokenAsync(dto);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Làm mới (refresh) FCM Token khi token cũ hết hạn hoặc đổi thiết bị.
+        /// </summary>
+        /// <remarks>
+        /// **Role:** Tất cả người dùng đã đăng nhập.  
+        /// 
+        /// Dùng khi app nhận được token FCM mới từ Firebase (ví dụ sau khi cài lại app).  
+        /// Token cũ (theo `DeviceInfo`) sẽ bị đánh dấu **Expired** và lưu token mới.
+        /// 
+        /// **Yêu cầu body mẫu:**
+        /// ```json
+        /// {
+        ///   "fcmToken": "newToken456xyz...",
+        ///   "deviceInfo": "Samsung S22 / Android 14"
+        /// }
+        /// ```
+        /// </remarks>
+        /// <param name="dto">Thông tin token FCM mới.</param>
+        /// <returns>Thông báo refresh thành công.</returns>
+        /// <response code="200">Refresh token thành công.</response>
+        /// <response code="404">Token cũ không tồn tại.</response>
+        /// <response code="401">Chưa đăng nhập.</response>
+        /// <response code="500">Lỗi hệ thống.</response>
+        [HttpPut("refresh-fcm")]
+        [Authorize]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> RefreshFCMToken([FromBody] FCMRequestDto dto)
+        {
+            var result = await _authenService.RefreshFCMTokenAsync(dto);
+            return Ok(result);
+        }
     }
 }
