@@ -98,18 +98,18 @@ namespace AptCare.Api.Controllers
         /// <returns>Thông báo xóa thành công.</returns>
         /// <response code="200">Xóa thành công.</response>
         /// <response code="404">Không tìm thấy lịch hẹn.</response>
-        [HttpDelete("{id:int}")]
-        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}")]
-        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult> DeleteAppointment(int id)
-        {
-            var result = await _appointmentService.DeleteAppointmentAsync(id);
-            return Ok(result);
-        }
+        //[HttpDelete("{id:int}")]
+        //[Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}")]
+        //[ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        //[ProducesResponseType(StatusCodes.Status403Forbidden)]
+        //[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        //public async Task<ActionResult> DeleteAppointment(int id)
+        //{
+        //    var result = await _appointmentService.DeleteAppointmentAsync(id);
+        //    return Ok(result);
+        //}
 
         /// <summary>
         /// Lấy thông tin chi tiết của một lịch hẹn.

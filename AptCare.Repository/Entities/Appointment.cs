@@ -15,7 +15,7 @@ namespace AptCare.Repository.Entities
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
         public string? Note { get; set; } = null!;
-        public AppointmentStatus Status { get; set; } 
+        public AppointmentStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(RepairRequestId))]
@@ -25,5 +25,6 @@ namespace AptCare.Repository.Entities
 
         public ICollection<AppointmentAssign>? AppointmentAssigns { get; set; }
         public ICollection<InspectionReport>? InspectionReports { get; set; }
+        public ICollection<AppointmentTracking>? AppointmentTrackings { get; set; }
     }
 }

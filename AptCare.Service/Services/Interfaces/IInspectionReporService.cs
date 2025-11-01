@@ -8,8 +8,8 @@ namespace AptCare.Service.Services.Interfaces
 {
     public interface IInspectionReporService
     {
-        Task<string> GenerateInspectionReportAsync(CreateInspectionReporDto dto);
-        Task<IPaginate<InspectionReportDto>> GetPaginateInspectionReportsAsync(InspectionReportFilterDto filterDto);
+        Task<InspectionReportDto> GenerateInspectionReportAsync(CreateInspectionReporDto dto);
+        Task<IPaginate<InspectionBasicReportDto>> GetPaginateInspectionReportsAsync(InspectionReportFilterDto filterDto);
         Task<InspectionReportDto> GetInspectionReportByIdAsync(int id);
         Task<string> UpdateInspectionReportAsync(int id, UpdateInspectionReporDto dto);
 

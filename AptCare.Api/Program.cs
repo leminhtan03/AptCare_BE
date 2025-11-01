@@ -38,22 +38,25 @@ namespace AptCare.Api
             builder.Services.AddSignalR();
 
             var allowed = new[]
-{
+            {
                 "http://localhost:5173",
-                "http://192.168.100.141"
+                "http://192.168.100.141",
+                "http://aptcare.click",
+                "http://www.aptcare.click",
+                "https://aptcare.click",
+                "https://www.aptcare.click"
             };
-            //CORS
+
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowFrontend", policy =>
                 {
-                    policy.WithOrigins(allowed) // Your frontend URL
+                    policy.WithOrigins(allowed)
                           .AllowAnyHeader()
                           .AllowAnyMethod()
-                          .AllowCredentials();
+                          .AllowCredentials(); // cần cho cookie/JWT + SignalR
                 });
             });
-
             var app = builder.Build();
 
             using (var scope = app.Services.CreateScope())
@@ -119,8 +122,7 @@ namespace AptCare.Api
             });
             //}
 
-            //Comment lại khi deploy lên server 
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
             app.UseCors("AllowFrontend");
             app.UseAuthentication();
             app.UseAuthorization();
