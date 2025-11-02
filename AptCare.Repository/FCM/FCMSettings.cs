@@ -10,5 +10,6 @@ namespace AptCare.Repository.FCM
     {
         public string ServerKey { get; set; } = null!;
         public string SenderId { get; set; } = null!;
+        public string ProjectId { get; set; } = null!;
     }
 }

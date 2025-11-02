@@ -9,6 +9,14 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Content Remove="Configs\firebase-service-account.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="Configs\firebase-service-account.json" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="EPPlus" Version="8.2.0" />
 		<PackageReference Include="DotNetEnv" Version="3.1.1" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.20" />

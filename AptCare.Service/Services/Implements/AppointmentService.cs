@@ -140,6 +140,8 @@ namespace AptCare.Service.Services.Implements
                 include: i => i.Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                                 .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.RequestTrackings)
+                                .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
                                 .Include(x => x.AppointmentTrackings)
                                     .ThenInclude(x => x.UpdatedByUser),
