@@ -20,6 +20,7 @@ namespace AptCare.Service.Services.Implements
     {
         private readonly IUserContext _userContext;
         private readonly ICloudinaryService _cloudinaryService;
+
         public InspectionReporService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InspectionReporService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;

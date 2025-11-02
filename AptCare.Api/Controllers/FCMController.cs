@@ -42,16 +42,16 @@ namespace AptCare.Api.Controllers
             return Ok("Gửi thông báo thành công đến nhiều thiết bị.");
         }
 
-        [HttpPost("singleaaaa")]
-        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> PushToSingleaaaaAsync(string fcmToken, string title, string body, string image)
-        {
-            var result = await _fcmService.PushNotificationaaaAsync(fcmToken, title, body, image);
+        //[HttpPost("singleaaaa")]
+        //[ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //public async Task<IActionResult> PushToSingleaaaaAsync(string fcmToken, string title, string body, string image)
+        //{
+        //    var result = await _fcmService.PushNotificationaaaAsync(fcmToken, title, body, image);
 
-            if (!result)
-                return StatusCode(StatusCodes.Status500InternalServerError, "Gửi thông báo thất bại.");
-            return Ok("Gửi thông báo thành công.");
-        }
+        //    if (!result)
+        //        return StatusCode(StatusCodes.Status500InternalServerError, "Gửi thông báo thất bại.");
+        //    return Ok("Gửi thông báo thành công.");
+        //}
     }
 }
