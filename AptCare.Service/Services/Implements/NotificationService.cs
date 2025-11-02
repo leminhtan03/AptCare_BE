@@ -22,6 +22,7 @@ using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.AppointmentDtos;
 using System.Linq.Expressions;
+using AptCare.Service.Constants;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -129,7 +130,9 @@ namespace AptCare.Service.Services.Implements
                     predicate: x => dto.UserIds.Contains(x.AccountId) && x.TokenType == TokenType.FCMToken && x.Status == TokenStatus.Active
                     );
 
-                var isPushed = await _fcmService.PushMulticastAsync(fcmTokens, dto.Title, dto.Description, dto.Image);
+                var image = dto.Image == null ? Constant.LOGO_IMAGE : dto.Image;
+
+                var isPushed = await _fcmService.PushMulticastAsync(fcmTokens, dto.Title, dto.Description, image);
                 if (!isPushed)
                 {
                     throw new AppValidationException("Push notification thất bại.", StatusCodes.Status500InternalServerError);
