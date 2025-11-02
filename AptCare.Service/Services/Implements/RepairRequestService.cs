@@ -14,6 +14,7 @@ using System.Linq.Dynamic.Core;
 using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using System.Linq.Expressions;
+using AptCare.Service.Dtos.NotificationDtos;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -22,6 +23,7 @@ namespace AptCare.Service.Services.Implements
         private readonly IUserContext _userContext;
         private readonly ICloudinaryService _cloudinaryService;
         private readonly IAppointmentAssignService _appointmentAssignService;
+        private readonly INotificationService _notificationService;
 
         public RepairRequestService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
@@ -29,11 +31,13 @@ namespace AptCare.Service.Services.Implements
             IMapper mapper,
             IUserContext userContext,
             ICloudinaryService cloudinaryService,
-            IAppointmentAssignService appointmentAssignService) : base(unitOfWork, logger, mapper)
+            IAppointmentAssignService appointmentAssignService,
+            INotificationService notificationService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _cloudinaryService = cloudinaryService;
             _appointmentAssignService = appointmentAssignService;
+            _notificationService = notificationService;
         }
 
         public async Task<string> CreateNormalRepairRequestAsync(RepairRequestNormalCreateDto dto)
@@ -191,24 +195,22 @@ namespace AptCare.Service.Services.Implements
                     }
                 }
 
-
-
                 var techLeadId = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
                         selector: s => s.UserId,
                         predicate: p => p.Account.Role == AccountRole.TechnicianLead,
                         include: i => i.Include(x => x.Account)
                     );
 
-                var notification = new Notification
-                {
-                    ReceiverId = techLeadId,
-                    Type = NotificationType.Individual,
-                    Description = isAssigned ? "Có 1 yêu cầu sữa chữa mới cần xác nhận." : "Có 1 yêu cầu sữa chữa mới cần phân công.",
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow.AddHours(7)
-                };
+                //List<int> userIds = new List<int>();
+                //userIds.Add(techLeadId);
 
-                await _unitOfWork.GetRepository<Notification>().InsertAsync(notification);
+                //var a = await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+                //{
+                //    Title = "Có yêu cầu sửa chửa mới",
+                //    Type = NotificationType.Individual,
+                //    Description = isAssigned ? "Có 1 yêu cầu sữa chữa mới cần xác nhận." : "Có 1 yêu cầu sữa chữa mới cần phân công.",
+                //    UserIds = userIds
+                //});         
 
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
@@ -245,13 +247,15 @@ namespace AptCare.Service.Services.Implements
                     Status = WorkOrderStatus.Pending
                 });
 
-                await _unitOfWork.GetRepository<Notification>().InsertAsync(new Notification
+                List<int> userIds = new List<int>();
+                userIds.Add(technicianId);
+
+                var a = await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
                 {
-                    ReceiverId = technicianId,
+                    Title = "Có yêu cầu sửa chửa mới đuọc giao",
                     Type = NotificationType.Individual,
-                    Description = "Có yêu cầu sữa chữa mới được giao cho bạn.",
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow.AddHours(7)
+                    Description = "Có yêu cầu sữa chữa mới được giao cho bạn vào .",
+                    UserIds = userIds
                 });
             }
             return true;
@@ -312,7 +316,6 @@ namespace AptCare.Service.Services.Implements
 
                 if (dto.Files != null)
                 {
-
                     foreach (var file in dto.Files)
                     {
                         if (file == null || file.Length == 0)
