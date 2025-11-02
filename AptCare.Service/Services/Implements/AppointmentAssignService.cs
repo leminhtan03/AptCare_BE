@@ -62,7 +62,7 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Kĩ thuật viên đã được phân công cho lịch hẹn này.");
                 }
                 var tracking = await appointmentTracking.GetListAsync(predicate: s => s.AppointmentId == appointmentId);
-                if (tracking.LastOrDefault().Status == AppointmentStatus.Pending)
+                if (tracking.OrderByDescending(x => x.UpdatedAt).First().Status == AppointmentStatus.Pending)
                 {
                     await appointmentTracking.InsertAsync(new AppointmentTracking
                     {
@@ -172,8 +172,10 @@ namespace AptCare.Service.Services.Implements
                                         p.WorkSlots.Any(ws => ws.Date == DateOnly.FromDateTime(appointment.StartTime) &&
                                             ws.Slot.FromTime <= appointment.StartTime.TimeOfDay &&
                                             ws.Slot.ToTime >= appointment.StartTime.TimeOfDay) &&
-                                        p.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) == DateOnly.FromDateTime(appointment.StartTime)).All(aa => aa.EstimatedEndTime <= appointment.StartTime ||
-                                                                             aa.EstimatedStartTime >= appointment.EndTime);
+                                        p.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) == 
+                                                                         DateOnly.FromDateTime(appointment.StartTime) && 
+                                                                         aa.Status != WorkOrderStatus.Cancel)
+                                                            .All(aa => aa.EstimatedEndTime <= appointment.StartTime ||aa.EstimatedStartTime >= appointment.EndTime);
             }
 
             var technicians = await _unitOfWork.GetRepository<User>().GetListAsync(
@@ -186,10 +188,13 @@ namespace AptCare.Service.Services.Implements
                         Email = s.Email,
                         Birthday = s.Birthday,
                         AssignCountThatDay = s.AppointmentAssigns.Count(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) ==
-                                                                              DateOnly.FromDateTime(appointment.StartTime)),
-                        AssignCountThatMonth = s.AppointmentAssigns.Count(aa => aa.EstimatedStartTime.Month == appointment.StartTime.Month),
+                                                                              DateOnly.FromDateTime(appointment.StartTime) &&
+                                                                              aa.Status != WorkOrderStatus.Cancel),
+                        AssignCountThatMonth = s.AppointmentAssigns.Count(aa => aa.EstimatedStartTime.Month == appointment.StartTime.Month &&
+                                                                                aa.Status != WorkOrderStatus.Cancel),
                         AppointmentsThatDay = s.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) ==
-                                                                              DateOnly.FromDateTime(appointment.StartTime))
+                                                                               DateOnly.FromDateTime(appointment.StartTime) &&
+                                                                               aa.Status != WorkOrderStatus.Cancel)
                                                                   .Select(aa => _mapper.Map<AppointmentDto>(aa.Appointment)).ToList()
                     },
                     predicate: predicate,

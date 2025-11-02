@@ -103,6 +103,8 @@ namespace AptCare.Service.Services.Implements
                                     .ThenInclude(x => x.Technician)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
+                                .Include(x => x.AppointmentTrackings)
+                                    .ThenInclude(x => x.UpdatedByUser)
                 );
 
             if (appointment == null)
@@ -113,7 +115,7 @@ namespace AptCare.Service.Services.Implements
             return appointment;
         }
 
-        public async Task<IPaginate<AppointmentDto>> GetPaginateAppointmentAsync(PaginateDto dto, DateOnly? fromDate, DateOnly? toDate)
+        public async Task<IPaginate<AppointmentDto>> GetPaginateAppointmentAsync(PaginateDto dto, DateOnly? fromDate, DateOnly? toDate, bool? isAprroved)
         {
             if (fromDate != null && toDate != null && fromDate > toDate)
                 throw new AppValidationException("Ngày bắt đầu không thể sau ngày kết thúc");
@@ -127,7 +129,10 @@ namespace AptCare.Service.Services.Implements
                 (string.IsNullOrEmpty(search) || p.Note.Contains(search)) &&
                 (string.IsNullOrEmpty(filter) || filter.Equals(p.AppointmentTrackings.LastOrDefault().Status.ToString().ToLower())) &&
                 (fromDate == null || DateOnly.FromDateTime(p.StartTime) >= fromDate) &&
-                (toDate == null || DateOnly.FromDateTime(p.StartTime) <= toDate);
+                (toDate == null || DateOnly.FromDateTime(p.StartTime) <= toDate) &&
+                (isAprroved == null || 
+                    (isAprroved == true && p.RepairRequest.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status != RequestStatus.Pending) ||
+                    (isAprroved == false && p.RepairRequest.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status == RequestStatus.Pending));
 
             var result = await _unitOfWork.GetRepository<Appointment>().GetPagingListAsync(
                 selector: x => _mapper.Map<AppointmentDto>(x),
@@ -136,7 +141,8 @@ namespace AptCare.Service.Services.Implements
                                     .ThenInclude(x => x.Technician)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
-                                .Include(x => x.AppointmentTrackings),
+                                .Include(x => x.AppointmentTrackings)
+                                    .ThenInclude(x => x.UpdatedByUser),
 
                 orderBy: BuildOrderBy(dto.sortBy),
                     page: page,
@@ -160,6 +166,8 @@ namespace AptCare.Service.Services.Implements
                                         .ThenInclude(x => x.UserApartments)
                                 .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
+                                .Include(x => x.AppointmentTrackings)
+                                    .ThenInclude(x => x.UpdatedByUser)
                 );
 
             var result = appointments.GroupBy(a => DateOnly.FromDateTime(a.StartTime))
@@ -177,11 +185,14 @@ namespace AptCare.Service.Services.Implements
                 selector: x => _mapper.Map<AppointmentDto>(x),
                 predicate: p => DateOnly.FromDateTime(p.StartTime) >= fromDate &&
                                 DateOnly.FromDateTime(p.StartTime) <= toDate &&
+                                p.AppointmentTrackings.OrderByDescending(x => x.UpdatedAt).First().Status != AppointmentStatus.Pending &&
+                                p.AppointmentTrackings.OrderByDescending(x => x.UpdatedAt).First().Status != AppointmentStatus.Assigned &&
                                 (technicianId == null || p.AppointmentAssigns.Any(ua => ua.TechnicianId == technicianId)),
                 include: i => i.Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
                                 .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
+                                .Include(x => x.AppointmentTrackings)
                 );
 
             var slots = await _unitOfWork.GetRepository<Slot>().GetListAsync(predicate: p => p.Status == ActiveStatus.Active);

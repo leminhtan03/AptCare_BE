@@ -1,4 +1,5 @@
 ﻿using AptCare.Repository.FCM;
+using AptCare.Service.Constants;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -21,28 +22,28 @@ namespace AptCare.Service.Services.Implements
             _httpClient = httpClient;
         }
 
-        //public async Task<bool> PushNotificationAsync(string fcmToken, string title, string body, string image)
-        //{
-        //    _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"key={_config.Value.ServerKey}");
-        //    _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Sender", $"id={_config.Value.SenderId}");
+        public async Task<bool> PushNotificationaaaAsync(string fcmToken, string title, string body, string image)
+        {
+            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", $"key={_config.Value.ServerKey}");
+            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("Sender", $"id={_config.Value.SenderId}");
 
-        //    var payload = new
-        //    {
-        //        to = fcmToken,
-        //        notification = new
-        //        {
-        //            title = title,
-        //            body = body,
-        //            image = image
-        //        }
-        //    };
+            var payload = new
+            {
+                to = fcmToken,
+                notification = new
+                {
+                    title = title,
+                    body = body,
+                    image = image
+                }
+            };
 
-        //    string jsonPayload = JsonSerializer.Serialize(payload);
-        //    var requestContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+            string jsonPayload = JsonSerializer.Serialize(payload);
+            var requestContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
 
-        //    var response = await _httpClient.PostAsync("https://fcm.googleapis.com/fcm/send", requestContent);
-        //    return response.IsSuccessStatusCode;
-        //}
+            var response = await _httpClient.PostAsync("https://fcm.googleapis.com/fcm/send", requestContent);
+            return response.IsSuccessStatusCode;
+        }
 
         public async Task<bool> PushNotificationAsync(string fcmToken, string title, string body, string? image = null)
         {
@@ -58,7 +59,7 @@ namespace AptCare.Service.Services.Implements
             if (tokens == null || tokens.Count == 0)
                 return false;
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, "https://fcm.googleapis.com/fcm/send");
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"https://fcm.googleapis.com/v1/projects/aptcare-28d40/messages:send");
             request.Headers.TryAddWithoutValidation("Authorization", $"key={_config.Value.ServerKey}");
             request.Headers.TryAddWithoutValidation("Sender", $"id={_config.Value.SenderId}");
 
@@ -69,7 +70,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     title,
                     body,
-                    image = string.IsNullOrEmpty(image) ? "https://yourapp.com/logo.png" : image
+                    image = string.IsNullOrEmpty(image) ? $"{Constant.LOGO_IMAGE}" : image
                 },
                 data = new
                 {
