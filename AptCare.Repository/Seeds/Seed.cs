@@ -89,7 +89,7 @@ namespace AptCare.Repository.Seeds
                     new Technique { Name = "Điện", Description = "Sửa chữa, bảo trì hệ thống điện trong căn hộ và khu chung cư" },
                     new Technique { Name = "Nước", Description = "Xử lý sự cố rò rỉ, tắc nghẽn, áp lực nước" },
                     new Technique { Name = "Điều hòa - Thông gió", Description = "Vệ sinh, bảo trì máy lạnh, quạt thông gió" },
-                    new Technique { Name = "Cơ khí - Cửa - Khóa", Description = "Sửa cửa, bản lề, ổ khóa, lan can" },                   
+                    new Technique { Name = "Cơ khí - Cửa - Khóa", Description = "Sửa cửa, bản lề, ổ khóa, lan can" },
                     new Technique { Name = "Chiếu sáng công cộng", Description = "Thay bóng đèn, kiểm tra tủ điện tầng" },
                     new Technique { Name = "Môi trường - Vệ sinh", Description = "Khử mùi, vệ sinh kỹ thuật, bảo trì bồn chứa" },
                     new Technique { Name = "Internet - Hệ thống mạng", Description = "Xử lý sự cố mạng, camera, intercom" },
@@ -356,7 +356,7 @@ namespace AptCare.Repository.Seeds
                 int userIdx = 14;
                 foreach (var apartment in apartments)
                 {
-                    for (int u = 1; u <= 4; u++)
+                    for (int u = 1; u <= 2; u++)
                     {
                         var user = users[userIdx];
                         userApartments.Add(new UserApartment
@@ -382,7 +382,7 @@ namespace AptCare.Repository.Seeds
                 var commonAreas = new List<CommonArea>();
 
                 // Tạo khu vực cho mỗi tầng
-                foreach (var floor in floors)              
+                foreach (var floor in floors)
                 {
                     commonAreas.Add(new CommonArea
                     {

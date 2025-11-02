@@ -1,31 +1,35 @@
-﻿using AptCare.Repository.Entities;
+﻿using AptCare.Repository;
+using AptCare.Repository.Entities;
+using AptCare.Repository.Enum;
+using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
-using AptCare.Repository;
+using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.AppointmentDtos;
+using AptCare.Service.Dtos.RepairRequestDtos;
+using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
-using Microsoft.Extensions.Logging;
-using AptCare.Service.Dtos.AppointmentDtos;
-using AptCare.Service.Exceptions;
 using Microsoft.AspNetCore.Http;
-using AptCare.Repository.Paginate;
-using AptCare.Service.Dtos;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
-using AptCare.Repository.Enum;
 
 namespace AptCare.Service.Services.Implements
 {
     public class AppointmentService : BaseService<AppointmentService>, IAppointmentService
     {
         private readonly IUserContext _userContext;
+        private readonly IRepairRequestService _repairRequestService;
 
         public AppointmentService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
             ILogger<AppointmentService> logger,
             IMapper mapper,
-            IUserContext userContext) : base(unitOfWork, logger, mapper)
+            IUserContext userContext,
+            IRepairRequestService IRepairRequestService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
+            _repairRequestService = IRepairRequestService;
         }
 
         public async Task<string> CreateAppointmentAsync(AppointmentCreateDto dto)
@@ -132,7 +136,7 @@ namespace AptCare.Service.Services.Implements
                 (string.IsNullOrEmpty(filter) || filter.Equals(p.AppointmentTrackings.LastOrDefault().Status.ToString().ToLower())) &&
                 (fromDate == null || DateOnly.FromDateTime(p.StartTime) >= fromDate) &&
                 (toDate == null || DateOnly.FromDateTime(p.StartTime) <= toDate) &&
-                (isAprroved == null || 
+                (isAprroved == null ||
                     (isAprroved == true && p.RepairRequest.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status != RequestStatus.Pending) ||
                     (isAprroved == false && p.RepairRequest.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status == RequestStatus.Pending));
 
@@ -199,6 +203,8 @@ namespace AptCare.Service.Services.Implements
                 include: i => i.Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
                                 .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.RequestTrackings)
+                                .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Issue)
                                 .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
@@ -253,8 +259,7 @@ namespace AptCare.Service.Services.Implements
             {
                 var userId = _userContext.CurrentUserId;
                 var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
-                    predicate: x => x.AppointmentId == id &&
-                                    x.AppointmentAssigns.Any(aa => aa.TechnicianId == userId),
+                    predicate: x => x.AppointmentId == id,
                     include: i => i.Include(x => x.AppointmentTrackings)
                                     .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
@@ -265,9 +270,55 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Lịch hẹn không tồn tại hoặc bạn không được phân công cho lịch hẹn này.", StatusCodes.Status404NotFound);
                 }
 
+                await _unitOfWork.BeginTransactionAsync();
+                var timeNow = DateTime.UtcNow.AddHours(7);
+                var appointmentStartTime = appointment.StartTime;
+                if (timeNow < appointmentStartTime.AddMinutes(-30))
+                {
+                    throw new AppValidationException("Chưa đến thời gian check-in cho lịch hẹn này.");
+                }
+                var StatusChange = await _repairRequestService.ToggleRepairRequestStatusAsync(new ToggleRRStatus
+                {
+                    RepairRequestId = appointment.RepairRequestId,
+                    NewStatus = Repository.Enum.RequestStatus.InProgress,
+                    Note = "Kỹ thuật đã check-in cho lịch hẹn."
+                });
                 var latestTracking = appointment.AppointmentTrackings
                                                 .OrderByDescending(at => at.UpdatedAt)
                                                 .FirstOrDefault(); 
+                if (latestTracking != null && latestTracking.Status == AppointmentStatus.Confirmed)
+                {
+                    var appointmentTracking = new AppointmentTracking
+                    {
+                        AppointmentId = appointment.AppointmentId,
+                        Status = AppointmentStatus.InVisit,
+                        Note = "Kỹ thuật đã check-in.",
+                        UpdatedBy = userId,
+                        UpdatedAt = DateTime.UtcNow.AddHours(7)
+                    };
+                    await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
+                    await _unitOfWork.CommitAsync();
+                    var appointmentAssign = appointment.AppointmentAssigns;
+                    foreach (var assign in appointmentAssign)
+                    {
+                        if (assign != null)
+                        {
+                            assign.ActualStartTime = DateTime.UtcNow;
+                            assign.Status = Repository.Enum.WorkOrderStatus.Working;
+                            _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(assign);
+                            await _unitOfWork.CommitAsync();
+                        }
+                    }
+                    await _unitOfWork.CommitTransactionAsync();
+                    return "Check-in thành công cho lịch hẹn.";
+                }
+                else
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    throw new AppValidationException("Lịch hẹn không ở trạng thái chưa được xác nhận phân công, không thể check-in.");
+                }
+
+
             }
             catch (Exception ex)
             {
@@ -276,9 +327,168 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-        public Task<string> StartRepairAsync(int id)
+        public async Task<string> StartRepairAsync(int id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var userId = _userContext.CurrentUserId;
+                var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
+                    predicate: x => x.AppointmentId == id,
+                    include: i => i.Include(x => x.AppointmentTrackings)
+                                    .Include(x => x.AppointmentAssigns)
+                                    .ThenInclude(x => x.Technician)
+                                    .Include(x => x.RepairRequest)
+                    );
+
+                if (appointment == null)
+                {
+                    throw new AppValidationException("Lịch hẹn không tồn tại hoặc bạn không được phân công cho lịch hẹn này.", StatusCodes.Status404NotFound);
+                }
+
+                var latestTracking = appointment.AppointmentTrackings
+                                                .OrderByDescending(at => at.UpdatedAt)
+                                                .FirstOrDefault();
+
+                if (latestTracking == null || latestTracking.Status != AppointmentStatus.InVisit)
+                {
+                    throw new AppValidationException("Bạn chưa check-in, không thể bắt đầu sửa chữa.");
+                }
+
+                await _unitOfWork.BeginTransactionAsync();
+
+                var appointmentTracking = new AppointmentTracking
+                {
+                    AppointmentId = appointment.AppointmentId,
+                    Status = AppointmentStatus.InRepair,
+                    Note = "Kỹ thuật viên bắt đầu sửa chữa.",
+                    UpdatedBy = userId,
+                    UpdatedAt = DateTime.UtcNow.AddHours(7)
+                };
+
+                await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
+                await _unitOfWork.CommitAsync();
+
+                var appointmentAssigns = appointment.AppointmentAssigns;
+                foreach (var assign in appointmentAssigns)
+                {
+                    if (assign != null && assign.ActualStartTime != null)
+                    {
+                        assign.Status = Repository.Enum.WorkOrderStatus.Working;
+                        _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(assign);
+                    }
+                }
+
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return "Bắt đầu sửa chữa thành công.";
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Error during StartRepairAsync for Appointment ID {AppointmentId}", id);
+                throw new AppValidationException("Đã xảy ra lỗi khi bắt đầu sửa chữa. Vui lòng thử lại sau.");
+            }
+        }
+
+        public async Task<bool> ToogleAppoimnentStatus(int Id, string note, AppointmentStatus appointmentStatus)
+        {
+            var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
+                predicate: x => x.AppointmentId == Id,
+                include: i => i.Include(x => x.AppointmentTrackings)
+            );
+
+            if (appointment == null)
+            {
+                throw new AppValidationException("Lịch hẹn không tồn tại.", StatusCodes.Status404NotFound);
+            }
+
+            var latestTracking = appointment.AppointmentTrackings
+                                            .OrderByDescending(at => at.UpdatedAt)
+                                            .FirstOrDefault();
+
+            var currentStatus = latestTracking?.Status ?? AppointmentStatus.Pending;
+
+            if (!IsValidStatusTransition(currentStatus, appointmentStatus))
+            {
+                throw new AppValidationException(
+                    $"Không thể chuyển trạng thái từ '{currentStatus}' sang '{appointmentStatus}'.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var userId = _userContext.CurrentUserId;
+
+            var appointmentTracking = new AppointmentTracking
+            {
+                AppointmentId = Id,
+                Status = appointmentStatus,
+                Note = note ?? string.Empty,
+                UpdatedBy = userId,
+                UpdatedAt = DateTime.UtcNow.AddHours(7)
+            };
+
+            await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
+            await _unitOfWork.CommitAsync();
+
+            return true;
+        }
+
+        private bool IsValidStatusTransition(AppointmentStatus currentStatus, AppointmentStatus newStatus)
+        {
+            var validNextStatuses = currentStatus switch
+            {
+                AppointmentStatus.Pending => new[]
+                {
+                    AppointmentStatus.Assigned,
+                    AppointmentStatus.Cancelled
+                },
+                AppointmentStatus.Assigned => new[]
+                {
+                    AppointmentStatus.Confirmed,
+                    AppointmentStatus.Cancelled,
+                    AppointmentStatus.Rescheduled
+                },
+                AppointmentStatus.Confirmed => new[]
+                {
+                    AppointmentStatus.InVisit,
+                    AppointmentStatus.Cancelled,
+                    AppointmentStatus.Rescheduled
+                },
+                AppointmentStatus.AwaitingIRApproval => new[]
+                {
+                    AppointmentStatus.Visited,
+                    AppointmentStatus.Rescheduled,
+                    AppointmentStatus.InRepair
+                }
+                ,
+                AppointmentStatus.InVisit => new[]
+                {
+                    AppointmentStatus.AwaitingIRApproval,
+                    AppointmentStatus.Cancelled,
+                    AppointmentStatus.PreCheck
+                },
+                AppointmentStatus.PreCheck => new[]
+                {
+                    AppointmentStatus.Cancelled,
+                    AppointmentStatus.AwaitingIRApproval
+                },
+                AppointmentStatus.InRepair => new[]
+                {
+                    AppointmentStatus.Completed,
+                    AppointmentStatus.Cancelled
+                },
+
+                // From Rescheduled, can move to Assigned or Cancelled
+                AppointmentStatus.Rescheduled => new[]
+                {
+                    AppointmentStatus.Assigned,
+                    AppointmentStatus.Cancelled
+                },
+                AppointmentStatus.Completed => Array.Empty<AppointmentStatus>(),
+                AppointmentStatus.Cancelled => Array.Empty<AppointmentStatus>(),
+                _ => Array.Empty<AppointmentStatus>()
+            };
+            return validNextStatuses.Contains(newStatus);
         }
     }
 }
