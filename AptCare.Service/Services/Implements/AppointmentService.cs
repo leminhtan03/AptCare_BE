@@ -354,7 +354,7 @@ namespace AptCare.Service.Services.Implements
                     Status = AppointmentStatus.InRepair,
                     Note = "Kỹ thuật viên bắt đầu sửa chữa.",
                     UpdatedBy = userId,
-                    UpdatedAt = DateTime.UtcNow
+                    UpdatedAt = DateTime.UtcNow.AddHours(7)
                 };
 
                 await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
