@@ -10,5 +10,6 @@ namespace AptCare.Service.Services.Interfaces
     {
         Task<bool> PushNotificationAsync(string fcmToken, string title, string body, string? image = null);
         Task<bool> PushMulticastAsync(IEnumerable<string> fcmTokens, string title, string body, string? image = null);
+        Task<bool> PushNotificationaaaAsync(string fcmToken, string title, string body, string image);
     }
 }

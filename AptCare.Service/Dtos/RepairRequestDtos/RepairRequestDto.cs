@@ -31,9 +31,7 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public List<int>? ChildRequestIds { get; set; }
         public List<MediaDto>? Medias { get; set; }
         public List<RequestTrackingDto>? RequestTrackings { get; set; }
-        public List<AppointmentDto>? Appointments { get; set; }
-        public List<int>? InspectionReportIds { get; set; }
-        public int? RepairReportId { get; set; }
+        public List<AppointmentBasicDto>? Appointments { get; set; }
     }
 
     public class RequestTrackingDto
