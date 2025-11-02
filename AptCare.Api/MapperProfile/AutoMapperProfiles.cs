@@ -183,7 +183,8 @@ namespace AptCare.Api.MapperProfile
             CreateMap<AppointmentCreateDto, Appointment>()
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
             CreateMap<AppointmentUpdateDto, Appointment>();
-            CreateMap<AppointmentTracking, AppointmentTrackingDto>();
+            CreateMap<AppointmentTracking, AppointmentTrackingDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
 
             CreateMap<RepairRequestNormalCreateDto, RepairRequest>()
                .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => false))

@@ -133,10 +133,10 @@ namespace AptCare.Service.Services.Implements
                 var image = dto.Image == null ? Constant.LOGO_IMAGE : dto.Image;
 
                 var isPushed = await _fcmService.PushMulticastAsync(fcmTokens, dto.Title, dto.Description, image);
-                if (!isPushed)
-                {
-                    throw new AppValidationException("Push notification thất bại.", StatusCodes.Status500InternalServerError);
-                }
+                //if (!isPushed)
+                //{
+                //    throw new AppValidationException("Push notification thất bại.", StatusCodes.Status500InternalServerError);
+                //}
 
                 await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
                 await _unitOfWork.CommitAsync();
