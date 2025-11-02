@@ -8,23 +8,19 @@ namespace AptCare.Repository.Enum
 {
     public enum AppointmentStatus
     {
-        Pending = 1, // Đã lên lịch
-        Assigned = 2,  // Đã gán kỹ thuật viên
-        Confirmed = 3,     // kỹ thuật viên xác đã được xác nhận ca làm
-        InVisit = 4,      // Đang trong buổi khảo sát
-        AwaitingIRApproval = 5,
-        Visited = 6,              // Kết thúc buổi khảo sát (không sửa trong buổi này)
-
-        // Nhánh sửa chữa (cùng buổi hoặc buổi khác)
-        PreCheck = 7,           // Kiểm tra sơ bộ trước khi thi công (ở buổi sửa)
-        InRepair = 8,             // Đang thi công
-        OnHold = 9,               // Tạm dừng (đợi vật tư/không vào nhà/…)
-        Completed = 10,            // Hoàn tất buổi (đã thi công xong)
-
-        // Sự cố/lịch
-        Rescheduled = 11,          // Đổi lịch
-        Cancelled = 12,            // Hủy lịch
-        NoShowCustomer = 13,       // Khách vắng
-        NoShowTechnician = 14     // Kỹ thuật viên vắng
+        Pending = 1,           // Chờ phân công
+        Assigned = 2,          // Đã phân công technician
+        Confirmed = 3,         // Technician đã xác nhận
+        InVisit = 4,           // Đang kiểm tra (đã check-in)
+        AwaitingIRApproval = 5,// Chờ duyệt IR
+        Visited = 6,           // Kết thúc kiểm tra (chưa sửa)
+        PreCheck = 7,          // Kiểm tra trước khi thi công
+        InRepair = 8,          // Đang thi công
+        OnHold = 9,            // Tạm dừng
+        Completed = 10,        // Hoàn tất
+        Rescheduled = 11,      // Đổi lịch
+        Cancelled = 12,        // Hủy
+        NoShowCustomer = 13,   // Khách vắng
+        NoShowTechnician = 14  // Technician vắng
     }
 }

@@ -1,7 +1,6 @@
 ﻿using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
-using System.Text.Json.Serialization;
 
 namespace AptCare.Api.Extensions
 {
