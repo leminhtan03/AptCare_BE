@@ -159,12 +159,14 @@ namespace AptCare.Api.Controllers
         /// - `search`: Từ khóa tìm kiếm theo ghi chú.  
         /// - `filter`: Lọc theo trạng thái (ví dụ: pending, assigned, confirmed, completed, canceled).  
         /// - `fromDate`: Ngày bắt đầu (định dạng `yyyy-MM-dd`).  
-        /// - `toDate`: Ngày kết thúc (định dạng `yyyy-MM-dd`).  
+        /// - `toDate`: Ngày kết thúc (định dạng `yyyy-MM-dd`).   
+        /// - `isAprroved`: Lọc lịch hẹn của những request đã được chấp nhận hay chưa.  
         /// - `sortBy`: Tiêu chí sắp xếp (`starttime`, `starttime_desc`, v.v.).  
         /// </remarks>
         /// <param name="dto">Thông tin phân trang, tìm kiếm, sắp xếp và lọc.</param>
         /// <param name="fromDate">Ngày bắt đầu (tùy chọn).</param>
         /// <param name="toDate">Ngày kết thúc (tùy chọn).</param>
+        /// <param name="isAprroved">Đã chấp nhận chưa (tùy chọn).</param>
         /// <returns>Danh sách lịch hẹn có phân trang.</returns>
         /// <response code="200">Trả về danh sách lịch hẹn.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
@@ -181,9 +183,10 @@ namespace AptCare.Api.Controllers
         public async Task<ActionResult<IPaginate<AppointmentDto>>> GetPaginateAppointment(
             [FromQuery] PaginateDto dto,
             [FromQuery] DateOnly? fromDate,
-            [FromQuery] DateOnly? toDate)
+            [FromQuery] DateOnly? toDate,
+            [FromQuery] bool? isAprroved)
         {
-            var result = await _appointmentService.GetPaginateAppointmentAsync(dto, fromDate, toDate);
+            var result = await _appointmentService.GetPaginateAppointmentAsync(dto, fromDate, toDate, isAprroved);
             return Ok(result);
         }
 

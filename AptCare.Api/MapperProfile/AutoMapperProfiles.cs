@@ -166,29 +166,7 @@ namespace AptCare.Api.MapperProfile
 
             //REPAIR REQUEST
             CreateMap<RepairRequest, RepairRequestDto>()
-                .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null))
-                .ForMember(d => d.RepairReportId, o => o.MapFrom(s =>
-                    s.Appointments != null
-                        ? s.Appointments
-                            .Where(a => a.RepairReport != null)
-                            .Select(a => a.RepairReport)
-                            .FirstOrDefault() != null
-                                ? s.Appointments
-                                    .Where(a => a.RepairReport != null)
-                                    .Select(a => a.RepairReport.RepairReportId)
-                                    .FirstOrDefault()
-                                : (int?)null
-                        : (int?)null
-                ))
-                .ForMember(d => d.InspectionReportIds, o => o.MapFrom(s =>
-                    s.Appointments != null
-                        ? s.Appointments
-                            .Where(a => a.InspectionReports != null && a.InspectionReports.Count > 0)
-                            .SelectMany(a => a.InspectionReports)
-                            .Select(ir => ir.InspectionReportId)
-                            .ToList()
-                        : null
-                ));
+                .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null));                
 
             CreateMap<RepairRequest, RepairRequestBasicDto>();
             CreateMap<RequestTracking, RequestTrackingDto>()
@@ -196,11 +174,16 @@ namespace AptCare.Api.MapperProfile
 
             //APOINTMENT
             CreateMap<Appointment, AppointmentDto>()
-                .ForMember(d => d.Status, o => o.MapFrom(s => s.AppointmentTrackings.LastOrDefault().Status.ToString()))
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.AppointmentTrackings.OrderByDescending(x => x.UpdatedAt).First().Status.ToString()))
                 .ForMember(d => d.Technicians, o => o.MapFrom(s => s.AppointmentAssigns.Select(x => x.Technician)));
+            CreateMap<Appointment, AppointmentBasicDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.AppointmentTrackings.OrderByDescending(x => x.UpdatedAt).First().Status.ToString()))
+                .ForMember(d => d.Technicians, o => o.MapFrom(s => s.AppointmentAssigns.Select(x => x.Technician)));
+
             CreateMap<AppointmentCreateDto, Appointment>()
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
             CreateMap<AppointmentUpdateDto, Appointment>();
+            CreateMap<AppointmentTracking, AppointmentTrackingDto>();
 
             CreateMap<RepairRequestNormalCreateDto, RepairRequest>()
                .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => false))
