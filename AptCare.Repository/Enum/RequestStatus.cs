@@ -8,13 +8,14 @@ namespace AptCare.Repository.Enum
 {
     public enum RequestStatus
     {
-        Pending = 1,
-        Approved = 2, // đã gán kỹ thuật viên
-        InProgress = 3,
-        Diagnosed = 4,
-        CompletedPendingVerify = 5,
-        AcceptancePendinhVerify = 6,
-        Completed = 7,
-        Cancelled = 8
+        Pending = 1,              // Chờ duyệt
+        Approved = 2,             // Đã duyệt, chờ bắt đầu
+        InProgress = 3,           // Đang tiến hành (technician đã check-in)
+        Diagnosed = 4,            // Đã chẩn đoán (IR đã được approve)
+        CompletedPendingVerify = 5, // Hoàn tất, chờ kiểm duyệt
+        AcceptancePendingVerify = 6, // Chờ nghiệm thu
+        Completed = 7,            // Hoàn tất
+        Cancelled = 8,            // Đã hủy
+        Rejected = 9              // Bị từ chối
     }
 }

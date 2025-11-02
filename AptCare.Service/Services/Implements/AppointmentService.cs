@@ -114,7 +114,7 @@ namespace AptCare.Service.Services.Implements
         }
 
         public async Task<IPaginate<AppointmentDto>> GetPaginateAppointmentAsync(PaginateDto dto, DateOnly? fromDate, DateOnly? toDate)
-        { 
+        {
             if (fromDate != null && toDate != null && fromDate > toDate)
                 throw new AppValidationException("Ngày bắt đầu không thể sau ngày kết thúc");
 
@@ -224,6 +224,40 @@ namespace AptCare.Service.Services.Implements
                 "start_time_desc" => q => q.OrderByDescending(p => p.StartTime),
                 _ => q => q.OrderByDescending(p => p.AppointmentId) // Default sort
             };
+        }
+
+        public async Task<string> CheckInAsync(int id)
+        {
+            try
+            {
+                var userId = _userContext.CurrentUserId;
+                var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
+                    predicate: x => x.AppointmentId == id &&
+                                    x.AppointmentAssigns.Any(aa => aa.TechnicianId == userId),
+                    include: i => i.Include(x => x.AppointmentTrackings)
+                                    .Include(x => x.AppointmentAssigns)
+                                    .ThenInclude(x => x.Technician)
+                                    .Include(x => x.RepairRequest)
+                    );
+                if (appointment == null)
+                {
+                    throw new AppValidationException("Lịch hẹn không tồn tại hoặc bạn không được phân công cho lịch hẹn này.", StatusCodes.Status404NotFound);
+                }
+
+                var latestTracking = appointment.AppointmentTrackings
+                                                .OrderByDescending(at => at.UpdatedAt)
+                                                .FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during CheckInAsync for Appointment ID {AppointmentId}", id);
+                throw new AppValidationException("An error occurred while checking in to the appointment. Please try again later.");
+            }
+        }
+
+        public Task<string> StartRepairAsync(int id)
+        {
+            throw new NotImplementedException();
         }
     }
 }
