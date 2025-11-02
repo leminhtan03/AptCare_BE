@@ -308,6 +308,30 @@ namespace AptCare.Api.Controllers
             var result = await _appointmentService.GetMyTechnicianAppointmentScheduleAsync(fromDate, toDate);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Kỹ thuật viên check-in để bắt đầu buổi hẹn.
+        /// </summary>
+        [HttpPost("{id}/check-in")]
+        [Authorize(Roles = nameof(AccountRole.Technician))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CheckIn(int id)
+        {
+            var result = await _appointmentService.CheckInAsync(id);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Bắt đầu thi công sửa chữa.
+        /// </summary>
+        [HttpPost("{id}/start-repair")]
+        [Authorize(Roles = nameof(AccountRole.Technician))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> StartRepair(int id)
+        {
+            var result = await _appointmentService.StartRepairAsync(id);
+            return Ok(result);
+        }
     }
 }
 

@@ -199,18 +199,18 @@ namespace AptCare.Service.Services.Implements
                         include: i => i.Include(x => x.Account)
                     );
 
-                var notification = new Notification
-                {
-                    ReceiverId = techLeadId,
-                    Type = NotificationType.Individual,
-                    Description = isAssigned ? "Có 1 yêu cầu sữa chữa mới cần xác nhận." : "Có 1 yêu cầu sữa chữa mới cần phân công.",
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow.AddHours(7)
-                };
+                //var notification = new Notification
+                //{
+                //    ReceiverId = techLeadId,
+                //    Type = NotificationType.Individual,
+                //    Description = isAssigned ? "Có 1 yêu cầu sữa chữa mới cần xác nhận." : "Có 1 yêu cầu sữa chữa mới cần phân công.",
+                //    IsRead = false,
+                //    CreatedAt = DateTime.UtcNow.AddHours(7)
+                //};
 
-                await _unitOfWork.GetRepository<Notification>().InsertAsync(notification);
+                //await _unitOfWork.GetRepository<Notification>().InsertAsync(notification);
 
-                await _unitOfWork.CommitAsync();
+                //await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
                 return "Tạo yêu cầu sửa chữa thành công";
             }
@@ -245,14 +245,14 @@ namespace AptCare.Service.Services.Implements
                     Status = WorkOrderStatus.Pending
                 });
 
-                await _unitOfWork.GetRepository<Notification>().InsertAsync(new Notification
-                {
-                    ReceiverId = technicianId,
-                    Type = NotificationType.Individual,
-                    Description = "Có yêu cầu sữa chữa mới được giao cho bạn.",
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow.AddHours(7)
-                });
+                //await _unitOfWork.GetRepository<Notification>().InsertAsync(new Notification
+                //{
+                //    ReceiverId = technicianId,
+                //    Type = NotificationType.Individual,
+                //    Description = "Có yêu cầu sữa chữa mới được giao cho bạn.",
+                //    IsRead = false,
+                //    CreatedAt = DateTime.UtcNow.AddHours(7)
+                //});
             }
             return true;
         }
@@ -375,7 +375,7 @@ namespace AptCare.Service.Services.Implements
             var techniciansAcceptable = await _appointmentAssignService.SuggestTechniciansForAppointment(appointment.AppointmentId, null);
             var technicianidsAcceptable = techniciansAcceptable.Select(x => x.UserId).ToList();
 
-            var notifications = new List<Notification>();
+            //var notifications = new List<Notification>();
 
             if (technicianidsAcceptable.Count != 0)
             {
@@ -393,14 +393,14 @@ namespace AptCare.Service.Services.Implements
                         Status = WorkOrderStatus.Working
                     });
 
-                    notifications.Add(new Notification
-                    {
-                        ReceiverId = technicianId,
-                        Type = NotificationType.Individual,
-                        Description = "Có yêu cầu sữa chữa khẩn cấp được giao cho bạn. Vui lòng tiến hành sữa chữa ngay",
-                        IsRead = false,
-                        CreatedAt = DateTime.UtcNow.AddHours(7)
-                    });
+                    //notifications.Add(new Notification
+                    //{
+                    //    ReceiverId = technicianId,
+                    //    Type = NotificationType.Individual,
+                    //    Description = "Có yêu cầu sữa chữa khẩn cấp được giao cho bạn. Vui lòng tiến hành sữa chữa ngay",
+                    //    IsRead = false,
+                    //    CreatedAt = DateTime.UtcNow.AddHours(7)
+                    //});
                 }
             }
 
@@ -412,17 +412,17 @@ namespace AptCare.Service.Services.Implements
 
             if (technicianidsAcceptable.Count < issue.RequiredTechnician)
             {
-                foreach (var id in ids)
-                {
-                    notifications.Add(new Notification
-                    {
-                        ReceiverId = id,
-                        Type = NotificationType.Individual,
-                        Description = $"Có yêu cầu sữa chữa khẩn cấp. Đã phân công được {technicianidsAcceptable.Count}/{issue.RequiredTechnician} kĩ thuật viên. Vui lòng tiếp tục phân công.",
-                        IsRead = false,
-                        CreatedAt = DateTime.UtcNow.AddHours(7)
-                    });
-                }
+                //foreach (var id in ids)
+                //{
+                //    notifications.Add(new Notification
+                //    {
+                //        ReceiverId = id,
+                //        Type = NotificationType.Individual,
+                //        Description = $"Có yêu cầu sữa chữa khẩn cấp. Đã phân công được {technicianidsAcceptable.Count}/{issue.RequiredTechnician} kĩ thuật viên. Vui lòng tiếp tục phân công.",
+                //        IsRead = false,
+                //        CreatedAt = DateTime.UtcNow.AddHours(7)
+                //    });
+                //}
             }
             else
             {
@@ -436,20 +436,20 @@ namespace AptCare.Service.Services.Implements
                 };
                 await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(newAppoTracking);
                 await _unitOfWork.CommitAsync();
-                foreach (var id in ids)
-                {
-                    notifications.Add(new Notification
-                    {
-                        ReceiverId = id,
-                        Type = NotificationType.Individual,
-                        Description = $"Có yêu cầu sữa chữa khẩn cấp. Đã phân công đủ {issue.RequiredTechnician}/{issue.RequiredTechnician} kĩ thuật viên.",
-                        IsRead = false,
-                        CreatedAt = DateTime.UtcNow.AddHours(7)
-                    });
-                }
+                //foreach (var id in ids)
+                //{
+                //    notifications.Add(new Notification
+                //    {
+                //        ReceiverId = id,
+                //        Type = NotificationType.Individual,
+                //        Description = $"Có yêu cầu sữa chữa khẩn cấp. Đã phân công đủ {issue.RequiredTechnician}/{issue.RequiredTechnician} kĩ thuật viên.",
+                //        IsRead = false,
+                //        CreatedAt = DateTime.UtcNow.AddHours(7)
+                //    });
+                //}
             }
 
-            await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
+            //await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
         }
 
         public async Task<IPaginate<RepairRequestDto>> GetPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? apartmentId, int? issueId, int? maintenanceRequestId)
