@@ -9,11 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <Content Remove="Configs\firebase-service-account.json" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Include="Configs\firebase-service-account.json" />
+	  <None Include="firebase-service-account.json" />
 	</ItemGroup>
 
 	<ItemGroup>

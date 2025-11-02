@@ -15,7 +15,7 @@ public class FCMService : IFCMService
 
     public FCMService(IOptions<FCMSettings> config, HttpClient httpClient)
     {
-        _firebaseConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "Configs", "firebase-service-account.json");
+        _firebaseConfigPath = Path.Combine(Directory.GetCurrentDirectory(), "firebase-service-account.json");
         _httpClient = httpClient;
 
         if (!File.Exists(_firebaseConfigPath))
@@ -25,9 +25,6 @@ public class FCMService : IFCMService
             .FromFile(_firebaseConfigPath)
             .CreateScoped("https://www.googleapis.com/auth/firebase.messaging");
 
-        using var stream = new FileStream(_firebaseConfigPath, FileMode.Open, FileAccess.Read);
-        using var reader = new StreamReader(stream);
-        var json = JsonDocument.Parse(reader.ReadToEnd());
         _projectId = config.Value.ProjectId;
     }
 
