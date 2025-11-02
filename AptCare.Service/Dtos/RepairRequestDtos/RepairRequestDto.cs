@@ -49,6 +49,7 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public string Object { get; set; } = null!;
         public string Description { get; set; } = null!;
         public bool IsEmergency { get; set; }
+        public IssueListItemDto? Issue { get; set; }
         public ApartmentDto Apartment { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
     }

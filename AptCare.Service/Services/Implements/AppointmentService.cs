@@ -107,6 +107,8 @@ namespace AptCare.Service.Services.Implements
                                     .ThenInclude(x => x.Technician)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
+                                .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.Issue)
                                 .Include(x => x.AppointmentTrackings)
                                     .ThenInclude(x => x.UpdatedByUser)
                 );
@@ -144,6 +146,8 @@ namespace AptCare.Service.Services.Implements
                 include: i => i.Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                                 .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.Issue)
+                                .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.RequestTrackings)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
@@ -170,6 +174,8 @@ namespace AptCare.Service.Services.Implements
                 include: i => i.Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
                                         .ThenInclude(x => x.UserApartments)
+                                .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.Issue)
                                 .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                                 .Include(x => x.AppointmentTrackings)
@@ -198,6 +204,8 @@ namespace AptCare.Service.Services.Implements
                                     .ThenInclude(x => x.Apartment)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.RequestTrackings)
+                                .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.Issue)
                                 .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                                 .Include(x => x.AppointmentTrackings)
@@ -277,7 +285,7 @@ namespace AptCare.Service.Services.Implements
                 });
                 var latestTracking = appointment.AppointmentTrackings
                                                 .OrderByDescending(at => at.UpdatedAt)
-                                                .FirstOrDefault();
+                                                .FirstOrDefault(); 
                 if (latestTracking != null && latestTracking.Status == AppointmentStatus.Confirmed)
                 {
                     var appointmentTracking = new AppointmentTracking
