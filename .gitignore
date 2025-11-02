@@ -65,3 +65,6 @@ applicationhost.config
 CodeChunks.db
 SemanticSymbols.db
 *.vsix
+
+# Firebase service account key (do not commit!)
+firebase-service-account.json
