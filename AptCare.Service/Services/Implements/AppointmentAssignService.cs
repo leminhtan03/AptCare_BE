@@ -309,5 +309,31 @@ namespace AptCare.Service.Services.Implements
             }
 
         }
+
+        public async Task<string> CancleAssignmentAsync(CancleAssignDto dto)
+        {
+            try
+            {
+                var assignToCancel = await _unitOfWork.GetRepository<AppointmentAssign>().SingleOrDefaultAsync(
+                    predicate: x => x.TechnicianId == dto.technicanId && x.AppointmentId == dto.appointmentId
+                    );
+                if (assignToCancel == null)
+                {
+                    throw new AppValidationException("Lịch phân công không tồn tại.", StatusCodes.Status404NotFound);
+                }
+                if (assignToCancel.Status == WorkOrderStatus.Working || assignToCancel.Status == WorkOrderStatus.Completed)
+                {
+                    throw new AppValidationException("Không thể hủy lịch phân công đang trong trạng thái Đang thực hiện hoặc Hoàn thành.", StatusCodes.Status400BadRequest);
+                }
+                _unitOfWork.GetRepository<AppointmentAssign>().DeleteAsync(assignToCancel);
+                await _unitOfWork.CommitAsync();
+                return "Hủy phân công thành công.";
+            }
+            catch (Exception ex)
+            {
+                throw new AppValidationException($"Hủy phân công thất bại. Lỗi: {ex.Message}", StatusCodes.Status500InternalServerError);
+
+            }
+        }
     }
 }
