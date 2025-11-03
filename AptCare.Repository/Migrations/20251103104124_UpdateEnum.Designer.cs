@@ -3,6 +3,7 @@ using System;
 using AptCare.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     [DbContext(typeof(AptCareSystemDBContext))]
-    partial class AptCareSystemDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251103104124_UpdateEnum")]
+    partial class UpdateEnum
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1046,10 +1049,10 @@ namespace AptCare.Repository.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("InspectionReportId")
+                    b.Property<int>("InspectionReportId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("RepairReportId")
+                    b.Property<int>("RepairReportId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Role")
@@ -1754,11 +1757,15 @@ namespace AptCare.Repository.Migrations
                 {
                     b.HasOne("AptCare.Repository.Entities.InspectionReport", "InspectionReport")
                         .WithMany("ReportApprovals")
-                        .HasForeignKey("InspectionReportId");
+                        .HasForeignKey("InspectionReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("AptCare.Repository.Entities.RepairReport", "RepairReport")
                         .WithMany("ReportApprovals")
-                        .HasForeignKey("RepairReportId");
+                        .HasForeignKey("RepairReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("AptCare.Repository.Entities.User", "User")
                         .WithMany()

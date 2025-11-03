@@ -9,7 +9,14 @@ namespace AptCare.Service.Services.Interfaces
 {
     public interface IReportApprovalService
     {
-        Task<string> ApproveReportAsync(ApproveReportCreateDto dto);
+        /// <summary>
+        /// Tạo approval pending cho TechnicianLead/Manager
+        /// </summary>
+        Task<bool> CreateApproveReportAsync(ApproveReportCreateDto dto);
 
+        /// <summary>
+        /// Approve/Reject hoặc escalate lên cấp cao hơn
+        /// </summary>
+        Task<bool> ApproveReportAsync(ApproveReportCreateDto dto);
     }
 }

@@ -530,7 +530,7 @@ namespace AptCare.Service.Services.Implements
             };
         }
 
-        public async Task<string> ToggleRepairRequestStatusAsync(ToggleRRStatus dto)
+        public async Task<bool> ToggleRepairRequestStatusAsync(ToggleRRStatus dto)
         {
             try
             {
@@ -542,15 +542,14 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
 
                 var userId = _userContext.CurrentUserId;
-
                 var currentStatus = request.RequestTrackings
                     .OrderByDescending(x => x.UpdatedAt)
                     .FirstOrDefault()?.Status;
 
-                var validationMessage = ValidateStatusTransition(currentStatus, dto.NewStatus);
-                if (!string.IsNullOrEmpty(validationMessage))
+                if (!ValidateStatusTransition(currentStatus, dto.NewStatus))
                 {
-                    throw new AppValidationException(validationMessage);
+                    throw new AppValidationException("Chuyển trạng thái không hợp lệ từ " +
+                        $"{currentStatus} sang {dto.NewStatus}.", StatusCodes.Status400BadRequest);
                 }
 
                 await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
@@ -565,64 +564,54 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.CommitAsync();
 
                 await SendNotificationForUserApartment(dto.RepairRequestId, dto.NewStatus);
-
-                return "Cập nhật trạng thái yêu cầu sửa chữa thành công";
+                
+                return true;
             }
             catch (Exception ex)
             {
                 throw new AppValidationException($"Lỗi hệ thống: {ex.Message}", StatusCodes.Status500InternalServerError);
             }
         }
-
-        private string ValidateStatusTransition(RequestStatus? currentStatus, RequestStatus newStatus)
+        private bool ValidateStatusTransition(RequestStatus? currentStatus, RequestStatus newStatus)
         {
-            switch (currentStatus)
+            var validNextStatuses = currentStatus switch
             {
-                case RequestStatus.Pending:
-                    if (newStatus != RequestStatus.Approved && newStatus != RequestStatus.Rejected)
-                        
-                        return "Yêu cầu đang chờ chỉ có thể chuyển sang Đã duyệt hoặc Từ chối.";
-                    break;
-
-                case RequestStatus.Approved:
-                    if (newStatus != RequestStatus.InProgress && newStatus != RequestStatus.Cancelled)
-                        return "Yêu cầu đã duyệt chỉ có thể chuyển sang Đang xử lý hoặc Hủy.";
-                    break;
-
-                case RequestStatus.InProgress:
-                    if (newStatus != RequestStatus.Diagnosed && newStatus != RequestStatus.Cancelled)
-                        return "Yêu cầu đang xử lý chỉ có thể chuyển sang Đã chẩn đoán hoặc Hủy.";
-                    break;
-
-                case RequestStatus.Diagnosed:
-                    if (newStatus != RequestStatus.CompletedPendingVerify && newStatus != RequestStatus.Cancelled)
-                        return "Yêu cầu đã chẩn đoán chỉ có thể chuyển sang Hoàn tất chờ kiểm duyệt hoặc Hủy.";
-                    break;
-
-                case RequestStatus.CompletedPendingVerify:
-                    if (newStatus != RequestStatus.AcceptancePendingVerify && newStatus != RequestStatus.InProgress)
-                        return "Yêu cầu hoàn tất chỉ có thể chuyển sang Chờ nghiệm thu hoặc quay lại Đang xử lý (nếu cần sửa lại).";
-                    break;
-
-                case RequestStatus.AcceptancePendingVerify:
-                    if (newStatus != RequestStatus.Completed && newStatus != RequestStatus.InProgress)
-                        return "Yêu cầu chờ nghiệm thu chỉ có thể chuyển sang Hoàn thành hoặc quay lại Đang xử lý (nếu cần sửa lại).";
-                    break;
-
-                case RequestStatus.Completed:
-                    return "Yêu cầu đã hoàn thành không thể thay đổi trạng thái.";
-
-                case RequestStatus.Rejected:
-                    return "Yêu cầu đã bị từ chối không thể thay đổi trạng thái.";
-
-                case RequestStatus.Cancelled:
-                    return "Yêu cầu đã bị hủy không thể thay đổi trạng thái.";
-
-                default:
-                    return "Trạng thái không hợp lệ.";
-            }
-
-            return string.Empty;
+                RequestStatus.Pending => new[]
+                {
+                    RequestStatus.Approved,
+                    RequestStatus.Rejected
+                },
+                RequestStatus.Approved => new[]
+                {
+                    RequestStatus.InProgress,
+                    RequestStatus.Cancelled
+                },
+                RequestStatus.InProgress => new[]
+                {
+                    RequestStatus.Diagnosed,
+                    RequestStatus.Cancelled
+                },
+                RequestStatus.Diagnosed => new[]
+                {
+                    RequestStatus.CompletedPendingVerify,
+                    RequestStatus.Cancelled
+                },
+                RequestStatus.CompletedPendingVerify => new[]
+                {
+                    RequestStatus.AcceptancePendingVerify,
+                    RequestStatus.InProgress
+                },
+                RequestStatus.AcceptancePendingVerify => new[]
+                {
+                    RequestStatus.Completed,
+                    RequestStatus.InProgress
+                },
+                RequestStatus.Completed => Array.Empty<RequestStatus>(),
+                RequestStatus.Rejected => Array.Empty<RequestStatus>(),
+                RequestStatus.Cancelled => Array.Empty<RequestStatus>(),
+                _ => Array.Empty<RequestStatus>()
+            };
+            return validNextStatuses.Contains(newStatus);
         }
 
         private async Task SendNotificationForUserApartment(int repairRequestId, RequestStatus newStatus)
