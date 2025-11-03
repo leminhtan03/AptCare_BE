@@ -275,6 +275,9 @@ namespace AptCare.Repository
                 entity.HasOne(ra => ra.RepairReport)
                       .WithMany(rr => rr.ReportApprovals)
                       .HasForeignKey(ra => ra.RepairReportId);
+                entity.HasOne(ra => ra.InspectionReport)
+                        .WithMany(u => u.ReportApprovals)
+                        .HasForeignKey(ra => ra.InspectionReportId);
             });
 
             // RepairRequest - RequestTracking (1 - n)

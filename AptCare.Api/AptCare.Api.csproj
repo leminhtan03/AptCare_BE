@@ -26,9 +26,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update=".env">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
 		<None Update="MailTemplate\AccountCredentials.html">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>

@@ -172,10 +172,10 @@ namespace AptCare.Service.Services.Implements
                                         p.WorkSlots.Any(ws => ws.Date == DateOnly.FromDateTime(appointment.StartTime) &&
                                             ws.Slot.FromTime <= appointment.StartTime.TimeOfDay &&
                                             ws.Slot.ToTime >= appointment.StartTime.TimeOfDay) &&
-                                        p.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) == 
-                                                                         DateOnly.FromDateTime(appointment.StartTime) && 
+                                        p.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) ==
+                                                                         DateOnly.FromDateTime(appointment.StartTime) &&
                                                                          aa.Status != WorkOrderStatus.Cancel)
-                                                            .All(aa => aa.EstimatedEndTime <= appointment.StartTime ||aa.EstimatedStartTime >= appointment.EndTime);
+                                                            .All(aa => aa.EstimatedEndTime <= appointment.StartTime || aa.EstimatedStartTime >= appointment.EndTime);
             }
 
             var technicians = await _unitOfWork.GetRepository<User>().GetListAsync(
@@ -267,29 +267,30 @@ namespace AptCare.Service.Services.Implements
                     var AppoinmentTracking = Appoiment.AppointmentTrackings;
                     if (AppoinmentTracking.LastOrDefault().Status == AppointmentStatus.Pending)
                         throw new AppValidationException("Lịch hẹn chưa được phân công kỹ thuật viên nhất định", StatusCodes.Status400BadRequest);
-                    AppoinmentTracking.Add(new AppointmentTracking
+
+                    var n = new AppointmentTracking
                     {
                         AppointmentId = appointmentId,
                         Status = AppointmentStatus.Confirmed,
                         UpdatedAt = DateTime.UtcNow.AddHours(7),
                         UpdatedBy = _userContext.CurrentUserId,
                         Note = "Kỹ thuật viên trưởng đã xác nhận phân công Kỹ thuật viên."
-                    });
-                    await AppoimentTrackingRepo.InsertAsync(AppoinmentTracking.Last());
+                    };
+                    await AppoimentTrackingRepo.InsertAsync(n);
                     await _unitOfWork.CommitAsync();
                 }
                 else
                 {
                     var AppoinmentTracking = Appoiment.AppointmentTrackings;
-                    AppoinmentTracking.Add(new AppointmentTracking
+                    var n = new AppointmentTracking
                     {
                         AppointmentId = appointmentId,
                         Status = AppointmentStatus.Pending,
                         UpdatedAt = DateTime.UtcNow.AddHours(7),
                         UpdatedBy = _userContext.CurrentUserId,
                         Note = "Kỹ thuật viên trưởng đã hủy phân công Kỹ thuật viên."
-                    });
-                    await AppoimentTrackingRepo.InsertAsync(AppoinmentTracking.Last());
+                    };
+                    await AppoimentTrackingRepo.InsertAsync(n);
                     await _unitOfWork.CommitAsync();
                     var appoAssigns = Appoiment.AppointmentAssigns;
                     foreach (var appoAssign in appoAssigns)
@@ -298,6 +299,7 @@ namespace AptCare.Service.Services.Implements
                     }
                     await _unitOfWork.CommitAsync();
                 }
+                await _unitOfWork.CommitTransactionAsync();
                 return isConfirmed ? "Xác nhận phân công thành công." : "Hủy phân công thành công.";
 
             }

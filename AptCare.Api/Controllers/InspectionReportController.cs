@@ -46,7 +46,7 @@ namespace AptCare.Api.Controllers
         [Authorize(Roles = nameof(AccountRole.Technician))]
         public async Task<IActionResult> GenerateInspectionReportAsync([FromBody] CreateInspectionReporDto dto)
         {
-            var result = await _inspectionReporService.GenerateInspectionReportAsync(dto);
+            var result = await _inspectionReporService.CreateInspectionReportAsync(dto);
             return Ok(result);
         }
         /// <summary>
@@ -77,7 +77,7 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin) + "," + nameof(AccountRole.Resident))]
+        [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin) + "," + nameof(AccountRole.Resident) + "," + nameof(AccountRole.TechnicianLead))]
         public async Task<IActionResult> GetInspectionReportByIdAsync([FromRoute] int id)
         {
             var result = await _inspectionReporService.GetInspectionReportByIdAsync(id);
@@ -116,51 +116,89 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin))]
-        public async Task<IActionResult> GetPaginateInspectionReportsAsync([FromQuery] InspectionReportFilterDto filterDto)
+        [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin) + "," + nameof(AccountRole.TechnicianLead))]
+        public async Task<IActionResult> GetPaginateInspectionReportsAsync([FromForm] InspectionReportFilterDto filterDto)
         {
             var result = await _inspectionReporService.GetPaginateInspectionReportsAsync(filterDto);
             return Ok(result);
         }
+        ///// <summary>
+        ///// Cập nhật thông tin báo cáo kiểm tra.
+        ///// </summary>
+        ///// <remarks>
+        ///// **Chức năng:**  
+        ///// - Cập nhật thông tin chi tiết của báo cáo kiểm tra đã tồn tại.  
+        ///// - Cho phép thay đổi loại lỗi (lỗi tòa nhà hoặc lỗi cư dân).  
+        ///// - Cập nhật giải pháp xử lý (sửa chữa, thay thế, thuê ngoài).  
+        ///// - Chỉnh sửa mô tả chi tiết và giải pháp đề xuất.
+        ///// 
+        ///// **Ràng buộc:**  
+        ///// - `FaultOwner`: Chỉ chấp nhận giá trị enum `FaultType`:
+        /////   - `1` = BuildingFault (Lỗi tòa nhà)
+        /////   - `2` = ResidentFault (Lỗi cư dân)
+        ///// - `SolutionType`: Chỉ chấp nhận giá trị enum `SolutionType`:
+        /////   - `1` = Repair (Sửa chữa)
+        /////   - `2` = Replacement (Thay thế)
+        /////   - `3` = Outsource (Thuê ngoài)
+        ///// - `Description`: Bắt buộc, mô tả chi tiết về lỗi
+        ///// - `Solution`: Bắt buộc, giải pháp đề xuất
+        ///// 
+        ///// **Lưu ý:**  
+        ///// - Chỉ có thể cập nhật báo cáo đang ở trạng thái cho phép chỉnh sửa
+        ///// - ID báo cáo phải tồn tại trong hệ thống
+        ///// </remarks>
+        ///// <param name="id">ID của báo cáo kiểm tra cần cập nhật</param>
+        ///// <param name="dto">Thông tin cập nhật bao gồm FaultOwner (enum), SolutionType (enum), Description và Solution</param>
+        ///// <returns>Thông báo xác nhận cập nhật báo cáo thành công</returns>
+        //[HttpPut("update-inspection-report/{id}")]
+        //[ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        //[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        //[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        //[ProducesResponseType(StatusCodes.Status403Forbidden)]
+        //[Authorize(Roles = nameof(AccountRole.Technician))]
+        //public async Task<IActionResult> UpdateInspectionReportAsync([FromRoute] int id, [FromBody] UpdateInspectionReporDto dto)
+        //{
+        //    var result = await _inspectionReporService.UpdateInspectionReportAsync(id, dto);
+        //    return Ok(result);
+        //}
+
         /// <summary>
-        /// Cập nhật thông tin báo cáo kiểm tra.
+        /// Lấy thông tin báo cáo kiểm tra theo ID lịch hẹn.
         /// </summary>
         /// <remarks>
         /// **Chức năng:**  
-        /// - Cập nhật thông tin chi tiết của báo cáo kiểm tra đã tồn tại.  
-        /// - Cho phép thay đổi loại lỗi (lỗi tòa nhà hoặc lỗi cư dân).  
-        /// - Cập nhật giải pháp xử lý (sửa chữa, thay thế, thuê ngoài).  
-        /// - Chỉnh sửa mô tả chi tiết và giải pháp đề xuất.
+        /// - Truy xuất thông tin báo cáo kiểm tra dựa trên ID lịch hẹn.  
+        /// - Hiển thị thông tin cơ bản của báo cáo bao gồm: loại lỗi, giải pháp xử lý, trạng thái.  
+        /// - Bao gồm thông tin kỹ thuật viên thực hiện và khu vực liên quan.  
+        /// - Hiển thị danh sách media (hình ảnh/video) đính kèm nếu có.
         /// 
-        /// **Ràng buộc:**  
-        /// - `FaultOwner`: Chỉ chấp nhận giá trị enum `FaultType`:
-        ///   - `1` = BuildingFault (Lỗi tòa nhà)
-        ///   - `2` = ResidentFault (Lỗi cư dân)
-        /// - `SolutionType`: Chỉ chấp nhận giá trị enum `SolutionType`:
-        ///   - `1` = Repair (Sửa chữa)
-        ///   - `2` = Replacement (Thay thế)
-        ///   - `3` = Outsource (Thuê ngoài)
-        /// - `Description`: Bắt buộc, mô tả chi tiết về lỗi
-        /// - `Solution`: Bắt buộc, giải pháp đề xuất
+        /// **Kết quả trả về:**  
+        /// - `InspectionReportId`: ID của báo cáo kiểm tra
+        /// - `FaultOwner`: Loại lỗi (BuildingFault = 1, ResidentFault = 2)
+        /// - `SolutionType`: Loại giải pháp (Repair = 1, Replacement = 2, Outsource = 3)
+        /// - `Status`: Trạng thái báo cáo (Pending, Approved, Rejected)
+        /// - `CreatedAt`: Thời gian tạo báo cáo
+        /// - `AreaName`: Tên khu vực
+        /// - `Technican`: Thông tin kỹ thuật viên (TechnicanDto)
+        /// - `Medias`: Danh sách media đính kèm (List&lt;MediaDto&gt;)
         /// 
         /// **Lưu ý:**  
-        /// - Chỉ có thể cập nhật báo cáo đang ở trạng thái cho phép chỉnh sửa
-        /// - ID báo cáo phải tồn tại trong hệ thống
+        /// - Trả về 404 nếu không tìm thấy báo cáo với AppointmentId được cung cấp
+        /// - Chỉ người dùng có quyền phù hợp mới có thể truy cập
         /// </remarks>
-        /// <param name="id">ID của báo cáo kiểm tra cần cập nhật</param>
-        /// <param name="dto">Thông tin cập nhật bao gồm FaultOwner (enum), SolutionType (enum), Description và Solution</param>
-        /// <returns>Thông báo xác nhận cập nhật báo cáo thành công</returns>
-        [HttpPut("update-inspection-report/{id}")]
-        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        /// <param name="id">ID của lịch hẹn cần lấy báo cáo kiểm tra</param>
+        /// <returns>Thông tin cơ bản của báo cáo kiểm tra liên quan đến lịch hẹn</returns>
+        [HttpGet("get-inspection-report-by-appointment-id/{id}")]
+        [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [Authorize(Roles = nameof(AccountRole.Technician))]
-        public async Task<IActionResult> UpdateInspectionReportAsync([FromRoute] int id, [FromBody] UpdateInspectionReporDto dto)
+        [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin) + "," + nameof(AccountRole.Resident))]
+        public async Task<IActionResult> GetInspectionReportByAppointmentIdAsync([FromRoute] int id)
         {
-            var result = await _inspectionReporService.UpdateInspectionReportAsync(id, dto);
+            var result = await _inspectionReporService.GetInspectionReportByAppointmentIdAsync(id);
             return Ok(result);
         }
     }

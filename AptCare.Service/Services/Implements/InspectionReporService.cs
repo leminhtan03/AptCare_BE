@@ -4,7 +4,9 @@ using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.ApproveReportDtos;
 using AptCare.Service.Dtos.InspectionReporDtos;
+using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
@@ -20,35 +22,40 @@ namespace AptCare.Service.Services.Implements
     {
         private readonly IUserContext _userContext;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly IRepairRequestService _repairRequestService;
+        private readonly IAppointmentService _appointmentService;
+        private readonly IReportApprovalService _reportApprovalService;
 
-        public InspectionReporService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InspectionReporService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
+        public InspectionReporService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InspectionReporService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService, IRepairRequestService repairRequestService, IAppointmentService appointmentService, IReportApprovalService reportApprovalService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _cloudinaryService = cloudinaryService;
+            _repairRequestService = repairRequestService;
+            _appointmentService = appointmentService;
+            _reportApprovalService = reportApprovalService;
         }
 
-        public async Task<InspectionReportDto> GenerateInspectionReportAsync(CreateInspectionReporDto dto)
+        public async Task<InspectionReportDto> CreateInspectionReportAsync(CreateInspectionReporDto dto)
         {
             try
             {
-                var InspecRepo = _unitOfWork.GetRepository<InspectionReport>();
                 var appoRepo = _unitOfWork.GetRepository<Appointment>();
-                var mediaRepo = _unitOfWork.GetRepository<Media>();
-                await _unitOfWork.BeginTransactionAsync();
-                if (await appoRepo.AnyAsync(
-                    predicate: e => e.AppointmentId == dto.AppointmentId &&
-                    e.AppointmentTrackings.LastOrDefault().Status == AppointmentStatus.Pending,
-                    include: i => i.Include(o => o.AppointmentTrackings)))
+                var repairRequestRepo = _unitOfWork.GetRepository<RepairRequest>();
+                var appointmentExists = await appoRepo.SingleOrDefaultAsync(
+                    predicate: e => e.AppointmentId == dto.AppointmentId,
+                    include: i => i.Include(o => o.AppointmentTrackings));
+                if (appointmentExists == null)
                     throw new AppValidationException("Cuộc hẹn không tồn tại hoặc đang trong quá trình phân công nhân lực");
-                var newInsReport = _mapper.Map<InspectionReport>(dto);
-                newInsReport.UserId = _userContext.CurrentUserId;
-                await InspecRepo.InsertAsync(newInsReport);
-                await _unitOfWork.CommitAsync();
+                var repairRequest = await repairRequestRepo.SingleOrDefaultAsync(
+                    predicate: e => e.Appointments.Any(a => a.AppointmentId == dto.AppointmentId),
+                    include: e => e.Include(e => e.Appointments));
 
+                if (repairRequest == null)
+                    throw new AppValidationException("Không tìm thấy yêu cầu sửa chữa liên quan");
 
-                if (dto.Files != null)
+                List<string> uploadedFilePaths = new List<string>();
+                if (dto.Files != null && dto.Files.Any())
                 {
-
                     foreach (var file in dto.Files)
                     {
                         if (file == null || file.Length == 0)
@@ -56,31 +63,119 @@ namespace AptCare.Service.Services.Implements
 
                         var filePath = await _cloudinaryService.UploadImageAsync(file);
                         if (string.IsNullOrEmpty(filePath))
-                        {
                             throw new AppValidationException("Có lỗi xảy ra khi gửi file.", StatusCodes.Status500InternalServerError);
-                        }
-                        await _unitOfWork.GetRepository<Media>().InsertAsync(new Media
+
+                        uploadedFilePaths.Add(filePath);
+                    }
+                }
+                await _unitOfWork.BeginTransactionAsync();
+                var InspecRepo = _unitOfWork.GetRepository<InspectionReport>();
+                var newInsReport = _mapper.Map<InspectionReport>(dto);
+                newInsReport.UserId = _userContext.CurrentUserId;
+                newInsReport.Status = ReportStatus.Pending;
+                await InspecRepo.InsertAsync(newInsReport);
+                await _unitOfWork.CommitAsync();
+
+                if (!await _appointmentService.ToogleAppoimnentStatus(
+                    dto.AppointmentId,
+                    "Hoàn thành kiểm tra - chờ duyệt báo cáo kiểm tra",
+                    AppointmentStatus.AwaitingIRApproval))
+                {
+                    throw new AppValidationException("Có lỗi xảy ra khi cập nhật trạng thái cuộc hẹn.", StatusCodes.Status500InternalServerError);
+                }
+                if (!await _repairRequestService.ToggleRepairRequestStatusAsync(new ToggleRRStatus
+                {
+                    RepairRequestId = repairRequest.RepairRequestId,
+                    Note = "Hoàn thành kiểm tra - chờ duyệt báo cáo.",
+                    NewStatus = RequestStatus.Diagnosed
+                }))
+                {
+                    throw new AppValidationException("Có lỗi xảy ra khi cập nhật trạng thái yêu cầu sửa chữa.", StatusCodes.Status500InternalServerError);
+                }
+                if (!await _reportApprovalService.CreateApproveReportAsync(new ApproveReportCreateDto
+                {
+                    ReportId = newInsReport.InspectionReportId,
+                    ReportType = "InspectionReport",
+                    Status = ReportStatus.Pending
+                }))
+                {
+                    throw new AppValidationException("Lỗi không tạo được approval pending");
+                }
+                if (uploadedFilePaths.Any())
+                {
+                    var mediaRepo = _unitOfWork.GetRepository<Media>();
+                    var mediaEntities = new List<Media>();
+
+                    for (int i = 0; i < uploadedFilePaths.Count; i++)
+                    {
+                        mediaEntities.Add(new Media
                         {
                             Entity = nameof(InspectionReport),
                             EntityId = newInsReport.InspectionReportId,
-                            FileName = file.FileName,
-                            FilePath = filePath,
-                            ContentType = file.ContentType,
+                            FileName = dto.Files[i].FileName,
+                            FilePath = uploadedFilePaths[i],
+                            ContentType = dto.Files[i].ContentType,
                             CreatedAt = DateTime.UtcNow.AddHours(7),
                             Status = ActiveStatus.Active
-
                         });
                     }
+
+                    await mediaRepo.InsertRangeAsync(mediaEntities);
+                    await _unitOfWork.CommitAsync();
                 }
                 await _unitOfWork.CommitTransactionAsync();
                 var result = _mapper.Map<InspectionReportDto>(newInsReport);
+                _logger.LogInformation("Created inspection report {ReportId} for appointment {AppointmentId}",
+                    newInsReport.InspectionReportId, dto.AppointmentId);
 
                 return result;
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                throw new Exception("GenerateInspectionReportAsync", ex);
+                _logger.LogError(ex, "Error creating inspection report for AppointmentId: {AppointmentId}", dto.AppointmentId);
+                throw;
+            }
+        }
+
+        public async Task<InspectionReportDto> GetInspectionReportByAppointmentIdAsync(int id)
+        {
+            try
+            {
+                var InspecRepo = _unitOfWork.GetRepository<InspectionReport>();
+                var inspectionReport = await InspecRepo.SingleOrDefaultAsync(
+                    predicate: e => e.AppointmentId == id,
+                    include: q => q.Include(i => i.User)
+                                    .ThenInclude(u => u.TechnicianTechniques)
+                                        .ThenInclude(tt => tt.Technique)
+                                    .Include(i => i.User)
+                                        .ThenInclude(u => u.WorkSlots)
+                                    .Include(ws => ws.Appointment)
+                                        .ThenInclude(a => a.RepairRequest)
+                                            .ThenInclude(rr => rr.Apartment)
+                                    .Include(ws => ws.Appointment)
+                                        .ThenInclude(a => a.RepairRequest)
+                                            .ThenInclude(rr => rr.MaintenanceRequest)
+                                                .ThenInclude(mr => mr.CommonAreaObject)
+                                    .Include(ra => ra.ReportApprovals)
+                                        .ThenInclude(ra => ra.User)
+                                            .ThenInclude(u => u.Account)
+                );
+
+                if (inspectionReport == null)
+                    throw new AppValidationException("Báo cáo kiểm tra không tồn tại");
+
+                var result = _mapper.Map<InspectionReportDto>(inspectionReport);
+                var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                    selector: s => _mapper.Map<MediaDto>(s),
+                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == result.InspectionReportId
+                    );
+                result.Medias = medias.ToList();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("GetInspectionReportByIdAsync", ex);
             }
         }
 
@@ -103,6 +198,9 @@ namespace AptCare.Service.Services.Implements
                                         .ThenInclude(a => a.RepairRequest)
                                             .ThenInclude(rr => rr.MaintenanceRequest)
                                                 .ThenInclude(mr => mr.CommonAreaObject)
+                                    .Include(ra => ra.ReportApprovals)
+                                        .ThenInclude(ra => ra.User)
+                                            .ThenInclude(u => u.Account)
                 );
 
                 if (inspectionReport == null)
@@ -121,10 +219,12 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception("GetInspectionReportByIdAsync", ex);
             }
         }
+
         public async Task<IPaginate<InspectionBasicReportDto>> GetPaginateInspectionReportsAsync(InspectionReportFilterDto filterDto)
         {
             try
             {
+                var userId = _userContext.CurrentUserId;
                 int page = filterDto.page > 0 ? filterDto.page : 1;
                 int size = filterDto.size > 0 ? filterDto.size : 10;
                 string search = filterDto.search?.ToLower() ?? string.Empty;

@@ -194,7 +194,14 @@ namespace AptCare.Api.Controllers
         public async Task<ActionResult> ToggleRepairRequestStatus([FromQuery] ToggleRRStatus dto)
         {
             var result = await _repairRequestService.ToggleRepairRequestStatusAsync(dto);
-            return Ok(result);
+            if (result)
+            {
+                return Ok("Cập nhật trạng thái yêu cầu sửa chữa thành công.");
+            }
+            else
+            {
+                return BadRequest("Cập nhật trạng thái yêu cầu sửa chữa thất bại.");
+            }
         }
     }
 }
