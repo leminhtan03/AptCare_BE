@@ -1,23 +1,25 @@
 ﻿using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
+using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.Apartment;
+using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.Account;
+using AptCare.Service.Dtos.AppointmentDtos;
+using AptCare.Service.Dtos.ApproveReportDtos;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
-using AptCare.Service.Dtos.RepairRequestDtos;
+using AptCare.Service.Dtos.InspectionReporDtos;
+using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Dtos.IssueDto;
+using AptCare.Service.Dtos.NotificationDtos;
+using AptCare.Service.Dtos.RepairReportDtos;
+using AptCare.Service.Dtos.RepairRequestDtos;
+using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Dtos.TechniqueDto;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Dtos.WorkSlotDtos;
 using AutoMapper;
-using AptCare.Service.Dtos.AppointmentDtos;
-using AptCare.Service.Dtos;
-using AptCare.Service.Dtos.SlotDtos;
-using AptCare.Service.Dtos.InvoiceDtos;
 using System.ComponentModel.DataAnnotations.Schema;
-using AptCare.Service.Dtos.InspectionReporDtos;
-using AptCare.Repository.Enum.AccountUserEnum;
-using AptCare.Service.Dtos.NotificationDtos;
 
 namespace AptCare.Api.MapperProfile
 {
@@ -166,7 +168,7 @@ namespace AptCare.Api.MapperProfile
 
             //REPAIR REQUEST
             CreateMap<RepairRequest, RepairRequestDto>()
-                .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null));                
+                .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null));
 
             CreateMap<RepairRequest, RepairRequestBasicDto>();
             CreateMap<RequestTracking, RequestTrackingDto>()
@@ -252,7 +254,14 @@ namespace AptCare.Api.MapperProfile
                     ? s.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name
                     : s.Appointment.RepairRequest.Apartment != null
                         ? s.Appointment.RepairRequest.Apartment.Room
-                        : string.Empty));
+                        : string.Empty))
+                .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals));
+
+            CreateMap<ReportApproval, ApprovelReportDto>()
+                .ForMember(d => d.Role, o => o.MapFrom(s => s.Role))
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status))
+                .ForMember(d => d.FullName, o => o.MapFrom(s => s.User.FirstName + s.User.LastName));
+
             CreateMap<InspectionReport, InspectionBasicReportDto>()
                 .ForMember(d => d.Technican, o => o.MapFrom(s => s.User))
                 .ForMember(d => d.AreaName, o => o.MapFrom(s => s.Appointment.RepairRequest.MaintenanceRequest != null
@@ -286,6 +295,20 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
             CreateMap<Notification, NotificationDto>()
                 .ForMember(d => d.Type, o => o.MapFrom(s => s.Type.ToString()));
+            CreateMap<CreateRepairReportDto, RepairReport>()
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.WorkDescription))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow.AddHours(7)));
+            CreateMap<UpdateRepairReportDto, RepairReport>();
+            CreateMap<RepairReport, RepairReportDto>()
+                .ForMember(dest => dest.UserFullName, opt => opt.MapFrom(src => $"{src.User.FirstName} {src.User.LastName}"));
+            CreateMap<RepairReport, RepairReportBasicDto>()
+                .ForMember(dest => dest.UserFullName, opt => opt.MapFrom(src => $"{src.User.FirstName} {src.User.LastName}"))
+                .ForMember(dest => dest.ApartmentOrAreaName, opt => opt.MapFrom(src =>
+                    src.Appointment.RepairRequest.Apartment != null
+                        ? src.Appointment.RepairRequest.Apartment.Room
+                        : src.Appointment.RepairRequest.MaintenanceRequest != null
+                            ? src.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name
+                            : "N/A"));
         }
     }
 }

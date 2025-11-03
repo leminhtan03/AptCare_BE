@@ -25,5 +25,7 @@ namespace AptCare.Repository.Entities
 
         [ForeignKey(nameof(UserId))]
         public User User { get; set; } = null!;
+        public ICollection<ReportApproval>? ReportApprovals { get; set; }
+
     }
 }

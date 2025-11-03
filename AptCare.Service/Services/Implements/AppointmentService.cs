@@ -111,6 +111,10 @@ namespace AptCare.Service.Services.Implements
                                     .ThenInclude(x => x.Issue)
                                 .Include(x => x.AppointmentTrackings)
                                     .ThenInclude(x => x.UpdatedByUser)
+                                .Include(x => x.InspectionReports)
+                                    .ThenInclude(x => x.ReportApprovals)
+                                .Include(x => x.InspectionReports)
+                                    .ThenInclude(x => x.ReportApprovals)
                 );
 
             if (appointment == null)
@@ -253,7 +257,7 @@ namespace AptCare.Service.Services.Implements
             };
         }
 
-        public async Task<string> CheckInAsync(int id)
+        public async Task<bool> CheckInAsync(int id)
         {
             try
             {
@@ -273,19 +277,19 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.BeginTransactionAsync();
                 var timeNow = DateTime.UtcNow.AddHours(7);
                 var appointmentStartTime = appointment.StartTime;
-                if (timeNow < appointmentStartTime.AddMinutes(-30))
-                {
-                    throw new AppValidationException("Chưa đến thời gian check-in cho lịch hẹn này.");
-                }
+                //if (timeNow < appointmentStartTime.AddMinutes(-30))
+                //{
+                //    throw new AppValidationException("Chưa đến thời gian check-in cho lịch hẹn này.");
+                //}
                 var StatusChange = await _repairRequestService.ToggleRepairRequestStatusAsync(new ToggleRRStatus
                 {
                     RepairRequestId = appointment.RepairRequestId,
-                    NewStatus = Repository.Enum.RequestStatus.InProgress,
+                    NewStatus = RequestStatus.InProgress,
                     Note = "Kỹ thuật đã check-in cho lịch hẹn."
                 });
                 var latestTracking = appointment.AppointmentTrackings
                                                 .OrderByDescending(at => at.UpdatedAt)
-                                                .FirstOrDefault(); 
+                                                .FirstOrDefault();
                 if (latestTracking != null && latestTracking.Status == AppointmentStatus.Confirmed)
                 {
                     var appointmentTracking = new AppointmentTracking
@@ -303,14 +307,14 @@ namespace AptCare.Service.Services.Implements
                     {
                         if (assign != null)
                         {
-                            assign.ActualStartTime = DateTime.UtcNow;
-                            assign.Status = Repository.Enum.WorkOrderStatus.Working;
+                            assign.ActualStartTime = DateTime.UtcNow.AddHours(7);
+                            assign.Status = WorkOrderStatus.Working;
                             _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(assign);
                             await _unitOfWork.CommitAsync();
                         }
                     }
                     await _unitOfWork.CommitTransactionAsync();
-                    return "Check-in thành công cho lịch hẹn.";
+                    return true;
                 }
                 else
                 {
@@ -323,11 +327,11 @@ namespace AptCare.Service.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during CheckInAsync for Appointment ID {AppointmentId}", id);
-                throw new AppValidationException("An error occurred while checking in to the appointment. Please try again later.");
+                throw new AppValidationException(ex.Message);
             }
         }
 
-        public async Task<string> StartRepairAsync(int id)
+        public async Task<bool> StartRepairAsync(int id)
         {
             try
             {
@@ -338,22 +342,33 @@ namespace AptCare.Service.Services.Implements
                                     .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                                     .Include(x => x.RepairRequest)
+                                    .Include(x => x.InspectionReports) // Kiểm tra có IR không
                     );
 
                 if (appointment == null)
                 {
-                    throw new AppValidationException("Lịch hẹn không tồn tại hoặc bạn không được phân công cho lịch hẹn này.", StatusCodes.Status404NotFound);
+                    throw new AppValidationException(
+                        "Lịch hẹn không tồn tại hoặc bạn không được phân công cho lịch hẹn này.",
+                        StatusCodes.Status404NotFound);
                 }
 
                 var latestTracking = appointment.AppointmentTrackings
                                                 .OrderByDescending(at => at.UpdatedAt)
                                                 .FirstOrDefault();
-
-                if (latestTracking == null || latestTracking.Status != AppointmentStatus.InVisit)
+                var validStatuses = new[]
                 {
-                    throw new AppValidationException("Bạn chưa check-in, không thể bắt đầu sửa chữa.");
-                }
+                    AppointmentStatus.InVisit,
+                    AppointmentStatus.Visited,
+                    AppointmentStatus.AwaitingIRApproval,
+                    AppointmentStatus.PreCheck
+                };
 
+                if (latestTracking == null || !validStatuses.Contains(latestTracking.Status))
+                {
+                    throw new AppValidationException(
+                        $"Không thể bắt đầu sửa chữa từ trạng thái '{latestTracking?.Status}'. " +
+                        "Yêu cầu phải ở trạng thái InVisit, Visited hoặc AwaitingIRApproval.");
+                }
                 await _unitOfWork.BeginTransactionAsync();
 
                 var appointmentTracking = new AppointmentTracking
@@ -364,30 +379,29 @@ namespace AptCare.Service.Services.Implements
                     UpdatedBy = userId,
                     UpdatedAt = DateTime.UtcNow.AddHours(7)
                 };
-
                 await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
                 await _unitOfWork.CommitAsync();
 
+                // Cập nhật AppointmentAssign status
                 var appointmentAssigns = appointment.AppointmentAssigns;
                 foreach (var assign in appointmentAssigns)
                 {
                     if (assign != null && assign.ActualStartTime != null)
                     {
-                        assign.Status = Repository.Enum.WorkOrderStatus.Working;
+                        assign.Status = WorkOrderStatus.Working;
                         _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(assign);
                     }
                 }
 
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
-
-                return "Bắt đầu sửa chữa thành công.";
+                return true;
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error during StartRepairAsync for Appointment ID {AppointmentId}", id);
-                throw new AppValidationException("Đã xảy ra lỗi khi bắt đầu sửa chữa. Vui lòng thử lại sau.");
+                throw;
             }
         }
 
@@ -454,18 +468,17 @@ namespace AptCare.Service.Services.Implements
                     AppointmentStatus.Cancelled,
                     AppointmentStatus.Rescheduled
                 },
-                AppointmentStatus.AwaitingIRApproval => new[]
-                {
-                    AppointmentStatus.Visited,
-                    AppointmentStatus.Rescheduled,
-                    AppointmentStatus.InRepair
-                }
-                ,
                 AppointmentStatus.InVisit => new[]
                 {
                     AppointmentStatus.AwaitingIRApproval,
                     AppointmentStatus.Cancelled,
                     AppointmentStatus.PreCheck
+                },
+                AppointmentStatus.AwaitingIRApproval => new[]
+                {
+                    AppointmentStatus.Visited,
+                    AppointmentStatus.Rescheduled,
+                    AppointmentStatus.InRepair
                 },
                 AppointmentStatus.PreCheck => new[]
                 {
@@ -477,8 +490,6 @@ namespace AptCare.Service.Services.Implements
                     AppointmentStatus.Completed,
                     AppointmentStatus.Cancelled
                 },
-
-                // From Rescheduled, can move to Assigned or Cancelled
                 AppointmentStatus.Rescheduled => new[]
                 {
                     AppointmentStatus.Assigned,

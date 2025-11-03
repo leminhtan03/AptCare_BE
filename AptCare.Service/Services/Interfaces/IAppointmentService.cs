@@ -20,9 +20,8 @@ namespace AptCare.Service.Services.Interfaces
         Task<IEnumerable<ResidentAppointmentScheduleDto>> GetResidentAppointmentScheduleAsync(DateOnly fromDate, DateOnly toDate);
         Task<IEnumerable<TechnicianAppointmentScheduleDto>> GetTechnicianAppointmentScheduleAsync(int? technicianId, DateOnly fromDate, DateOnly toDate);
         Task<IEnumerable<TechnicianAppointmentScheduleDto>> GetMyTechnicianAppointmentScheduleAsync(DateOnly fromDate, DateOnly toDate);
-        Task<string> CheckInAsync(int id);
-        Task<string> StartRepairAsync(int id);
-
+        Task<bool> CheckInAsync(int id);
+        Task<bool> StartRepairAsync(int id);
         Task<bool> ToogleAppoimnentStatus(int Id, string note, AppointmentStatus appointmentStatus);
     }
 }
