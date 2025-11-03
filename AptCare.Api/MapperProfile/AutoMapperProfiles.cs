@@ -258,9 +258,10 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals));
 
             CreateMap<ReportApproval, ApprovelReportDto>()
-                .ForMember(d => d.Role, o => o.MapFrom(s => s.Role))
-                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status))
-                .ForMember(d => d.FullName, o => o.MapFrom(s => s.User.FirstName + s.User.LastName));
+                .ForMember(dest => dest.ReportId, opt => opt.MapFrom(src =>
+                    src.InspectionReportId ?? src.RepairReportId ?? 0))  // ✅ Map int   
+                .ForMember(dest => dest.FullName, opt => opt.MapFrom(src =>
+                    src.User.FirstName + " " + src.User.LastName));  // ✅ Map FullName với khoảng trắng
 
             CreateMap<InspectionReport, InspectionBasicReportDto>()
                 .ForMember(d => d.Technican, o => o.MapFrom(s => s.User))

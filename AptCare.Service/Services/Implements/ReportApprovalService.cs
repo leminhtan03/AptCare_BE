@@ -212,11 +212,10 @@ namespace AptCare.Service.Services.Implements
         {
             var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
             var repairRepo = _unitOfWork.GetRepository<RepairReport>();
-
-            var repairReport = await repairRepo.SingleOrDefaultAsync(
+            var exists = await repairRepo.AnyAsync(
                 predicate: rr => rr.RepairReportId == dto.ReportId);
 
-            if (repairReport == null)
+            if (!exists)
             {
                 throw new AppValidationException(
                     $"Không tìm thấy báo cáo sửa chữa. ReportId: {dto.ReportId}",
@@ -234,9 +233,6 @@ namespace AptCare.Service.Services.Implements
             };
 
             await reportApprovalRepo.InsertAsync(reportApproval);
-
-            repairReport.Status = ReportStatus.Pending;
-            repairRepo.UpdateAsync(repairReport);
         }
 
         private async Task ProcessRepairReportApprovalAsync(

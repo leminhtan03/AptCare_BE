@@ -554,10 +554,17 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var request = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
                     predicate: x => x.RepairRequestId == dto.RepairRequestId,
                     include: i => i.Include(x => x.RequestTrackings)
-                    );
+                                   .Include(x => x.Appointments)
+                                       .ThenInclude(a => a.AppointmentAssigns)
+                                   .Include(x => x.Appointments)
+                                       .ThenInclude(a => a.AppointmentTrackings)
+                );
+
                 if (request == null)
                     throw new AppValidationException("Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
 
@@ -571,7 +578,6 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Chuyển trạng thái không hợp lệ từ " +
                         $"{currentStatus} sang {dto.NewStatus}.", StatusCodes.Status400BadRequest);
                 }
-
                 await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
                 {
                     RepairRequestId = dto.RepairRequestId,
@@ -580,15 +586,73 @@ namespace AptCare.Service.Services.Implements
                     Note = dto.Note,
                     UpdatedBy = userId
                 });
+
+                if (dto.NewStatus == RequestStatus.Cancelled || dto.NewStatus == RequestStatus.Rejected)
+                {
+                    var appointments = request.Appointments?.ToList();
+
+                    if (appointments != null && appointments.Any())
+                    {
+                        var appointmentTrackingRepo = _unitOfWork.GetRepository<AppointmentTracking>();
+                        var appointmentAssignRepo = _unitOfWork.GetRepository<AppointmentAssign>();
+
+                        foreach (var appointment in appointments)
+                        {
+                            var currentAppointmentStatus = appointment.AppointmentTrackings?
+                                .OrderByDescending(at => at.UpdatedAt)
+                                .FirstOrDefault()?.Status;
+                            if (currentAppointmentStatus != AppointmentStatus.Completed &&
+                                currentAppointmentStatus != AppointmentStatus.Cancelled)
+                            {
+                                await appointmentTrackingRepo.InsertAsync(new AppointmentTracking
+                                {
+                                    AppointmentId = appointment.AppointmentId,
+                                    Status = AppointmentStatus.Cancelled,
+                                    Note = dto.NewStatus == RequestStatus.Cancelled
+                                        ? $"Cuộc hẹn bị hủy do yêu cầu sửa chữa bị hủy. Lý do: {dto.Note}"
+                                        : $"Cuộc hẹn bị hủy do yêu cầu sửa chữa bị từ chối. Lý do: {dto.Note}",
+                                    UpdatedBy = userId,
+                                    UpdatedAt = DateTime.UtcNow.AddHours(7)
+                                });
+
+                                // ✅ Xóa tất cả AppointmentAssign liên quan
+                                if (appointment.AppointmentAssigns != null && appointment.AppointmentAssigns.Any())
+                                {
+                                    appointmentAssignRepo.DeleteRangeAsync(appointment.AppointmentAssigns);
+
+                                    _logger.LogInformation(
+                                        "Deleted {Count} appointment assigns for appointment {AppointmentId} due to repair request {RepairRequestId} being {Status}",
+                                        appointment.AppointmentAssigns.Count,
+                                        appointment.AppointmentId,
+                                        dto.RepairRequestId,
+                                        dto.NewStatus
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+
                 await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                _logger.LogInformation(
+                    "Successfully toggled repair request {RepairRequestId} status from {OldStatus} to {NewStatus}",
+                    dto.RepairRequestId,
+                    currentStatus,
+                    dto.NewStatus
+                );
 
                 return true;
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Error toggling repair request status for RepairRequestId: {RepairRequestId}", dto.RepairRequestId);
                 throw new AppValidationException($"Lỗi hệ thống: {ex.Message}", StatusCodes.Status500InternalServerError);
             }
         }
+
         private bool ValidateStatusTransition(RequestStatus? currentStatus, RequestStatus newStatus)
         {
             var validNextStatuses = currentStatus switch
