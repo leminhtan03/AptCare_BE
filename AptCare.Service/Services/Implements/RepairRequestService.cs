@@ -247,17 +247,6 @@ namespace AptCare.Service.Services.Implements
                     EstimatedEndTime = (DateTime)appointment.EndTime,
                     Status = WorkOrderStatus.Pending
                 });
-
-                //List<int> userIds = new List<int>();
-                //userIds.Add(technicianId);
-
-                //var a = await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
-                //{
-                //    Title = "Có yêu cầu sửa chửa mới đuọc giao",
-                //    Type = NotificationType.Individual,
-                //    Description = "Có yêu cầu sữa chữa mới được giao cho bạn vào .",
-                //    UserIds = userIds
-                //});
             }
             return true;
         }
@@ -574,6 +563,7 @@ namespace AptCare.Service.Services.Implements
                 });
 
                 await _unitOfWork.CommitAsync();
+
                 await SendNotificationForUserApartment(dto.RepairRequestId, dto.NewStatus);
 
                 return "Cập nhật trạng thái yêu cầu sửa chữa thành công";
