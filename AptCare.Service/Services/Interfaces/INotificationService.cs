@@ -13,6 +13,7 @@ namespace AptCare.Service.Services.Interfaces
     {
         Task<string> BroadcastNotificationAsync(NotificationCreateDto dto);
         Task<IPaginate<NotificationDto>> GetMyNotificationPaginateAsync(PaginateDto dto);
-        Task<bool> SendAndPushNotificationAsync(NotificationPushRequestDto dto);
+        Task SendAndPushNotificationAsync(NotificationPushRequestDto dto);
+        Task PushNotificationAsync(NotificationPushRequestDto dto);
     }
 }
