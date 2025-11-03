@@ -15,6 +15,7 @@ using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using System.Linq.Expressions;
 using AptCare.Service.Dtos.NotificationDtos;
+using Org.BouncyCastle.Crypto;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -201,19 +202,19 @@ namespace AptCare.Service.Services.Implements
                         include: i => i.Include(x => x.Account)
                     );
 
-                //List<int> userIds = new List<int>();
-                //userIds.Add(techLeadId);
+                List<int> userIds = new List<int>();
+                userIds.Add(techLeadId);
 
-                //var a = await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
-                //{
-                //    Title = "Có yêu cầu sửa chửa mới",
-                //    Type = NotificationType.Individual,
-                //    Description = isAssigned ? "Có 1 yêu cầu sữa chữa mới cần xác nhận." : "Có 1 yêu cầu sữa chữa mới cần phân công.",
-                //    UserIds = userIds
-                //});         
+                await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+                {
+                    Title = "Có yêu cầu sửa chửa mới",
+                    Type = NotificationType.Individual,
+                    Description = isAssigned ? "Có 1 yêu cầu sữa chữa mới cần xác nhận." : "Có 1 yêu cầu sữa chữa mới cần phân công.",
+                    UserIds = userIds
+                });
 
-                //await _unitOfWork.CommitAsync();
-                await _unitOfWork.CommitTransactionAsync();
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync(); 
                 return "Tạo yêu cầu sửa chữa thành công";
             }
             catch (Exception e)
@@ -245,17 +246,6 @@ namespace AptCare.Service.Services.Implements
                     EstimatedStartTime = appointment.StartTime,
                     EstimatedEndTime = (DateTime)appointment.EndTime,
                     Status = WorkOrderStatus.Pending
-                });
-
-                List<int> userIds = new List<int>();
-                userIds.Add(technicianId);
-
-                var a = await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
-                {
-                    Title = "Có yêu cầu sửa chửa mới đuộc giao",
-                    Type = NotificationType.Individual,
-                    Description = "Có yêu cầu sữa chữa mới được giao cho bạn vào .",
-                    UserIds = userIds
                 });
             }
             return true;
@@ -378,8 +368,6 @@ namespace AptCare.Service.Services.Implements
             var techniciansAcceptable = await _appointmentAssignService.SuggestTechniciansForAppointment(appointment.AppointmentId, null);
             var technicianidsAcceptable = techniciansAcceptable.Select(x => x.UserId).ToList();
 
-            //var notifications = new List<Notification>();
-
             if (technicianidsAcceptable.Count != 0)
             {
                 var technicianIds = technicianidsAcceptable.Take(issue.RequiredTechnician);
@@ -396,16 +384,17 @@ namespace AptCare.Service.Services.Implements
                         Status = WorkOrderStatus.Working
                     });
 
-                    //notifications.Add(new Notification
-                    //{
-                    //    ReceiverId = technicianId,
-                    //    Type = NotificationType.Individual,
-                    //    Description = "Có yêu cầu sữa chữa khẩn cấp được giao cho bạn. Vui lòng tiến hành sữa chữa ngay",
-                    //    IsRead = false,
-                    //    CreatedAt = DateTime.UtcNow.AddHours(7)
-                    //});
+                    await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+                    {
+                        Title = "Có yêu cầu sửa chửa mới được giao",
+                        Type = NotificationType.Individual,
+                        Description = "Có yêu cầu sữa chữa khẩn cấp được giao cho bạn. Vui lòng tiến hành sữa chữa ngay.",
+                        UserIds = technicianIds
+                    });
                 }
             }
+
+            
 
             var ids = await _unitOfWork.GetRepository<User>().GetListAsync(
                         selector: s => s.UserId,
@@ -415,17 +404,13 @@ namespace AptCare.Service.Services.Implements
 
             if (technicianidsAcceptable.Count < issue.RequiredTechnician)
             {
-                //foreach (var id in ids)
-                //{
-                //    notifications.Add(new Notification
-                //    {
-                //        ReceiverId = id,
-                //        Type = NotificationType.Individual,
-                //        Description = $"Có yêu cầu sữa chữa khẩn cấp. Đã phân công được {technicianidsAcceptable.Count}/{issue.RequiredTechnician} kĩ thuật viên. Vui lòng tiếp tục phân công.",
-                //        IsRead = false,
-                //        CreatedAt = DateTime.UtcNow.AddHours(7)
-                //    });
-                //}
+                await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+                {
+                    Title = "Có yêu cầu sửa chửa khẩn cấp mới",
+                    Type = NotificationType.Individual,
+                    Description = $"Có yêu cầu sữa chữa khẩn cấp. Đã phân công được {technicianidsAcceptable.Count}/{issue.RequiredTechnician} kĩ thuật viên. Vui lòng tiếp tục phân công.",
+                    UserIds = ids
+                });
             }
             else
             {
@@ -439,20 +424,15 @@ namespace AptCare.Service.Services.Implements
                 };
                 await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(newAppoTracking);
                 await _unitOfWork.CommitAsync();
-                //foreach (var id in ids)
-                //{
-                //    notifications.Add(new Notification
-                //    {
-                //        ReceiverId = id,
-                //        Type = NotificationType.Individual,
-                //        Description = $"Có yêu cầu sữa chữa khẩn cấp. Đã phân công đủ {issue.RequiredTechnician}/{issue.RequiredTechnician} kĩ thuật viên.",
-                //        IsRead = false,
-                //        CreatedAt = DateTime.UtcNow.AddHours(7)
-                //    });
-                //}
-            }
 
-            //await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
+                await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+                {
+                    Title = "Có yêu cầu sửa chửa khẩn cấp mới",
+                    Type = NotificationType.Individual,
+                    Description = $"Có yêu cầu sữa chữa khẩn cấp. Đã phân công đủ {issue.RequiredTechnician}/{issue.RequiredTechnician} kĩ thuật viên.",
+                    UserIds = ids
+                });
+            }
         }
 
         public async Task<IPaginate<RepairRequestDto>> GetPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? apartmentId, int? issueId, int? maintenanceRequestId)
@@ -633,8 +613,11 @@ namespace AptCare.Service.Services.Implements
                     }
                 }
 
+
                 await _unitOfWork.CommitAsync();
-                await _unitOfWork.CommitTransactionAsync();
+
+                await SendNotificationForUserApartment(dto.RepairRequestId, dto.NewStatus);
+                                await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation(
                     "Successfully toggled repair request {RepairRequestId} status from {OldStatus} to {NewStatus}",
@@ -693,6 +676,70 @@ namespace AptCare.Service.Services.Implements
                 _ => Array.Empty<RequestStatus>()
             };
             return validNextStatuses.Contains(newStatus);
+        }
+
+        private async Task SendNotificationForUserApartment(int repairRequestId, RequestStatus newStatus)
+        {
+            var userIds = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                    selector: s => s.Apartment.UserApartments.Where(ua => ua.Status == ActiveStatus.Active)
+                                                             .Select(x => x.UserId),
+                    predicate: p => p.RepairRequestId == repairRequestId,
+                    include: i => i.Include(x => x.Apartment)
+                                        .ThenInclude(x => x.UserApartments)
+                    );
+
+            string description = string.Empty;
+
+            switch (newStatus)
+            {
+                case RequestStatus.Pending:
+                    description = "Yêu cầu sửa chữa của bạn đang chờ duyệt.";
+                    break;
+
+                case RequestStatus.Approved:
+                    description = "Yêu cầu sửa chữa của bạn đã được duyệt và đang chờ bắt đầu.";
+                    break;
+
+                case RequestStatus.InProgress:
+                    description = "Kỹ thuật viên đang tiến hành xử lý yêu cầu sửa chữa của bạn.";
+                    break;
+
+                case RequestStatus.Diagnosed:
+                    description = "Yêu cầu sửa chữa của bạn đã được chẩn đoán và chờ xác nhận.";
+                    break;
+
+                case RequestStatus.CompletedPendingVerify:
+                    description = "Yêu cầu sửa chữa đã hoàn tất và đang chờ kiểm duyệt.";
+                    break;
+
+                case RequestStatus.AcceptancePendingVerify:
+                    description = "Yêu cầu sửa chữa của bạn đang chờ nghiệm thu.";
+                    break;
+
+                case RequestStatus.Completed:
+                    description = "Yêu cầu sửa chữa của bạn đã được hoàn tất.";
+                    break;
+
+                case RequestStatus.Cancelled:
+                    description = "Yêu cầu sửa chữa của bạn đã bị hủy.";
+                    break;
+
+                case RequestStatus.Rejected:
+                    description = "Yêu cầu sửa chữa của bạn đã bị từ chối.";
+                    break;
+
+                default:
+                    description = "Trạng thái yêu cầu sửa chữa không xác định.";
+                    break;
+            }
+
+            await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+            {
+                Title = "Yêu cầu sửa chữa",
+                Type = NotificationType.Individual,
+                Description = description,
+                UserIds = userIds
+            });
         }
     }
 }

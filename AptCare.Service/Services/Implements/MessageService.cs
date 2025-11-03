@@ -17,12 +17,15 @@ using AptCare.Repository.Paginate;
 using Microsoft.EntityFrameworkCore;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Hub;
+using AptCare.Service.Dtos.NotificationDtos;
+using AptCare.Service.Constants;
 
 namespace AptCare.Service.Services.Implements
 {
     public class MessageService : BaseService<MessageService>, IMessageService
     {
         private readonly IUserContext _userContext;
+        private readonly INotificationService _notificationService;
         private readonly ICloudinaryService _cloudinaryService;
 
         public MessageService(
@@ -30,9 +33,11 @@ namespace AptCare.Service.Services.Implements
             ILogger<MessageService> logger,
             IMapper mapper,
             IUserContext userContext,
+            INotificationService notificationService,
             ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
+            _notificationService = notificationService;
             _cloudinaryService = cloudinaryService;
         }
 
@@ -44,10 +49,10 @@ namespace AptCare.Service.Services.Implements
 
                 var userId = _userContext.CurrentUserId;
 
-                var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(
+                var conversation = await _unitOfWork.GetRepository<Conversation>().SingleOrDefaultAsync(
                                     predicate: p => p.ConversationId == dto.ConversationId
                                     );
-                if (!isExistingConversation)
+                if (conversation == null)
                 {
                     throw new AppValidationException($"Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
                 }
@@ -68,7 +73,7 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.GetRepository<Message>().InsertAsync(message);
                 await _unitOfWork.CommitAsync();
-                await PushMessageNotificationAsync(message);
+                await PushMessageNotificationAsync(message, conversation);
                 await _unitOfWork.CommitTransactionAsync();
 
                 var result = await _unitOfWork.GetRepository<Message>().ProjectToSingleOrDefaultAsync<MessageDto>(
@@ -97,10 +102,10 @@ namespace AptCare.Service.Services.Implements
 
                 var userId = _userContext.CurrentUserId;
 
-                var isExistingConversation = await _unitOfWork.GetRepository<Conversation>().AnyAsync(
+                var conversation = await _unitOfWork.GetRepository<Conversation>().SingleOrDefaultAsync(
                                     predicate: p => p.ConversationId == conversationId
                                     );
-                if (!isExistingConversation)
+                if (conversation == null)
                 {
                     throw new AppValidationException($"Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
                 }
@@ -136,7 +141,7 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.GetRepository<Message>().InsertAsync(message);
                 await _unitOfWork.CommitAsync();
-                await PushMessageNotificationAsync(message);
+                await PushMessageNotificationAsync(message, conversation);
                 await _unitOfWork.CommitTransactionAsync();
 
                 var result = await _unitOfWork.GetRepository<Message>().ProjectToSingleOrDefaultAsync<MessageDto>(
@@ -157,7 +162,7 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-        private async Task PushMessageNotificationAsync(Message message)
+        private async Task PushMessageNotificationAsync(Message message, Conversation conversation)
         {
             var receiverIds = await _unitOfWork.GetRepository<ConversationParticipant>().GetListAsync(
                 selector: s => s.ParticipantId,
@@ -169,7 +174,25 @@ namespace AptCare.Service.Services.Implements
                 predicate: p => p.UserId == message.SenderId
                 );
 
-            var descrption = $"{senderName}: ";
+            var descrption = string.Empty;
+            var title = string.Empty;
+
+            if (receiverIds.Count > 1)
+            {
+                title = $"Nhóm: {conversation.Title}";
+                descrption = $"{senderName}: ";
+            }
+            else
+            {
+                title = senderName;
+            }
+
+            var avatar = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                selector: s => s.FilePath,
+                predicate: p => p.Entity == nameof(User) && p.EntityId == message.SenderId
+                );
+
+            var image = string.IsNullOrEmpty(avatar) ? Constant.AVATAR_DEFAULT_IMAGE : avatar;
 
             switch (message.Type)
             {
@@ -210,21 +233,13 @@ namespace AptCare.Service.Services.Implements
                     break;
             }
 
-            //var notifications = new List<Notification>();
-
-            //foreach (var receiverId in receiverIds)
-            //{
-            //    notifications.Add(new Notification
-            //    {
-            //        ReceiverId = message.SenderId,
-            //        Description = descrption,
-            //        IsRead = false,
-            //        CreatedAt = DateTime.UtcNow.AddHours(7)
-            //    });
-            //}
-
-            //await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
-            await _unitOfWork.CommitAsync();
+            await _notificationService.PushNotificationAsync(new NotificationPushRequestDto
+            {
+                Title = title,
+                Description = descrption,
+                UserIds = receiverIds,
+                Image = image
+            });
         }
 
         public async Task<IPaginate<MessageDto>> GetPaginateMessagesAsync(int conversationId, DateTime? before, int pageSize)

@@ -112,7 +112,7 @@ namespace AptCare.Service.Services.Implements
             return result;
         }
 
-        public async Task<bool> SendAndPushNotificationAsync(NotificationPushRequestDto dto)
+        public async Task SendAndPushNotificationAsync(NotificationPushRequestDto dto)
         {
             try
             {
@@ -130,7 +130,7 @@ namespace AptCare.Service.Services.Implements
                     predicate: x => dto.UserIds.Contains(x.AccountId) && x.TokenType == TokenType.FCMToken && x.Status == TokenStatus.Active
                     );
 
-                var image = dto.Image == null ? Constant.LOGO_IMAGE : dto.Image;
+                var image = string.IsNullOrEmpty(dto.Image) ? Constant.LOGO_IMAGE : dto.Image;
 
                 var isPushed = await _fcmService.PushMulticastAsync(fcmTokens, dto.Title, dto.Description, image);
                 //if (!isPushed)
@@ -140,8 +140,25 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
                 await _unitOfWork.CommitAsync();
+            }
+            catch (Exception e)
+            {
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
+            }
+        }
 
-                return true;
+        public async Task PushNotificationAsync(NotificationPushRequestDto dto)
+        {
+            try
+            {
+                var fcmTokens = await _unitOfWork.GetRepository<AccountToken>().GetListAsync(
+                    selector: s => s.Token,
+                    predicate: x => dto.UserIds.Contains(x.AccountId) && x.TokenType == TokenType.FCMToken && x.Status == TokenStatus.Active
+                    );
+
+                var image = string.IsNullOrEmpty(dto.Image) ? Constant.LOGO_IMAGE : dto.Image;
+
+                var isPushed = await _fcmService.PushMulticastAsync(fcmTokens, dto.Title, dto.Description, image);                
             }
             catch (Exception e)
             {

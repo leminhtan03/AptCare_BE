@@ -5,6 +5,7 @@ using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.AppointmentDtos;
+using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
@@ -19,6 +20,7 @@ namespace AptCare.Service.Services.Implements
     public class AppointmentService : BaseService<AppointmentService>, IAppointmentService
     {
         private readonly IUserContext _userContext;
+        private readonly INotificationService _notificationService;
         private readonly IRepairRequestService _repairRequestService;
 
         public AppointmentService(
@@ -26,9 +28,11 @@ namespace AptCare.Service.Services.Implements
             ILogger<AppointmentService> logger,
             IMapper mapper,
             IUserContext userContext,
+            INotificationService notificationService,
             IRepairRequestService IRepairRequestService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
+            _notificationService = notificationService;
             _repairRequestService = IRepairRequestService;
         }
 
@@ -441,6 +445,11 @@ namespace AptCare.Service.Services.Implements
                 UpdatedAt = DateTime.UtcNow.AddHours(7)
             };
 
+            if (appointmentStatus == AppointmentStatus.Confirmed)
+            {
+                await SendNotificationForTechnician(appointment);
+            }
+
             await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
             await _unitOfWork.CommitAsync();
 
@@ -500,6 +509,22 @@ namespace AptCare.Service.Services.Implements
                 _ => Array.Empty<AppointmentStatus>()
             };
             return validNextStatuses.Contains(newStatus);
+        }
+
+        private async Task SendNotificationForTechnician(Appointment appointment)
+        {
+            var userIds = await _unitOfWork.GetRepository<AppointmentAssign>().GetListAsync(
+                    selector: s => s.TechnicianId,
+                    predicate: p => p.AppointmentId == appointment.AppointmentId && p.Status != WorkOrderStatus.Cancel
+                    );
+            
+            await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+            {
+                Title = "Có yêu cầu sửa chữa mới được phân công cho bạn",
+                Type = NotificationType.Individual,
+                Description = $"Có yêu cầu sửa chữa mới được phân công cho bạn vào {appointment.StartTime.TimeOfDay} ngày {DateOnly.FromDateTime(appointment.StartTime)}",
+                UserIds = userIds
+            });
         }
     }
 }
