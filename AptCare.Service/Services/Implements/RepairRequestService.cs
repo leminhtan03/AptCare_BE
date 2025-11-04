@@ -121,7 +121,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     RepairRequestId = request.RepairRequestId,
                     Status = RequestStatus.Pending,
-                    UpdatedAt = DateTime.UtcNow.AddHours(7),
+                    UpdatedAt = DateTime.Now,
                     UpdatedBy = userId
                 });
 
@@ -146,7 +146,7 @@ namespace AptCare.Service.Services.Implements
                             FileName = file.FileName,
                             FilePath = filePath,
                             ContentType = file.ContentType,
-                            CreatedAt = DateTime.UtcNow.AddHours(7),
+                            CreatedAt = DateTime.Now,
                             Status = ActiveStatus.Active
 
                         });
@@ -159,7 +159,7 @@ namespace AptCare.Service.Services.Implements
                     StartTime = dto.PreferredAppointment,
                     EndTime = issue == null ? null : dto.PreferredAppointment.AddHours(issue.EstimatedDuration),
                     Note = dto.Note,
-                    CreatedAt = DateTime.UtcNow.AddHours(7)
+                    CreatedAt = DateTime.Now
                 };
 
                 await _unitOfWork.GetRepository<Appointment>().InsertAsync(appointment);
@@ -169,7 +169,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     AppointmentId = appointment.AppointmentId,
                     UpdatedBy = userId,
-                    UpdatedAt = DateTime.UtcNow.AddHours(7),
+                    UpdatedAt = DateTime.Now,
                     Status = AppointmentStatus.Pending,
                     Note = "Cuộc hẹn mong muốn của khách hàng chờ được phân công"
                 };
@@ -188,7 +188,7 @@ namespace AptCare.Service.Services.Implements
                             AppointmentId = appointment.AppointmentId,
                             UpdatedBy = userId,
                             Status = AppointmentStatus.Assigned,
-                            UpdatedAt = DateTime.UtcNow.AddHours(7),
+                            UpdatedAt = DateTime.Now,
                             Note = "Tự động phân công cho lịch hẹn với Id: " + appointment.AppointmentId.ToString()
 
                         });
@@ -242,7 +242,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     Appointment = appointment,
                     TechnicianId = technicianId,
-                    AssignedAt = DateTime.UtcNow.AddHours(7),
+                    AssignedAt = DateTime.Now,
                     EstimatedStartTime = appointment.StartTime,
                     EstimatedEndTime = (DateTime)appointment.EndTime,
                     Status = WorkOrderStatus.Pending
@@ -300,7 +300,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     RepairRequestId = request.RepairRequestId,
                     Status = RequestStatus.Pending,
-                    UpdatedAt = DateTime.UtcNow.AddHours(7),
+                    UpdatedAt = DateTime.Now,
                     UpdatedBy = userId
                 });
 
@@ -324,7 +324,7 @@ namespace AptCare.Service.Services.Implements
                             FileName = file.FileName,
                             FilePath = filePath,
                             ContentType = file.ContentType,
-                            CreatedAt = DateTime.UtcNow.AddHours(7),
+                            CreatedAt = DateTime.Now,
                             Status = ActiveStatus.Active
 
                         });
@@ -334,9 +334,9 @@ namespace AptCare.Service.Services.Implements
                 var appointment = new Appointment
                 {
                     RepairRequestId = request.RepairRequestId,
-                    StartTime = DateTime.UtcNow.AddHours(7),
-                    EndTime = DateTime.UtcNow.AddHours(7).AddHours(issue.EstimatedDuration),
-                    CreatedAt = DateTime.UtcNow.AddHours(7)
+                    StartTime = DateTime.Now,
+                    EndTime = DateTime.Now.AddHours(issue.EstimatedDuration),
+                    CreatedAt = DateTime.Now
                 };
 
                 await _unitOfWork.GetRepository<Appointment>().InsertAsync(appointment);
@@ -345,7 +345,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     AppointmentId = appointment.AppointmentId,
                     UpdatedBy = userId,
-                    UpdatedAt = DateTime.UtcNow.AddHours(7),
+                    UpdatedAt = DateTime.Now,
                     Status = AppointmentStatus.Pending,
                     Note = "Cuộc hẹn sửa chữa khẩn cấp chờ được phân công"
                 };
@@ -378,7 +378,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         Appointment = appointment,
                         TechnicianId = technicianId,
-                        AssignedAt = DateTime.UtcNow.AddHours(7),
+                        AssignedAt = DateTime.Now,
                         EstimatedStartTime = appointment.StartTime,
                         EstimatedEndTime = (DateTime)appointment.EndTime,
                         Status = WorkOrderStatus.Working
@@ -418,7 +418,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     AppointmentId = appointment.AppointmentId,
                     UpdatedBy = _userContext.CurrentUserId,
-                    UpdatedAt = DateTime.UtcNow.AddHours(7),
+                    UpdatedAt = DateTime.Now,
                     Status = AppointmentStatus.Assigned,
                     Note = "Cuộc hẹn sửa chữa khẩn cấp đã được phân công"
                 };
@@ -562,7 +562,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     RepairRequestId = dto.RepairRequestId,
                     Status = dto.NewStatus,
-                    UpdatedAt = DateTime.UtcNow.AddHours(7),
+                    UpdatedAt = DateTime.Now,
                     Note = dto.Note,
                     UpdatedBy = userId
                 });
@@ -741,6 +741,37 @@ namespace AptCare.Service.Services.Implements
                 Description = description,
                 UserIds = userIds
             });
+        }
+
+        public async Task CheckAcceptanceTimeAsync(DateTime dateTime)
+        {
+            try
+            {
+                var repairRequestIds = await _unitOfWork.GetRepository<RepairRequest>().GetListAsync(
+                    selector: s => s.RepairRequestId,
+                    predicate: p => p.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status ==
+                                        RequestStatus.AcceptancePendingVerify &&
+                                    p.AcceptanceTime != null &&
+                                    DateOnly.FromDateTime(p.AcceptanceTime.Value) ==
+                                        DateOnly.FromDateTime(dateTime),
+                    include: i => i.Include(x => x.RequestTrackings)
+                    );
+
+                foreach (var id in repairRequestIds)
+                {
+                    await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
+                    {
+                        RepairRequestId = id,
+                        Status = RequestStatus.Completed,
+                        UpdatedAt = DateTime.Now,
+                        Note = "Yêu cầu sửa chửa được tự động hoàn thành "
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Lỗi khi gửi thông báo tự động.");
+            }
         }
     }
 }

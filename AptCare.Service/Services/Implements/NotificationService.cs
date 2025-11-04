@@ -31,6 +31,8 @@ namespace AptCare.Service.Services.Implements
         private readonly IFCMService _fcmService;
         private readonly IUserContext _userContext;
 
+        private const int APPOINTMENT_REMINDER = 3;
+
         public NotificationService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
             ILogger<NotificationService> logger,
@@ -163,6 +165,44 @@ namespace AptCare.Service.Services.Implements
             catch (Exception e)
             {
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public async Task SendAndPushNotificationForAppointmentAsync(DateTime dateTime)
+        {
+            try
+            {                
+                var appointments = await _unitOfWork.GetRepository<Appointment>().GetListAsync(
+                    //selector: s => s.T~oken,
+                    predicate: p => DateOnly.FromDateTime(p.StartTime) == 
+                                        DateOnly.FromDateTime(dateTime).AddDays(APPOINTMENT_REMINDER) &&
+                                    p.AppointmentTrackings.OrderByDescending(x => x.UpdatedAt).First().Status == 
+                                        AppointmentStatus.Confirmed,
+                    include: i => i.Include(x => x.AppointmentTrackings)
+                    );
+
+                foreach (var appointment in appointments)
+                {
+                    var userIds = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                    selector: s => s.Apartment.UserApartments.Where(ua => ua.Status == ActiveStatus.Active)
+                                                             .Select(x => x.UserId),
+                    predicate: p => p.RepairRequestId == appointment.RepairRequestId,
+                    include: i => i.Include(x => x.Apartment)
+                                        .ThenInclude(x => x.UserApartments)
+                    );
+
+                    await SendAndPushNotificationAsync(new NotificationPushRequestDto
+                    {
+                        Title = "Nhắc nhở lịch hẹn",
+                        Type = NotificationType.Individual,
+                        Description = $"Bạn có lịch hẹn sửa chữa vào {APPOINTMENT_REMINDER} ngày ({appointment.StartTime.TimeOfDay} ngày {DateOnly.FromDateTime(appointment.StartTime)})",
+                        UserIds = userIds
+                    });
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Lỗi khi gửi thông báo tự động.");
             }
         }
 

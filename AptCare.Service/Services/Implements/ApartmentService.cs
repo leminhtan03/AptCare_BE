@@ -243,7 +243,7 @@ namespace AptCare.Service.Services.Implements
                     if (!newUserIds.Contains(userApartment.UserId))
                     {
                         userApartment.Status = ActiveStatus.Inactive;
-                        userApartment.DisableAt = DateTime.UtcNow.AddHours(7); // ✅ FIX: AddHours(7) cho timezone VN
+                        userApartment.DisableAt = DateTime.Now;
                         uaRepo.UpdateAsync(userApartment);
                     }
                 }

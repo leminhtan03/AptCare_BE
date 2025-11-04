@@ -18,6 +18,7 @@ namespace AptCare.Repository.Entities
         public bool IsChargeable { get; set; }
         public decimal TotalAmount { get; set; }
         public InvoiceType Type { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
         public ActiveStatus Status { get; set; }
 

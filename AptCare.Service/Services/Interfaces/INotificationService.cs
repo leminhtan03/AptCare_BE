@@ -15,5 +15,6 @@ namespace AptCare.Service.Services.Interfaces
         Task<IPaginate<NotificationDto>> GetMyNotificationPaginateAsync(PaginateDto dto);
         Task SendAndPushNotificationAsync(NotificationPushRequestDto dto);
         Task PushNotificationAsync(NotificationPushRequestDto dto);
+        Task SendAndPushNotificationForAppointmentAsync(DateTime dateTime);
     }
 }

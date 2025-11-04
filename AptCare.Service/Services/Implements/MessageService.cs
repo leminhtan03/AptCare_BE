@@ -135,7 +135,7 @@ namespace AptCare.Service.Services.Implements
                     SenderId = userId,
                     Content = content,
                     Status = MessageStatus.Sent,
-                    CreatedAt = DateTime.UtcNow.AddHours(7),
+                    CreatedAt = DateTime.Now,
                     Type = messageType
                 };
 

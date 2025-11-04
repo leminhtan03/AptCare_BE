@@ -11,5 +11,6 @@ namespace AptCare.Service.Services.Interfaces
         Task<string> CreateEmergencyRepairRequestAsync(RepairRequestEmergencyCreateDto dto);
         Task<IPaginate<RepairRequestDto>> GetPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? apartmentId, int? issueId, int? maintenanceRequestId);
         Task<bool> ToggleRepairRequestStatusAsync(ToggleRRStatus dto);
+        Task CheckAcceptanceTimeAsync(DateTime dateTime);
     }
 }

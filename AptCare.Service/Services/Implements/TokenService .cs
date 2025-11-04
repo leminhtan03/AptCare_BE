@@ -81,7 +81,7 @@ namespace AptCare.Service.Services.Implements
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(120),                 // AccessToken TTL
+                Expires = DateTime.Now.AddMinutes(120),                 // AccessToken TTL
                 Issuer = GetIssuerOrDefault(),                            // optional
                 Audience = GetAudienceOrDefault(),                        // optional
                 SigningCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256Signature)
@@ -94,8 +94,8 @@ namespace AptCare.Service.Services.Implements
             var refreshEntity = new AccountToken
             {
                 Token = tokenToStore,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
-                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.Now.AddDays(7),
+                CreatedAt = DateTime.Now,
                 AccountId = user.UserId,
                 DeviceInfo = deviceId,
                 TokenType = TokenType.RefreshToken,
@@ -126,7 +126,7 @@ namespace AptCare.Service.Services.Implements
                 throw new SecurityTokenException("Refresh token không tồn tại.");
             if (existingToken.Status == TokenStatus.Revoked)
                 throw new SecurityTokenException("Refresh token đã bị thu hồi.");
-            if (existingToken.ExpiresAt < DateTime.UtcNow)
+            if (existingToken.ExpiresAt < DateTime.Now)
                 throw new SecurityTokenException("Refresh token đã hết hạn.");
 
             existingToken.Status = TokenStatus.Expired;
@@ -176,7 +176,7 @@ namespace AptCare.Service.Services.Implements
                 t.AccountId == accountId &&
                 t.TokenType == TokenType.PasswordResetToken &&
                 t.Status == TokenStatus.Active &&
-                t.ExpiresAt > DateTime.UtcNow);
+                t.ExpiresAt > DateTime.Now);
 
             foreach (var t in oldTokens)
             {
@@ -189,8 +189,8 @@ namespace AptCare.Service.Services.Implements
             var entity = new AccountToken
             {
                 Token = HashToken(plain), // LƯU HASH
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.Add(lifetime),
+                CreatedAt = DateTime.Now,
+                ExpiresAt = DateTime.Now.Add(lifetime),
                 Status = TokenStatus.Active,
                 TokenType = TokenType.PasswordResetToken,
                 DeviceInfo = "ForRested",
@@ -218,7 +218,7 @@ namespace AptCare.Service.Services.Implements
                 t.Status == TokenStatus.Active);
 
             if (rec == null) return false;
-            if (rec.ExpiresAt <= DateTime.UtcNow) return false;
+            if (rec.ExpiresAt <= DateTime.Now) return false;
             return true;
         }
 
@@ -236,7 +236,7 @@ namespace AptCare.Service.Services.Implements
                 t.AccountId == accountId &&
                 t.TokenType == TokenType.PasswordResetToken &&
                 t.Status == TokenStatus.Active &&
-                t.ExpiresAt > DateTime.UtcNow &&
+                t.ExpiresAt > DateTime.Now &&
                 t.Token == hashed);
 
             if (rec == null) return false;
@@ -256,7 +256,7 @@ namespace AptCare.Service.Services.Implements
             var list = await repo.GetListAsync(predicate: t =>
                 t.AccountId == accountId &&
                 t.TokenType == TokenType.RefreshToken &&
-                (t.Status == TokenStatus.Active || t.ExpiresAt > DateTime.UtcNow));
+                (t.Status == TokenStatus.Active || t.ExpiresAt > DateTime.Now));
 
             foreach (var t in list)
             {

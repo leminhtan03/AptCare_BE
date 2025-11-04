@@ -77,7 +77,7 @@ namespace AptCare.Service.Services.Implements
                 var newReport = _mapper.Map<RepairReport>(dto);
                 newReport.UserId = _userContext.CurrentUserId;
                 newReport.Status = ReportStatus.Pending;
-                newReport.CreatedAt = DateTime.UtcNow.AddHours(7);
+                newReport.CreatedAt = DateTime.Now;
 
                 await repairReportRepo.InsertAsync(newReport);
                 await _unitOfWork.CommitAsync();
@@ -105,7 +105,7 @@ namespace AptCare.Service.Services.Implements
                             FileName = file.FileName,
                             FilePath = filePath,
                             ContentType = file.ContentType,
-                            CreatedAt = DateTime.UtcNow.AddHours(7),
+                            CreatedAt = DateTime.Now,
                             Status = ActiveStatus.Active
                         });
                     }

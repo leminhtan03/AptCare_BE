@@ -477,10 +477,10 @@ namespace AptCare.Service.Services.Implements
                     ["Username"] = user.Email,
                     ["TemporaryPassword"] = createAccountDto.Password,
                     ["LoginUrl"] = "https://app.aptcare.vn/login",
-                    ["ExpireAt"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
+                    ["ExpireAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
                     ["SupportEmail"] = "support@aptcare.vn",
                     ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                    ["Year"] = DateTime.UtcNow.Year.ToString()
+                    ["Year"] = DateTime.Now.Year.ToString()
                 };
 
                 await _mailSender.SendEmailWithTemplateAsync(
@@ -522,7 +522,7 @@ namespace AptCare.Service.Services.Implements
                     FilePath = imagePath,
                     FileName = "Ảnh đại diện của userExist" + dto.UserId,
                     ContentType = dto.ImageProfileUrl.ContentType,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.Now,
                     Status = ActiveStatus.Active
                 };
                 await mediaRepo.InsertAsync(newMedia);

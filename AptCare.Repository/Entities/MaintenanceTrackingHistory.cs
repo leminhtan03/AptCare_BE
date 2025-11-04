@@ -17,6 +17,7 @@ namespace AptCare.Repository.Entities
         public string OldValue { get; set; } = null!;
         [Required]
         public string NewValue { get; set; } = null!;
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime UpdatedAt { get; set; }
 
         [ForeignKey(nameof(MaintenanceRequestId))]

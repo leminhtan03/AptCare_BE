@@ -68,7 +68,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         AppointmentId = appointmentId,
                         Status = AppointmentStatus.Assigned,
-                        UpdatedAt = DateTime.UtcNow.AddHours(7),
+                        UpdatedAt = DateTime.Now,
                         UpdatedBy = _userContext.CurrentUserId,
                         Note = "Kỹ thuật viên trưởng đang phân công Kỹ thuật viên."
                     });
@@ -81,7 +81,7 @@ namespace AptCare.Service.Services.Implements
                     AppointmentId = appointmentId,
                     EstimatedStartTime = appointment.StartTime,
                     EstimatedEndTime = (DateTime)appointment.EndTime,
-                    AssignedAt = DateTime.UtcNow.AddHours(7),
+                    AssignedAt = DateTime.Now,
                     Status = WorkOrderStatus.Pending
                 };
 
@@ -272,7 +272,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         AppointmentId = appointmentId,
                         Status = AppointmentStatus.Confirmed,
-                        UpdatedAt = DateTime.UtcNow.AddHours(7),
+                        UpdatedAt = DateTime.Now,
                         UpdatedBy = _userContext.CurrentUserId,
                         Note = "Kỹ thuật viên trưởng đã xác nhận phân công Kỹ thuật viên."
                     };
@@ -286,7 +286,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         AppointmentId = appointmentId,
                         Status = AppointmentStatus.Pending,
-                        UpdatedAt = DateTime.UtcNow.AddHours(7),
+                        UpdatedAt = DateTime.Now,
                         UpdatedBy = _userContext.CurrentUserId,
                         Note = "Kỹ thuật viên trưởng đã hủy phân công Kỹ thuật viên."
                     };

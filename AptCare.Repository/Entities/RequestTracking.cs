@@ -14,6 +14,7 @@ namespace AptCare.Repository.Entities
         public RequestStatus Status { get; set; }
         public string? Note { get; set; }
         public int? UpdatedBy { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime UpdatedAt { get; set; }
 
         [ForeignKey(nameof(RepairRequestId))]

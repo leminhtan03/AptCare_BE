@@ -2,6 +2,7 @@
 using AptCare.Repository.Entities;
 using AptCare.Repository.Repositories;
 using AptCare.Repository.UnitOfWork;
+using AptCare.Service.Services.Background;
 using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -48,6 +49,8 @@ namespace AptCare.Api.Extensions
             service.AddTransient<INotificationService, NotificationService>();
             service.AddHttpClient<IFCMService, FCMService>();
             service.AddTransient<IRepairReportService, RepairReportService>();
+
+            service.AddHostedService<NotificationBackgroundService>();
 
 
             return service;

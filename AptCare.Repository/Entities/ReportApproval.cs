@@ -16,6 +16,7 @@ namespace AptCare.Repository.Entities
         public AccountRole Role { get; set; }
         public ReportStatus Status { get; set; }
         public string? Comment { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(InspectionReportId))]

@@ -14,6 +14,7 @@ namespace AptCare.Repository.Entities
         public int? ParentFeedbackId { get; set; }
         public int Rating { get; set; }
         public string Comment { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(RepairRequestId))]

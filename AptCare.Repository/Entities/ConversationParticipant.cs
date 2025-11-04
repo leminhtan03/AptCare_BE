@@ -17,6 +17,7 @@ namespace AptCare.Repository.Entities
         [ForeignKey("Participant")]
         public int ParticipantId { get; set; }
         [Required]
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime JoinedAt { get; set; }
         [Required]
         public bool IsMuted { get; set; }

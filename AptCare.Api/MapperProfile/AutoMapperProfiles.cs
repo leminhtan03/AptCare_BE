@@ -127,7 +127,7 @@ namespace AptCare.Api.MapperProfile
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<ResidentOfApartmentDto, UserApartment>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             // ===== CommonArea =====
@@ -149,7 +149,7 @@ namespace AptCare.Api.MapperProfile
             CreateMap<TextMessageCreateDto, Message>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => MessageStatus.Sent))
                 .ForMember(d => d.Type, o => o.MapFrom(s => MessageType.Text))
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
 
             CreateMap<Message, MessageDto>()
                 .ForMember(d => d.Slug, o => o.MapFrom(s => s.Conversation.Slug))
@@ -184,17 +184,17 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Technicians, o => o.MapFrom(s => s.AppointmentAssigns.Select(x => x.Technician)));
 
             CreateMap<AppointmentCreateDto, Appointment>()
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
             CreateMap<AppointmentUpdateDto, Appointment>();
             CreateMap<AppointmentTracking, AppointmentTrackingDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
 
             CreateMap<RepairRequestNormalCreateDto, RepairRequest>()
                .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => false))
-               .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow.AddHours(7)));
+               .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Now));
             CreateMap<RepairRequestEmergencyCreateDto, RepairRequest>()
                .ForMember(dest => dest.IsEmergency, opt => opt.MapFrom(src => true))
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
 
             // ===== Issue =====
             CreateMap<IssueCreateDto, Issue>()
@@ -220,9 +220,9 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
             CreateMap<SlotCreateDto, Slot>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
-                .ForMember(d => d.LastUpdated, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+                .ForMember(d => d.LastUpdated, o => o.MapFrom(s => DateTime.Now));
             CreateMap<SlotUpdateDto, Slot>()
-                .ForMember(d => d.LastUpdated, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+                .ForMember(d => d.LastUpdated, o => o.MapFrom(s => DateTime.Now));
 
             //INVOICE
             CreateMap<Invoice, InvoiceDto>()
@@ -236,13 +236,13 @@ namespace AptCare.Api.MapperProfile
             CreateMap<InvoiceInternalCreateDto, Invoice>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
                 .ForMember(d => d.Type, o => o.MapFrom(s => InvoiceType.InternalRepair))
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
             .ForMember(d => d.InvoiceAccessories, o => o.MapFrom(s => new List<InvoiceAccessory>()))
             .ForMember(d => d.InvoiceServices, o => o.MapFrom(s => new List<InvoiceService>()));
             CreateMap<InvoiceExternalCreateDto, Invoice>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
                 .ForMember(d => d.Type, o => o.MapFrom(s => InvoiceType.ExternalContractor))
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
                 .ForMember(d => d.InvoiceAccessories, o => o.MapFrom(s => new List<InvoiceAccessory>()))
                 .ForMember(d => d.InvoiceServices, o => o.MapFrom(s => new List<InvoiceService>()));
             CreateMap<InvoiceUpdateDto, Invoice>();
@@ -274,7 +274,7 @@ namespace AptCare.Api.MapperProfile
 
             CreateMap<CreateInspectionReporDto, InspectionReport>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ReportStatus.Pending))
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
 
             CreateMap<UpdateInspectionReporDto, InspectionReport>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
@@ -285,7 +285,7 @@ namespace AptCare.Api.MapperProfile
                 .AfterMap((src, dest) =>
                 {
                     var todayWorkSlot = src.WorkSlots != null
-                        ? src.WorkSlots.FirstOrDefault(ws => ws.Date == DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)))
+                        ? src.WorkSlots.FirstOrDefault(ws => ws.Date == DateOnly.FromDateTime(DateTime.Now))
                         : null;
                     dest.workStatus = todayWorkSlot?.Status ?? WorkSlotStatus.Off;
                 });
@@ -294,12 +294,12 @@ namespace AptCare.Api.MapperProfile
             CreateMap<NotificationCreateDto, NotificationPushRequestDto>();
             CreateMap<NotificationPushRequestDto, Notification>()
                 .ForMember(d => d.IsRead, o => o.MapFrom(s => false))
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.UtcNow.AddHours(7)));
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
             CreateMap<Notification, NotificationDto>()
                 .ForMember(d => d.Type, o => o.MapFrom(s => s.Type.ToString()));
             CreateMap<CreateRepairReportDto, RepairReport>()
                 .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.WorkDescription))
-                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow.AddHours(7)));
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Now));
             CreateMap<UpdateRepairReportDto, RepairReport>();
             CreateMap<RepairReport, RepairReportDto>()
                 .ForMember(dest => dest.UserFullName, opt => opt.MapFrom(src => $"{src.User.FirstName} {src.User.LastName}"));
