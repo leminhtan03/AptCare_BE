@@ -202,17 +202,22 @@ namespace AptCare.Service.Services.Implements
             var aptRepo = _unitOfWork.GetRepository<Apartment>();
             var uaRepo = _unitOfWork.GetRepository<UserApartment>();
             var floorRepo = _unitOfWork.GetRepository<Floor>();
+            var userRepo = _unitOfWork.GetRepository<User>(); // ✅ THÊM để validate User
+
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
+
                 var apartment = await aptRepo.SingleOrDefaultAsync(
                     predicate: a => a.ApartmentId == AptId,
                     include: inc => inc.Include(a => a.UserApartments)
-                                      .ThenInclude(ua => ua.User)
+                                  .ThenInclude(ua => ua.User)
                 );
+
                 var floor = await floorRepo.SingleOrDefaultAsync(
                     predicate: f => f.FloorId == dto.FloorId
                 );
+
                 if (apartment == null)
                 {
                     throw new AppValidationException("Căn hộ không tồn tại.", StatusCodes.Status404NotFound);
@@ -222,45 +227,105 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Tầng không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
-
+                // ✅ Update apartment info
                 _mapper.Map(dto, apartment);
                 aptRepo.UpdateAsync(apartment);
 
-                var existingUserIds = apartment.UserApartments.Select(ua => ua.UserId).ToHashSet();
+                var existingUserIds = apartment.UserApartments
+                    .Select(ua => ua.UserId)
+                    .ToHashSet();
+
                 var newUserIds = dto.Residents?.Select(r => r.UserId).ToHashSet() ?? new HashSet<int>();
 
+                // ✅ Deactivate removed residents
                 foreach (var userApartment in apartment.UserApartments.ToList())
                 {
                     if (!newUserIds.Contains(userApartment.UserId))
                     {
                         userApartment.Status = ActiveStatus.Inactive;
-                        userApartment.DisableAt = DateTime.UtcNow;
+                        userApartment.DisableAt = DateTime.UtcNow.AddHours(7); // ✅ FIX: AddHours(7) cho timezone VN
                         uaRepo.UpdateAsync(userApartment);
                     }
                 }
 
+                // ✅ Add new residents
                 if (dto.Residents != null)
                 {
                     foreach (var residentDto in dto.Residents)
                     {
+                        // ✅ Validate User exists
+                        var userExists = await userRepo.AnyAsync(u => u.UserId == residentDto.UserId);
+                        if (!userExists)
+                        {
+                            throw new AppValidationException(
+                                $"Người dùng với UserId {residentDto.UserId} không tồn tại.",
+                                StatusCodes.Status404NotFound);
+                        }
+
                         if (!existingUserIds.Contains(residentDto.UserId))
                         {
-                            var newUserApartment = _mapper.Map<UserApartment>(residentDto);
+                            var newUserApartment = new UserApartment
+                            {
+                                UserId = residentDto.UserId,
+                                ApartmentId = AptId,
+                                RoleInApartment = residentDto.RoleInApartment,
+                                RelationshipToOwner = residentDto.RelationWithOwner, // ✅ FIX property name mismatch
+                                Status = ActiveStatus.Active,
+                                CreatedAt = DateTime.UtcNow.AddHours(7) // ✅ Add CreatedAt
+                            };
+
                             await uaRepo.InsertAsync(newUserApartment);
+                        }
+                        else
+                        {
+                            // ✅ Update existing relationship if needed
+                            var existingUA = apartment.UserApartments
+                                .FirstOrDefault(ua => ua.UserId == residentDto.UserId);
+
+                            if (existingUA != null)
+                            {
+                                existingUA.RoleInApartment = residentDto.RoleInApartment;
+                                existingUA.RelationshipToOwner = residentDto.RelationWithOwner;
+
+                                if (existingUA.Status == ActiveStatus.Inactive)
+                                {
+                                    existingUA.Status = ActiveStatus.Active;
+                                    existingUA.DisableAt = null;
+                                }
+
+                                uaRepo.UpdateAsync(existingUA);
+                            }
                         }
                     }
                 }
 
                 await _unitOfWork.CommitAsync();
-                var updatedApartmentDto = _mapper.Map<ApartmentDto>(apartment);
-                await LoadUserProfileImagesAsync(updatedApartmentDto);
-                return updatedApartmentDto;
+                await _unitOfWork.CommitTransactionAsync();
 
+                var updatedApartment = await aptRepo.SingleOrDefaultAsync(
+                    predicate: a => a.ApartmentId == AptId,
+                    include: inc => inc.Include(a => a.UserApartments)
+                                  .ThenInclude(ua => ua.User)
+                                      .ThenInclude(u => u.Account)
+                );
+
+                var updatedApartmentDto = _mapper.Map<ApartmentDto>(updatedApartment);
+                await LoadUserProfileImagesAsync(updatedApartmentDto);
+
+                return updatedApartmentDto;
             }
-            catch
-            (Exception ex)
+            catch (AppValidationException)
             {
-                throw new Exception("Cập nhật dữ liệu cư dân cho căn hộ thất bại: " + ex.Message);
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Error updating apartment {AptId} with resident data", AptId);
+                throw new AppValidationException(
+                    "Cập nhật dữ liệu cư dân cho căn hộ thất bại: " + ex.Message,
+                    StatusCodes.Status500InternalServerError);
             }
         }
     }

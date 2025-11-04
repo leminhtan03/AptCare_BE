@@ -214,7 +214,7 @@ namespace AptCare.Service.Services.Implements
                 });
 
                 await _unitOfWork.CommitAsync();
-                await _unitOfWork.CommitTransactionAsync(); 
+                await _unitOfWork.CommitTransactionAsync();
                 return "Tạo yêu cầu sửa chữa thành công";
             }
             catch (Exception e)
@@ -394,7 +394,7 @@ namespace AptCare.Service.Services.Implements
                 }
             }
 
-            
+
 
             var ids = await _unitOfWork.GetRepository<User>().GetListAsync(
                         selector: s => s.UserId,
@@ -617,7 +617,7 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.CommitAsync();
 
                 await SendNotificationForUserApartment(dto.RepairRequestId, dto.NewStatus);
-                                await _unitOfWork.CommitTransactionAsync();
+                await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation(
                     "Successfully toggled repair request {RepairRequestId} status from {OldStatus} to {NewStatus}",
@@ -658,6 +658,7 @@ namespace AptCare.Service.Services.Implements
                 RequestStatus.Diagnosed => new[]
                 {
                     RequestStatus.CompletedPendingVerify,
+                    RequestStatus.InProgress,
                     RequestStatus.Cancelled
                 },
                 RequestStatus.CompletedPendingVerify => new[]

@@ -169,13 +169,11 @@ namespace AptCare.Service.Services.Implements
 
             if (dto.EscalateToHigherLevel)
             {
-                // Escalate lên cấp cao hơn
                 await EscalateApprovalAsync(currentApproval, dto, role);
                 inspectionReport.Status = ReportStatus.Pending;
             }
             else
             {
-                // Approve/Reject ở cấp hiện tại
                 currentApproval.Status = dto.Status;
                 currentApproval.Comment = dto.Comment;
                 currentApproval.CreatedAt = DateTime.UtcNow.AddHours(7);

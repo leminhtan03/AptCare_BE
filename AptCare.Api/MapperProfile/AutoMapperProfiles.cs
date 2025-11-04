@@ -170,7 +170,8 @@ namespace AptCare.Api.MapperProfile
             CreateMap<RepairRequest, RepairRequestDto>()
                 .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null));
 
-            CreateMap<RepairRequest, RepairRequestBasicDto>();
+            CreateMap<RepairRequest, RepairRequestBasicDto>()
+                .ForMember(d => d.CreateUser, o => o.MapFrom(s => s.User));
             CreateMap<RequestTracking, RequestTrackingDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
 

@@ -52,5 +52,6 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public IssueListItemDto? Issue { get; set; }
         public ApartmentDto Apartment { get; set; } = null!;
         public DateTime CreatedAt { get; set; }
+        public UserBasicDto? CreateUser { get; set; } = null!;
     }
 }

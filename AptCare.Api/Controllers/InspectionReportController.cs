@@ -44,7 +44,7 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [Authorize(Roles = nameof(AccountRole.Technician))]
-        public async Task<IActionResult> GenerateInspectionReportAsync([FromBody] CreateInspectionReporDto dto)
+        public async Task<IActionResult> GenerateInspectionReportAsync([FromForm] CreateInspectionReporDto dto)
         {
             var result = await _inspectionReporService.CreateInspectionReportAsync(dto);
             return Ok(result);
@@ -142,7 +142,7 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin) + "," + nameof(AccountRole.TechnicianLead))]
-        public async Task<IActionResult> GetPaginateInspectionReportsAsync([FromQuery] InspectionReportFilterDto filterDto) 
+        public async Task<IActionResult> GetPaginateInspectionReportsAsync([FromQuery] InspectionReportFilterDto filterDto)
         {
             var result = await _inspectionReporService.GetPaginateInspectionReportsAsync(filterDto);
             return Ok(result);

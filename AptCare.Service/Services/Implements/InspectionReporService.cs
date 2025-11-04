@@ -163,7 +163,7 @@ namespace AptCare.Service.Services.Implements
                 );
 
                 if (inspectionReport == null)
-                    throw new AppValidationException("Báo cáo kiểm tra không tồn tại");
+                    return new InspectionReportDto();
 
                 var result = _mapper.Map<InspectionReportDto>(inspectionReport);
                 var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
@@ -175,7 +175,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception ex)
             {
-                throw new Exception("GetInspectionReportByIdAsync", ex);
+                throw new Exception("GetInspectionReportByIdAsync" + ex.Message);
             }
         }
 
@@ -204,7 +204,7 @@ namespace AptCare.Service.Services.Implements
                 );
 
                 if (inspectionReport == null)
-                    throw new AppValidationException("Báo cáo kiểm tra không tồn tại");
+                    return new InspectionReportDto();
 
                 var result = _mapper.Map<InspectionReportDto>(inspectionReport);
                 var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(

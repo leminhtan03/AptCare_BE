@@ -213,6 +213,8 @@ namespace AptCare.Service.Services.Implements
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.RequestTrackings)
                                 .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.User)
+                                .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Issue)
                                 .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
@@ -517,7 +519,7 @@ namespace AptCare.Service.Services.Implements
                     selector: s => s.TechnicianId,
                     predicate: p => p.AppointmentId == appointment.AppointmentId && p.Status != WorkOrderStatus.Cancel
                     );
-            
+
             await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
             {
                 Title = "Có yêu cầu sửa chữa mới được phân công cho bạn",
