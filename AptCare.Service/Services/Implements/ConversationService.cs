@@ -17,6 +17,7 @@ using AptCare.Repository.Enum.AccountUserEnum;
 using Microsoft.EntityFrameworkCore;
 using AptCare.Repository.Enum;
 using AptCare.Service.Exceptions;
+using AptCare.Service.Helpers;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -61,7 +62,7 @@ namespace AptCare.Service.Services.Implements
                 conversationParticipants.Add(new ConversationParticipant
                 {
                     ParticipantId = userId,
-                    JoinedAt = DateTime.UtcNow.AddHours(7),
+                    JoinedAt = CurrentDateTime.GetCurrentDateTime,
                     IsMuted = false
                 });
             }

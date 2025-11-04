@@ -18,6 +18,7 @@ namespace AptCare.Repository.Entities
         [Required]
         public string Solution { get; set; } = null!;
         public ReportStatus Status { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(AppointmentId))]

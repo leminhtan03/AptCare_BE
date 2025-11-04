@@ -129,7 +129,7 @@ namespace AptCare.Service.Services.Implements
                 Role = approverRole,
                 Status = ReportStatus.Pending,
                 Comment = dto.Comment ?? "Chờ phê duyệt",
-                CreatedAt = DateTime.UtcNow.AddHours(7)
+                CreatedAt = DateTime.Now
             };
 
             await reportApprovalRepo.InsertAsync(reportApproval);
@@ -178,7 +178,7 @@ namespace AptCare.Service.Services.Implements
                 // Approve/Reject ở cấp hiện tại
                 currentApproval.Status = dto.Status;
                 currentApproval.Comment = dto.Comment;
-                currentApproval.CreatedAt = DateTime.UtcNow.AddHours(7);
+                currentApproval.CreatedAt = DateTime.Now;
 
                 reportApprovalRepo.UpdateAsync(currentApproval);
                 inspectionReport.Status = dto.Status;
@@ -191,7 +191,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         RepairRequestId = repairRequest.RepairRequestId,
                         Status = RequestStatus.CompletedPendingVerify,
-                        UpdatedAt = DateTime.UtcNow.AddHours(7),
+                        UpdatedAt = DateTime.Now,
                         UpdatedBy = userId,
                         Note = "Báo cáo kiểm tra đã được phê duyệt, đã xác định phạm vi sửa chữa."
                     };
@@ -230,7 +230,7 @@ namespace AptCare.Service.Services.Implements
                 Role = approverRole,
                 Status = ReportStatus.Pending,
                 Comment = dto.Comment ?? "Chờ phê duyệt",
-                CreatedAt = DateTime.UtcNow.AddHours(7)
+                CreatedAt = DateTime.Now
             };
 
             await reportApprovalRepo.InsertAsync(reportApproval);
@@ -279,7 +279,7 @@ namespace AptCare.Service.Services.Implements
             {
                 currentApproval.Status = dto.Status;
                 currentApproval.Comment = dto.Comment;
-                currentApproval.CreatedAt = DateTime.UtcNow.AddHours(7);
+                currentApproval.CreatedAt = DateTime.Now;
 
                 reportApprovalRepo.UpdateAsync(currentApproval);
                 repairReport.Status = dto.Status;
@@ -292,7 +292,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         RepairRequestId = repairRequest.RepairRequestId,
                         Status = RequestStatus.AcceptancePendingVerify,
-                        UpdatedAt = DateTime.UtcNow.AddHours(7),
+                        UpdatedAt = DateTime.Now,
                         UpdatedBy = userId,
                         Note = "Báo cáo sửa chữa đã được phê duyệt, chờ nghiệm thu."
                     };
@@ -352,7 +352,7 @@ namespace AptCare.Service.Services.Implements
             // Đánh dấu approval hiện tại là Approved
             currentApproval.Status = ReportStatus.Approved;
             currentApproval.Comment = dto.Comment ?? "Đã phê duyệt và chuyển lên cấp cao hơn";
-            currentApproval.CreatedAt = DateTime.UtcNow.AddHours(7);
+            currentApproval.CreatedAt = DateTime.Now;
             reportApprovalRepo.UpdateAsync(currentApproval);
 
             // Tạo approval mới cho cấp cao hơn
@@ -366,7 +366,7 @@ namespace AptCare.Service.Services.Implements
                 Role = nextApproverRole,
                 Status = ReportStatus.Pending,
                 Comment = $"Chuyển từ {currentRole} - {dto.Comment}",
-                CreatedAt = DateTime.UtcNow.AddHours(7)
+                CreatedAt = DateTime.Now
             };
 
             await reportApprovalRepo.InsertAsync(newApproval);

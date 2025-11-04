@@ -2,6 +2,7 @@
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 namespace AptCare.Repository.Entities
 {
     public class User
@@ -32,6 +33,7 @@ namespace AptCare.Repository.Entities
         [MaxLength(50)]
         public string? CitizenshipIdentity { get; set; }
 
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime? Birthday { get; set; }
 
         public ActiveStatus Status { get; set; }

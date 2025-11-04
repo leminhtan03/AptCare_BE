@@ -13,6 +13,7 @@ namespace AptCare.Repository.Entities
         [ForeignKey("WorkSlot")]
         public int WorkSlotId { get; set; }
         public WorkSlot WorkSlot { get; set; } = null!;
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime StatusChangeTime { get; set; }
         public WorkSlotStatus PreviousStatus { get; set; }
         public WorkSlotStatus NewStatus { get; set; }

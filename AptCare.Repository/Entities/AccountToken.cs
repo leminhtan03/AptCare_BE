@@ -13,8 +13,10 @@ namespace AptCare.Repository.Entities
         [Required]
         public string Token { get; set; }
 
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
 
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime ExpiresAt { get; set; }
 
         public TokenStatus Status { get; set; }

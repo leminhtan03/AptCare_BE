@@ -68,7 +68,7 @@ namespace AptCare.Service.Services.Implements
                     ["FullName"] = existedEmail.FirstName + " " + existedEmail.LastName,
                     ["OtpCode"] = otp,
                     ["ExpiredMinutes"] = "5",
-                    ["ExpireAt"] = DateTime.UtcNow.AddMinutes(5).ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
+                    ["ExpireAt"] = DateTime.Now.AddMinutes(5).ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
                     ["SupportEmail"] = "Subiheo9999@gmail.com",
                     ["VerifyUrl"] = "",
                     ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
@@ -100,7 +100,7 @@ namespace AptCare.Service.Services.Implements
                     ["SystemName"] = "AptCare System",
                     ["SupportEmail"] = "support@aptcare.vn",
                     ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                    ["Year"] = DateTime.UtcNow.Year.ToString()
+                    ["Year"] = DateTime.Now.Year.ToString()
                 });
         }
 
@@ -188,7 +188,7 @@ namespace AptCare.Service.Services.Implements
                         ["SystemName"] = "AptCare System",
                         ["SupportEmail"] = "support@aptcare.vn",
                         ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                        ["Year"] = DateTime.UtcNow.Year.ToString()
+                        ["Year"] = DateTime.Now.Year.ToString()
                     });
                 return new ResetPasswordResponseDto
                 {
@@ -237,11 +237,11 @@ namespace AptCare.Service.Services.Implements
                     replacements: new Dictionary<string, string>
                     {
                         ["FullName"] = account.User.FirstName + " " + account.User.LastName,
-                        ["ChangedAt"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
+                        ["ChangedAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
                         ["SystemName"] = "AptCare System",
                         ["SupportEmail"] = "support@aptcare.vn",
                         ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                        ["Year"] = DateTime.UtcNow.Year.ToString()
+                        ["Year"] = DateTime.Now.Year.ToString()
                     });
             }
         }
@@ -302,11 +302,11 @@ namespace AptCare.Service.Services.Implements
                     replacements: new Dictionary<string, string>
                     {
                         ["FullName"] = account.User.FirstName + " " + account.User.LastName,
-                        ["ChangedAt"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
+                        ["ChangedAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
                         ["SystemName"] = "AptCare System",
                         ["SupportEmail"] = "support@aptcare.vn",
                         ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                        ["Year"] = DateTime.UtcNow.Year.ToString()
+                        ["Year"] = DateTime.Now.Year.ToString()
                     });
             }
             var user = await _unitOfWork.GetRepository<User>()
@@ -334,7 +334,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     AccountId = userId,
                     Token = dto.FcmToken,
-                    CreatedAt = DateTime.UtcNow.AddHours(7),
+                    CreatedAt = DateTime.Now,
                     DeviceInfo = dto.DeviceInfo,
                     Status = TokenStatus.Active,
                     TokenType = TokenType.FCMToken
@@ -357,7 +357,7 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException("Fcm Token cũ không tồn tại.", StatusCodes.Status404NotFound);
             }
 
-            tokenExpired.ExpiresAt = DateTime.UtcNow.AddHours(7);
+            tokenExpired.ExpiresAt = DateTime.Now;
             tokenExpired.Status = TokenStatus.Expired;
 
             _unitOfWork.GetRepository<AccountToken>().UpdateAsync(tokenExpired);
@@ -366,7 +366,7 @@ namespace AptCare.Service.Services.Implements
             {
                 AccountId = userId,
                 Token = dto.FcmToken,
-                CreatedAt = DateTime.UtcNow.AddHours(7),
+                CreatedAt = DateTime.Now,
                 DeviceInfo = dto.DeviceInfo,
                 Status = TokenStatus.Active,
                 TokenType = TokenType.FCMToken

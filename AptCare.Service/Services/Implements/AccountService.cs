@@ -81,10 +81,10 @@ namespace AptCare.Service.Services.Implements
                     ["Username"] = user.Email,
                     ["TemporaryPassword"] = Password,
                     ["LoginUrl"] = "https://app.aptcare.vn/login",
-                    ["ExpireAt"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
+                    ["ExpireAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
                     ["SupportEmail"] = "support@aptcare.vn",
                     ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                    ["Year"] = DateTime.UtcNow.Year.ToString()
+                    ["Year"] = DateTime.Now.Year.ToString()
                 };
 
                 await _mailSender.SendEmailWithTemplateAsync(

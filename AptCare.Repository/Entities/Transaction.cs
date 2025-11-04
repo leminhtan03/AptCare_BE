@@ -15,6 +15,7 @@ namespace AptCare.Repository.Entities
         public TransactionType TransactionType { get; set; }
         public decimal Amount { get; set; }
         public string Description { get; set; } = null!;
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(UserId))]

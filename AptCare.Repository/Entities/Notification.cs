@@ -18,6 +18,7 @@ namespace AptCare.Repository.Entities
         public string Title { get; set; } = null!;
         [Required]
         public string Description { get; set; } = null!;
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
         public bool IsRead { get; set; }
         public NotificationType Type { get; set; }

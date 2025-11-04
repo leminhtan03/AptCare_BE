@@ -234,7 +234,7 @@ namespace AptCare.Service.Services.Implements
                     if (!newUserIds.Contains(userApartment.UserId))
                     {
                         userApartment.Status = ActiveStatus.Inactive;
-                        userApartment.DisableAt = DateTime.UtcNow;
+                        userApartment.DisableAt = DateTime.Now;
                         uaRepo.UpdateAsync(userApartment);
                     }
                 }
