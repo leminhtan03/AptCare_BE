@@ -26,7 +26,9 @@ namespace AptCare.Repository.Entities
         public string? RelationshipToOwner { get; set; }
 
         public ActiveStatus Status { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime? DisableAt { get; set; }
     }
 }

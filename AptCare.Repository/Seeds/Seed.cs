@@ -364,7 +364,7 @@ namespace AptCare.Repository.Seeds
                             UserId = user.UserId,
                             ApartmentId = apartment.ApartmentId,
                             RoleInApartment = u == 1 ? RoleInApartmentType.Owner : RoleInApartmentType.Member,
-                            CreatedAt = DateTime.UtcNow.AddHours(7)
+                            CreatedAt = DateTime.Now
                         });
                         userIdx++;
                     }
@@ -502,7 +502,7 @@ namespace AptCare.Repository.Seeds
         {
             if (!context.Slots.Any())
             {
-                var now = DateTime.UtcNow.AddHours(7);
+                var now = DateTime.Now;
 
                 var slots = new List<Slot>
                 {

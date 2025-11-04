@@ -22,6 +22,7 @@ namespace AptCare.Repository.Entities
         public int? ReplyMessageId { get; set; }
         public string Content { get; set; }
         public MessageType Type { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
         public MessageStatus Status { get; set; }
 

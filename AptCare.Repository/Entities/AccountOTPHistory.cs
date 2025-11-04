@@ -19,10 +19,13 @@ namespace AptCare.Repository.Entities
 
         public OTPType OTPType { get; set; }
 
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
 
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime ExpiresAt { get; set; }
 
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime? VerifiedAt { get; set; }
 
         public OTPStatus Status { get; set; }

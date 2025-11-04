@@ -115,7 +115,7 @@ namespace AptCare.Service.Services.Implements
                             FileName = dto.Files[i].FileName,
                             FilePath = uploadedFilePaths[i],
                             ContentType = dto.Files[i].ContentType,
-                            CreatedAt = DateTime.UtcNow.AddHours(7),
+                            CreatedAt = DateTime.Now,
                             Status = ActiveStatus.Active
                         });
                     }

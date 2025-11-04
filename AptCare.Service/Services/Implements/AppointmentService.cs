@@ -279,7 +279,7 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 await _unitOfWork.BeginTransactionAsync();
-                var timeNow = DateTime.UtcNow.AddHours(7);
+                var timeNow = DateTime.Now;
                 var appointmentStartTime = appointment.StartTime;
                 //if (timeNow < appointmentStartTime.AddMinutes(-30))
                 //{
@@ -302,7 +302,7 @@ namespace AptCare.Service.Services.Implements
                         Status = AppointmentStatus.InVisit,
                         Note = "Kỹ thuật đã check-in.",
                         UpdatedBy = userId,
-                        UpdatedAt = DateTime.UtcNow.AddHours(7)
+                        UpdatedAt = DateTime.Now
                     };
                     await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
                     await _unitOfWork.CommitAsync();
@@ -311,7 +311,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         if (assign != null)
                         {
-                            assign.ActualStartTime = DateTime.UtcNow.AddHours(7);
+                            assign.ActualStartTime = DateTime.Now;
                             assign.Status = WorkOrderStatus.Working;
                             _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(assign);
                             await _unitOfWork.CommitAsync();
@@ -381,7 +381,7 @@ namespace AptCare.Service.Services.Implements
                     Status = AppointmentStatus.InRepair,
                     Note = "Kỹ thuật viên bắt đầu sửa chữa.",
                     UpdatedBy = userId,
-                    UpdatedAt = DateTime.UtcNow.AddHours(7)
+                    UpdatedAt = DateTime.Now
                 };
                 await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
                 await _unitOfWork.CommitAsync();
@@ -442,7 +442,7 @@ namespace AptCare.Service.Services.Implements
                 Status = appointmentStatus,
                 Note = note ?? string.Empty,
                 UpdatedBy = userId,
-                UpdatedAt = DateTime.UtcNow.AddHours(7)
+                UpdatedAt = DateTime.Now
             };
 
             if (appointmentStatus == AppointmentStatus.Confirmed)

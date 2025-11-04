@@ -39,7 +39,9 @@ namespace AptCare.Repository.Entities
         [MaxLength(1000)]
         public string Description { get; set; } = null!;
         public bool IsEmergency { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime? AcceptanceTime { get; set; }
 
         public ICollection<RepairRequest>? ChildRequests { get; set; }

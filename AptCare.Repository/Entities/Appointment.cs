@@ -12,9 +12,12 @@ namespace AptCare.Repository.Entities
         public int AppointmentId { get; set; }
 
         public int RepairRequestId { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime StartTime { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime? EndTime { get; set; }
         public string? Note { get; set; } = null!;
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
 
         [ForeignKey(nameof(RepairRequestId))]

@@ -29,7 +29,7 @@ namespace AptCare.Service.Services.Implements
                 p.AccountId == accountId &&
                 p.OTPType == type &&
                 p.Status == OTPStatus.Active &&
-                p.ExpiresAt > DateTime.UtcNow);
+                p.ExpiresAt > DateTime.Now);
 
             foreach (var it in actives)
             {
@@ -43,8 +43,8 @@ namespace AptCare.Service.Services.Implements
                 AccountId = accountId,
                 OTPCode = HashString(otp),
                 OTPType = type,
-                CreatedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.Add(lifetime),
+                CreatedAt = DateTime.Now,
+                ExpiresAt = DateTime.Now.Add(lifetime),
                 Status = OTPStatus.Active
             };
             await repo.InsertAsync(entity);
@@ -56,7 +56,7 @@ namespace AptCare.Service.Services.Implements
         public async Task<bool> VerifyOtpAsync(int accountId, string otpCode, OTPType type)
         {
             var repo = _unitOfWork.GetRepository<AccountOTPHistory>();
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             var otp = (await repo.GetListAsync(predicate: p =>
                         p.AccountId == accountId &&
                         p.OTPType == type &&

@@ -19,7 +19,9 @@ namespace AptCare.Repository.Entities
         [MaxLength(1000)]
         public string? Description { get; set; }
         public int Frequency { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime NextDay { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
         public ActiveStatus Status { get; set; }
   
