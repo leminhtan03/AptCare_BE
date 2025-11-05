@@ -483,23 +483,16 @@ namespace AptCare.Service.Services.Implements
                 selector: x => _mapper.Map<RepairRequestDto>(x),
                 predicate: predicate,
                 include: i => i.Include(x => x.RequestTrackings)
-                            .ThenInclude(x => x.UpdatedByUser)
-                       .Include(x => x.ParentRequest)
-                       .Include(x => x.ChildRequests)
-                       .Include(x => x.Appointments)
-                            .ThenInclude(x => x.AppointmentAssigns)
-                                .ThenInclude(x => x.Technician)
-                       .Include(x => x.Appointments)
-                            .ThenInclude(x => x.InspectionReports)
-                       .Include(x => x.Appointments)
-                            .ThenInclude(x => x.RepairReport)
-                       .Include(x => x.Appointments)
-                            .ThenInclude(x => x.AppointmentTrackings)
-                                .ThenInclude(x => x.UpdatedByUser)
-                       .Include(x => x.User)
-                       .Include(x => x.Apartment)
-                       .Include(x => x.MaintenanceRequest)
-                       .Include(x => x.Issue),
+                               .Include(x => x.ChildRequests)
+                               .Include(x => x.Appointments)
+                                    .ThenInclude(x => x.AppointmentAssigns)
+                               .Include(x => x.Apartment)
+                                    .ThenInclude(x => x.Floor)
+                                .Include(x => x.Apartment)
+                                    .ThenInclude(x => x.UserApartments)
+                               .Include(x => x.MaintenanceRequest)
+                               .Include(x => x.Issue)
+                                    .ThenInclude(x => x.Technique),
                 orderBy: BuildOrderBy(dto.sortBy),
                     page: page,
                     size: size
@@ -513,6 +506,70 @@ namespace AptCare.Service.Services.Implements
                     );
                 request.Medias = medias.ToList();
             }
+            return result;
+        }
+
+        public async Task<RepairRequestDetailDto> GetRepairRequestByIdAsync(int id)
+        {
+            if (_userContext.IsResident)
+            {
+                var isValid = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
+                predicate: p => p.RepairRequestId == id && 
+                                p.Apartment.UserApartments.Any(x => x.UserId == _userContext.CurrentUserId),
+                include: i => i.Include(x => x.Apartment)
+                                    .ThenInclude(x => x.UserApartments)
+                );
+                if (!isValid)
+                {
+                    throw new AppValidationException("Bạn không có yêu cầu sửa chữa này.");
+                }
+            }
+            if (_userContext.IsTechnician)
+            {
+                var isValid = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
+                predicate: p => p.RepairRequestId == id &&
+                                p.Appointments.Any(a => a.AppointmentAssigns.Any(aa => aa.TechnicianId == _userContext.CurrentUserId)),
+                include: i => i.Include(x => x.Appointments)
+                                    .ThenInclude(x => x.AppointmentAssigns)
+                );
+                if (!isValid)
+                {
+                    throw new AppValidationException("Bạn không có yêu cầu sửa chữa này.");
+                }
+            }
+
+            var result = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                selector: x => _mapper.Map<RepairRequestDetailDto>(x),
+                predicate: p => p.RepairRequestId == id,
+                include: i => i.Include(x => x.RequestTrackings)
+                            .ThenInclude(x => x.UpdatedByUser)
+                       .Include(x => x.ParentRequest)
+                       .Include(x => x.ChildRequests)
+                       .Include(x => x.Appointments)
+                            .ThenInclude(x => x.AppointmentAssigns)
+                                .ThenInclude(x => x.Technician)
+                       .Include(x => x.Appointments)
+                            .ThenInclude(x => x.AppointmentTrackings)
+                                .ThenInclude(x => x.UpdatedByUser)
+                       .Include(x => x.User)
+                       .Include(x => x.Apartment)
+                            .ThenInclude(x => x.Floor)
+                       .Include(x => x.MaintenanceRequest)
+                       .Include(x => x.Issue)
+                            .ThenInclude(x => x.Technique)
+                );
+
+            if (result == null)
+            {
+                throw new AppValidationException("Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
+            }
+
+            var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                selector: s => _mapper.Map<MediaDto>(s),
+                predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == id
+                );
+            result.Medias = medias.ToList();
+
             return result;
         }
 

@@ -47,6 +47,26 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
+        /// Lấy danh sách tầng.
+        /// </summary>
+        /// <remarks>
+        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
+        ///    
+        /// </remarks>
+        /// <returns>Danh sách tầng.</returns>
+        /// <response code="200">Trả về danh sách tầng.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        [HttpGet("list")]
+        [Authorize]
+        [ProducesResponseType(typeof(IEnumerable<FloorDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> GetFloors()
+        {
+            var result = await _floorService.GetFloorsAsync();
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Lấy thông tin chi tiết của một tầng theo ID.
         /// </summary>
         /// <remarks>

@@ -15,6 +15,7 @@ namespace AptCare.Service.Services.Interfaces
         Task<string> UpdateCommonAreaAsync(int id, CommonAreaUpdateDto dto);
         Task<string> DeleteCommonAreaAsync(int id);
         Task<CommonAreaDto> GetCommonAreaByIdAsync(int id);
+        Task<IEnumerable<CommonAreaDto>> GetCommonAreasAsync();
         Task<IPaginate<CommonAreaDto>> GetPaginateCommonAreaAsync(PaginateDto dto);
     }
 }
