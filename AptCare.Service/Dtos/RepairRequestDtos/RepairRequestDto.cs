@@ -24,6 +24,23 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public DateTime CreatedAt { get; set; }
         public DateTime? AcceptanceTime { get; set; }
         public int? ParentRequestId { get; set; }
+        public ApartmentDto Apartment { get; set; } = null!;
+        public IssueListItemDto? Issue { get; set; }
+        public int? MaintenanceRequestId { get; set; }
+        public List<int>? ChildRequestIds { get; set; }
+        public List<MediaDto>? Medias { get; set; }
+        public string Status { get; set; } = null!;
+    }
+
+    public class RepairRequestDetailDto
+    {
+        public int RepairRequestId { get; set; }
+        public string Object { get; set; } = null!;
+        public string Description { get; set; } = null!;
+        public bool IsEmergency { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? AcceptanceTime { get; set; }
+        public int? ParentRequestId { get; set; }
         public UserBasicDto User { get; set; } = null!;
         public ApartmentDto Apartment { get; set; } = null!;
         public IssueListItemDto? Issue { get; set; }

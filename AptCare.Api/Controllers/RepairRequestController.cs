@@ -143,6 +143,46 @@ namespace AptCare.Api.Controllers
             var result = await _repairRequestService.GetPaginateRepairRequestAsync(dto, isEmergency, apartmentId, issueId, maintenanceRequestId);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Lấy chi tiết yêu cầu sửa chữa theo ID.
+        /// </summary>
+        /// <remarks>
+        /// <b>Phân quyền &amp; hành vi tự động:</b>
+        /// <list type="bullet">
+        ///   <item>🏠 <b>Resident (Cư dân):</b> chỉ được xem yêu cầu thuộc căn hộ của mình.</item>
+        ///   <item>🔧 <b>Technician (Kỹ thuật viên):</b> chỉ xem được yêu cầu được phân công.</item>
+        ///   <item>🧑‍💼 <b>Manager / TechnicianLead / Receptionist:</b> xem được toàn bộ.</item>
+        /// </list>
+        /// <br/>
+        /// <b>Chi tiết bao gồm:</b>
+        /// <list type="bullet">
+        ///   <item>Thông tin người tạo yêu cầu, căn hộ, và vấn đề liên quan.</item>
+        ///   <item>Danh sách lịch hẹn, báo cáo kiểm tra, báo cáo sửa chữa.</item>
+        ///   <item>Lịch sử cập nhật trạng thái (RequestTracking).</item>
+        ///   <item>Danh sách file đính kèm (Media).</item>
+        /// </list>
+        /// </remarks>
+        /// <param name="id">ID của yêu cầu sửa chữa cần xem chi tiết.</param>
+        /// <returns>Đối tượng <see cref="RepairRequestDetailDto"/> chứa toàn bộ thông tin chi tiết của yêu cầu.</returns>
+        /// <response code="200">Trả về thông tin yêu cầu sửa chữa.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền.</response>
+        /// <response code="404">Yêu cầu không tồn tại.</response>
+        /// <response code="500">Lỗi hệ thống.</response>
+        [HttpGet("{id:int}")]
+        [Authorize]
+        [ProducesResponseType(typeof(RepairRequestDetailDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<RepairRequestDetailDto>> GetRepairRequestById([FromRoute] int id)
+        {
+            var result = await _repairRequestService.GetRepairRequestByIdAsync(id);
+            return Ok(result);
+        }
+
         /// <summary>
         /// Chuyển đổi trạng thái của yêu cầu sửa chữa.
         /// </summary>

@@ -110,6 +110,7 @@ namespace AptCare.Service.Services.Implements
                                     .ThenInclude(x => x.Technician)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
+                                        .ThenInclude(x => x.Floor)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Issue)
                                 .Include(x => x.AppointmentTrackings)
@@ -158,6 +159,7 @@ namespace AptCare.Service.Services.Implements
                                     .ThenInclude(x => x.RequestTrackings)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
+                                        .ThenInclude(x => x.Floor)
                                 .Include(x => x.AppointmentTrackings)
                                     .ThenInclude(x => x.UpdatedByUser),
 
@@ -181,6 +183,9 @@ namespace AptCare.Service.Services.Implements
                 include: i => i.Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
                                         .ThenInclude(x => x.UserApartments)
+                                .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.Apartment)
+                                        .ThenInclude(x => x.Floor)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Issue)
                                 .Include(x => x.AppointmentAssigns)
@@ -209,6 +214,7 @@ namespace AptCare.Service.Services.Implements
                                 (technicianId == null || p.AppointmentAssigns.Any(ua => ua.TechnicianId == technicianId)),
                 include: i => i.Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
+                                        .ThenInclude(x => x.Floor)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.RequestTrackings)
                                 .Include(x => x.RepairRequest)

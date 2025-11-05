@@ -2,6 +2,7 @@
 using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -68,6 +69,26 @@ namespace AptCare.Api.Controllers
         public async Task<ActionResult> GetCommonAreaById(int id)
         {
             var result = await _commonAreaService.GetCommonAreaByIdAsync(id);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Lấy danh sách khu vực chung.
+        /// </summary>
+        /// <remarks>
+        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
+        ///    
+        /// </remarks>
+        /// <returns>Danh sách khu vực chung.</returns>
+        /// <response code="200">Trả về danh sách khu vực chung.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        [HttpGet("list")]
+        [Authorize]
+        [ProducesResponseType(typeof(IEnumerable<FloorDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> GetCommonAreas()
+        {
+            var result = await _commonAreaService.GetCommonAreasAsync();
             return Ok(result);
         }
 

@@ -149,6 +149,17 @@ namespace AptCare.Service.Services.Implements
             return commonArea;
         }
 
+        public async Task<IEnumerable<CommonAreaDto>> GetCommonAreasAsync()
+        {
+            var commonAreas = await _unitOfWork.GetRepository<CommonArea>().GetListAsync(
+                selector: x => _mapper.Map<CommonAreaDto>(x),
+                predicate: p => p.Status == ActiveStatus.Active,
+                include: i => i.Include(x => x.Floor)
+                );
+
+            return commonAreas;
+        }
+
         public async Task<IPaginate<CommonAreaDto>> GetPaginateCommonAreaAsync(PaginateDto dto)
         {
             int page = dto.page > 0 ? dto.page : 1;
