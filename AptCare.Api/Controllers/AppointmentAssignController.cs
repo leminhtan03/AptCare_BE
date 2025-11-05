@@ -82,7 +82,7 @@ public class AppointmentAssignController : BaseApiController
     /// </remarks>
     /// <param name="appointmentId">ID lịch hẹn cần xác nhận phân công</param>
     /// <param name="isConfirmed">True để xác nhận, False để hủy xác nhận</param>
-    /// <returns>Thông báo kết quả xác nhận</returns>                                                                                                                                                                                                                                                                                                                                                                                                 
+    /// <returns>Thông báo kết quả xác nhận</returns>
     [HttpPut("confirm-assigned/{appointmentId}")]
     [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}")]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
@@ -91,4 +91,13 @@ public class AppointmentAssignController : BaseApiController
         var result = await _appointmentAssignService.ConfirmAssignmentAsync(appointmentId, isConfirmed);
         return Ok(result);
     }
+    [HttpDelete("{id}")]
+    [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}")]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    public async Task<IActionResult> DeleteAppointmentAssign(CancleAssignDto dto)
+    {
+        var result = await _appointmentAssignService.CancleAssignmentAsync(dto);
+        return Ok(result);
+    }
+
 }

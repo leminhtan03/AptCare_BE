@@ -169,13 +169,11 @@ namespace AptCare.Service.Services.Implements
 
             if (dto.EscalateToHigherLevel)
             {
-                // Escalate lên cấp cao hơn
                 await EscalateApprovalAsync(currentApproval, dto, role);
                 inspectionReport.Status = ReportStatus.Pending;
             }
             else
             {
-                // Approve/Reject ở cấp hiện tại
                 currentApproval.Status = dto.Status;
                 currentApproval.Comment = dto.Comment;
                 currentApproval.CreatedAt = DateTime.Now;
@@ -212,11 +210,10 @@ namespace AptCare.Service.Services.Implements
         {
             var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
             var repairRepo = _unitOfWork.GetRepository<RepairReport>();
-
-            var repairReport = await repairRepo.SingleOrDefaultAsync(
+            var exists = await repairRepo.AnyAsync(
                 predicate: rr => rr.RepairReportId == dto.ReportId);
 
-            if (repairReport == null)
+            if (!exists)
             {
                 throw new AppValidationException(
                     $"Không tìm thấy báo cáo sửa chữa. ReportId: {dto.ReportId}",
@@ -234,9 +231,6 @@ namespace AptCare.Service.Services.Implements
             };
 
             await reportApprovalRepo.InsertAsync(reportApproval);
-
-            repairReport.Status = ReportStatus.Pending;
-            repairRepo.UpdateAsync(repairReport);
         }
 
         private async Task ProcessRepairReportApprovalAsync(
@@ -251,7 +245,10 @@ namespace AptCare.Service.Services.Implements
                 predicate: rr => rr.RepairReportId == dto.ReportId,
                 include: i => i.Include(rr => rr.ReportApprovals)
                                .Include(rr => rr.Appointment)
-                                   .ThenInclude(a => a.RepairRequest));
+                                   .ThenInclude(a => a.RepairRequest)
+                               .Include(rr => rr.Appointment)
+                                   .ThenInclude(a => a.AppointmentAssigns)
+                                  );
 
             if (repairReport == null)
             {
@@ -288,6 +285,17 @@ namespace AptCare.Service.Services.Implements
                 {
                     var repairRequest = repairReport.Appointment.RepairRequest;
 
+                    var appointment = repairReport.Appointment;
+
+                    var appointmentTracking = new AppointmentTracking
+                    {
+                        AppointmentId = appointment.AppointmentId,
+                        Status = AppointmentStatus.Completed,
+                        UpdatedAt = DateTime.UtcNow.AddHours(7),
+                        UpdatedBy = userId,
+                        Note = "Báo cáo sửa chữa đã được phê duyệt, chờ nghiệm thu."
+                    };
+                    await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
                     var requestTracking = new RequestTracking
                     {
                         RepairRequestId = repairRequest.RepairRequestId,
@@ -296,11 +304,16 @@ namespace AptCare.Service.Services.Implements
                         UpdatedBy = userId,
                         Note = "Báo cáo sửa chữa đã được phê duyệt, chờ nghiệm thu."
                     };
-
                     await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(requestTracking);
+                    var appointmentAssign = repairReport.Appointment.AppointmentAssigns;
+                    foreach (var assign in appointmentAssign)
+                    {
+                        assign.Status = WorkOrderStatus.Completed;
+                        assign.ActualEndTime = DateTime.UtcNow.AddHours(7);
+                        _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(assign);
+                    }
                 }
             }
-
             repairRepo.UpdateAsync(repairReport);
         }
 

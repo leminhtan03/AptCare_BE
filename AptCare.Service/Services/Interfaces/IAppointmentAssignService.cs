@@ -13,6 +13,6 @@ namespace AptCare.Service.Services.Interfaces
         Task<string> UpdateAppointmentAssignAsync(int id, AppointmentAssignUpdateDto dto);
         Task<IEnumerable<SuggestedTechnicianDto>> SuggestTechniciansForAppointment(int appointmentId, int? techniqueId);
         Task<string> ConfirmAssignmentAsync(int appointmentId, bool isConfirmed);
-
+        Task<string> CancleAssignmentAsync(CancleAssignDto dto);
     }
 }

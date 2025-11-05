@@ -45,7 +45,6 @@ namespace AptCare.Service.Services.Implements
             {
                 throw new AppValidationException("Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
             }
-
             if (dto.StartTime >= dto.EndTime)
             {
                 throw new AppValidationException("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
@@ -212,6 +211,8 @@ namespace AptCare.Service.Services.Implements
                                     .ThenInclude(x => x.Apartment)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.RequestTrackings)
+                                .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.User)
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Issue)
                                 .Include(x => x.AppointmentAssigns)
@@ -517,7 +518,7 @@ namespace AptCare.Service.Services.Implements
                     selector: s => s.TechnicianId,
                     predicate: p => p.AppointmentId == appointment.AppointmentId && p.Status != WorkOrderStatus.Cancel
                     );
-            
+
             await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
             {
                 Title = "Có yêu cầu sửa chữa mới được phân công cho bạn",

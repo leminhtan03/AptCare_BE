@@ -211,58 +211,66 @@ namespace AptCare.Api.Controllers
             return Ok(result);
         }
         /// <summary>
-        /// Tạo mới một người dùng trong hệ thống với thông tin được cung cấp.
+        /// Tạo mới một người dùng trong hệ thống với tùy chọn tạo account ngay.
         /// </summary>
         /// <remarks>
-        /// <para>Endpoint này cho phép tạo mới người dùng với đầy đủ thông tin cá nhân và phân công căn hộ (nếu có).(Ko có tạo acc ở đây)</para>
-        /// <para>Hỗ trợ tạo tất cả các loại người dùng: cư dân, nhân viên, quản lý.</para>
-        /// <para><strong>Lưu ý:</strong> Endpoint này yêu cầu quyền Manager.</para>
-        /// <para><strong>Validation rules:</strong></para>
-        /// <list type="bullet">
-        /// <item><description>FirstName và LastName là bắt buộc, tối đa 256 ký tự</description></item>
-        /// <item><description>Email phải hợp lệ và duy nhất trong hệ thống</description></item>
-        /// <item><description>PhoneNumber phải có định dạng hợp lệ</description></item>
-        /// <item><description>CitizenshipIdentity tối đa 50 ký tự (tùy chọn)</description></item>
+        /// <para>Endpoint này cho phép tạo mới người dùng với tùy chọn tạo account đăng nhập ngay:</para>
+        /// 
+        /// <para><strong>Quy tắc tạo Account:</strong></para>
+        /// <list type="number">
+        /// <item><description><strong>Resident:</strong> Tùy chọn tạo account (set CreateAccount = true/false)</description></item>
+        /// <item><description><strong>Technician/TechnicianLead:</strong> Luôn tạo account tự động (ignore CreateAccount)</description></item>
+        /// <item><description><strong>Manager/Receptionist/Admin:</strong> Luôn tạo account tự động (ignore CreateAccount)</description></item>
         /// </list>
+        /// 
+        /// <para><strong>Thông tin Account tự động:</strong></para>
+        /// <list type="bullet">
+        /// <item><description>Username = Email của user</description></item>
+        /// <item><description>Password = Random password (12 ký tự, gửi qua email)</description></item>
+        /// <item><description>MustChangePassword = true (bắt buộc đổi password lần đầu)</description></item>
+        /// <item><description>EmailConfirmed = false (cần verify email)</description></item>
+        /// </list>
+        /// 
+        /// <para><strong>Ví dụ request - Tạo Resident có account:</strong></para>
+        /// <code>
+        /// {
+        ///   "firstName": "Nguyen",
+        ///   "lastName": "Van A",
+        ///   "phoneNumber": "0901234567",
+        ///   "email": "nguyenvana@example.com",
+        ///   "citizenshipIdentity": "001234567890",
+        ///   "birthday": "1990-01-15",
+        ///   "role": "Resident",
+        ///   "createAccount": true,
+        ///   "apartments": [
+        ///     {
+        ///       "apartmentId": 101,
+        ///       "roleInApartment": "Owner",
+        ///       "relationshipToOwner": "Self"
+        ///     }
+        ///   ]
+        /// }
+        /// </code>
+        /// 
+        /// <para><strong>Ví dụ request - Tạo Technician (tự động có account):</strong></para>
+        /// <code>
+        /// {
+        ///   "firstName": "Tran",
+        ///   "lastName": "Van B",
+        ///   "phoneNumber": "0907654321",
+        ///   "email": "tranvanb@example.com",
+        ///   "citizenshipIdentity": "009876543210",
+        ///   "role": "Technician",
+        ///   "createAccount": false,  // ignored, vẫn tạo account
+        ///   "techniqueIds": [1, 3, 5]
+        /// }
+        /// </code>
         /// </remarks>
-        /// <param name="createUserDto">Đối tượng chứa thông tin người dùng cần tạo.
-        /// <para><strong>Các thuộc tính bao gồm:</strong></para>
-        /// <list type="bullet">
-        /// <item><description><strong>FirstName:</strong> Tên (bắt buộc, tối đa 256 ký tự)</description></item>
-        /// <item><description><strong>LastName:</strong> Họ (bắt buộc, tối đa 256 ký tự)</description></item>
-        /// <item><description><strong>PhoneNumber:</strong> Số điện thoại (bắt buộc, tối đa 20 ký tự, có validation)</description></item>
-        /// <item><description><strong>Email:</strong> Địa chỉ email (bắt buộc, tối đa 256 ký tự, có validation)</description></item>
-        /// <item><description><strong>CitizenshipIdentity:</strong> Số CCCD/CMND (tùy chọn, tối đa 50 ký tự)</description></item>
-        /// <item><description><strong>Birthday:</strong> Ngày sinh (tùy chọn, định dạng DateTime)</description></item>
-        /// <item><description><strong>Apartments:</strong> Danh sách căn hộ được phân công (chỉ áp dụng cho cư dân):
-        ///   <list type="bullet">
-        ///   <item><description><strong>RoomNumber:</strong> Số căn hộ (VD: "A-101")</description></item>
-        ///   <item><description><strong>RoleInApartment:</strong> Vai trò - "Owner" (chủ hộ) hoặc "Member" (thành viên)</description></item>
-        ///   <item><description><strong>RelationshipToOwner:</strong> Mối quan hệ với chủ hộ (VD: "Spouse", "Child", "Parent", "Self")</description></item>
-        ///   </list>
-        /// </description></item>
-        /// </list>
-        /// </param>
-        /// <returns>
-        /// <para><strong>Các trường hợp trả về:</strong></para>
-        /// <list type="table">
-        /// <item><term>200 OK</term><description>Tạo thành công, trả về UserDto của người dùng mới được tạo</description></item>
-        /// <item><term>400 Bad Request</term><description>Dữ liệu đầu vào không hợp lệ (model validation failed, email đã tồn tại)</description></item>
-        /// <item><term>500 Internal Server Error</term><description>Lỗi hệ thống trong quá trình tạo người dùng</description></item>
-        /// </list>
-        /// </returns>
-        /// <exception cref="ValidationException">Ném khi dữ liệu đầu vào vi phạm validation rules</exception>
-        /// <exception cref="InvalidOperationException">Ném khi email đã tồn tại trong hệ thống</exception>
-        /// <exception cref="ArgumentException">Ném khi dữ liệu căn hộ không hợp lệ</exception>
         [HttpPost("create-user-data")]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
         {
-
             var result = await _userService.CreateUserAsync(createUserDto);
             return Ok(result);
         }

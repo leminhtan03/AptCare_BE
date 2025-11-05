@@ -10,6 +10,5 @@ namespace AptCare.Service.Dtos.Account
     public class CreateAccountForUserDto
     {
         public int UserId { get; set; }
-        public string? Role { get; set; } = nameof(AccountRole.Resident);
     }
 }

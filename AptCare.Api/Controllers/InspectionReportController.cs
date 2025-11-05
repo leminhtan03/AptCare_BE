@@ -44,7 +44,7 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [Authorize(Roles = nameof(AccountRole.Technician))]
-        public async Task<IActionResult> GenerateInspectionReportAsync([FromBody] CreateInspectionReporDto dto)
+        public async Task<IActionResult> GenerateInspectionReportAsync([FromForm] CreateInspectionReporDto dto)
         {
             var result = await _inspectionReporService.CreateInspectionReportAsync(dto);
             return Ok(result);
@@ -87,37 +87,62 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách báo cáo kiểm tra có phân trang và tìm kiếm.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Lấy danh sách tất cả các báo cáo kiểm tra với hỗ trợ phân trang.  
-        /// - Hỗ trợ tìm kiếm theo từ khóa.  
-        /// - Hỗ trợ lọc theo các tiêu chí cụ thể.  
-        /// - Hỗ trợ sắp xếp theo các trường dữ liệu.
-        /// 
-        /// **Tham số:**  
-        /// - `page`: Số trang (mặc định = 1)
-        /// - `size`: Số lượng bản ghi mỗi trang (mặc định = 10)
-        /// - `sortBy`: Trường dữ liệu để sắp xếp (VD: "id", "id_des")
-        /// - `search`: Từ khóa tìm kiếm (tìm trong Description, Solution, AreaName)
-        /// - `filter`: Bộ lọc theo điều kiện (VD:Pending ,Approved ,Rejected)
-        /// - `FaultType`: Lọc theo loại lỗi (BuildingFault ,ResidentFault)
-        /// - `SolutionType`: Lọc theo loại giải pháp (Repair ,Replacement ,Outsource)
-        /// 
-        /// **Kết quả trả về:**  
-        /// - `Size`: Số lượng bản ghi mỗi trang
-        /// - `Page`: Trang hiện tại
-        /// - `Total`: Tổng số bản ghi
-        /// - `TotalPages`: Tổng số trang
-        /// - `Items`: Danh sách báo cáo kiểm tra (InspectionBasicReportDto[])
+        /// <b>Phân quyền &amp; hành vi theo role:</b>
+        /// <list type="bullet">
+        ///   <item>🔧 <b>Technician (Kỹ thuật viên):</b> xem danh sách báo cáo do mình tạo.</item>
+        ///   <item>🧑‍💼 <b>TechnicianLead / Manager:</b> xem và quản lý toàn bộ báo cáo.</item>
+        ///   <item>👨‍💻 <b>Admin:</b> xem toàn bộ báo cáo trong hệ thống.</item>
+        /// </list>
+        /// <br/>
+        /// <b>Tham số lọc &amp; tìm kiếm:</b>
+        /// <list type="bullet">
+        ///   <item><c>page</c>: Số trang (mặc định = 1).</item>
+        ///   <item><c>size</c>: Số bản ghi trên mỗi trang (mặc định = 10).</item>
+        ///   <item><c>sortBy</c>: Sắp xếp theo trường (id, id_desc, date, date_desc).</item>
+        ///   <item><c>search</c>: Tìm kiếm theo Description, Solution, AreaName.</item>
+        ///   <item><c>filter</c>: Lọc theo trạng thái (Pending, Approved, Rejected).</item>
+        ///   <item><c>FaultType</c>: Lọc theo loại lỗi:
+        ///     <list type="bullet">
+        ///     <item><description>BuildingFault (1) - Lỗi tòa nhà</description></item>
+        ///     <item><description>ResidentFault (2) - Lỗi cư dân</description></item>
+        ///     </list>
+        ///   </item>
+        ///   <item><c>SolutionType</c>: Lọc theo giải pháp:
+        ///     <list type="bullet">
+        ///     <item><description>Repair (1) - Sửa chữa</description></item>
+        ///     <item><description>Replacement (2) - Thay thế</description></item>
+        ///     <item><description>Outsource (3) - Thuê ngoài</description></item>
+        ///     </list>
+        ///   </item>
+        ///   <item><c>Fromdate</c>: Lọc từ ngày (định dạng: yyyy-MM-dd).</item>
+        ///   <item><c>Todate</c>: Lọc đến ngày (định dạng: yyyy-MM-dd).</item>
+        /// </list>
+        /// <br/>
+        /// <b>Kết quả:</b>
+        /// <list type="bullet">
+        ///   <item>Danh sách báo cáo dạng rút gọn (ID, loại lỗi, giải pháp, trạng thái, ngày tạo).</item>
+        ///   <item>Thông tin phân trang (tổng số, số trang, trang hiện tại).</item>
+        ///   <item>Danh sách ảnh đính kèm cho mỗi báo cáo (nếu có).</item>
+        /// </list>
+        /// <br/>
+        /// <b>Tham số:</b>
+        /// <list type="bullet">
+        ///   <item><c>filterDto</c>: DTO chứa các tham số lọc và phân trang.</item>
+        /// </list> 
         /// </remarks>
-        /// <param name="filterDto">Tham số phân trang và lọc dữ liệu</param>
-        /// <returns>Danh sách báo cáo kiểm tra có phân trang</returns>
+        /// <param name="filterDto">Tham số phân trang và lọc dữ liệu.</param>
+        /// <returns>Danh sách báo cáo kiểm tra có phân trang.</returns>
+        /// <response code="200">Lấy danh sách báo cáo kiểm tra thành công.</response>
+        /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="500">Lỗi hệ thống.</response>
         [HttpGet("get-paginate-inspection-reports")]
         [ProducesResponseType(typeof(IPaginate<InspectionBasicReportDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin) + "," + nameof(AccountRole.TechnicianLead))]
-        public async Task<IActionResult> GetPaginateInspectionReportsAsync([FromForm] InspectionReportFilterDto filterDto)
+        public async Task<IActionResult> GetPaginateInspectionReportsAsync([FromQuery] InspectionReportFilterDto filterDto)
         {
             var result = await _inspectionReporService.GetPaginateInspectionReportsAsync(filterDto);
             return Ok(result);

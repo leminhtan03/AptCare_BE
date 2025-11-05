@@ -18,6 +18,7 @@ namespace AptCare.Service.Dtos.UserDtos
         public AccountForAdminDto? AccountInfo { get; set; }
         public string Status { get; set; } = null!;
         public string? ProfileImageUrl { get; set; }
+        public bool HasAccount => AccountInfo != null;
     }
 
     public class UserGetAllDto : UserDto

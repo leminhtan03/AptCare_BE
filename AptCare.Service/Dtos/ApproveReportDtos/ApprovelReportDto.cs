@@ -11,8 +11,8 @@ namespace AptCare.Service.Dtos.ApproveReportDtos
     public class ApprovelReportDto
     {
         public int ReportApprovalId { get; set; }
-        public ReportStatus ReportId { get; set; }
-        public int FullName { get; set; }
+        public int ReportId { get; set; }
+        public string FullName { get; set; }
         public AccountRole Role { get; set; }
         public ReportStatus Status { get; set; }
         public string? Comment { get; set; }
