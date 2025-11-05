@@ -72,8 +72,7 @@ namespace AptCare.Api
                     try
                     {
                         logger.LogInformation("Đang thử áp dụng migrations... Lần thử: {RetryCount}", retryCount + 1);
-
-                        // Scope riêng cho migrate
+                        
                         using (var migrateScope = app.Services.CreateScope())
                         {
                             var dbContext = migrateScope.ServiceProvider.GetRequiredService<AptCareSystemDBContext>();
@@ -81,8 +80,7 @@ namespace AptCare.Api
                         }
 
                         logger.LogInformation("Áp dụng migrations thành công!");
-
-                        // Scope riêng cho seed
+                        
                         using (var seedScope = app.Services.CreateScope())
                         {
                             await Seed.Initialize(seedScope.ServiceProvider);

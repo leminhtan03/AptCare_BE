@@ -20,6 +20,7 @@ namespace AptCare.Repository.Entities
         public bool LockoutEnabled { get; set; }
         public bool EmailConfirmed { get; set; }
         public bool MustChangePassword { get; set; } = false;
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime? LockoutEnd { get; set; }
 
         public AccountRole Role { get; set; }

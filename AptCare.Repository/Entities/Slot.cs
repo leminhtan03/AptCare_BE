@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -20,6 +21,7 @@ namespace AptCare.Repository.Entities
         public TimeSpan FromTime { get; set; }
         [Required]
         public TimeSpan ToTime { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime LastUpdated { get; set; }
         [Required]
         public int DisplayOrder { get; set; }

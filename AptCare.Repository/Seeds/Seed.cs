@@ -175,6 +175,9 @@ namespace AptCare.Repository.Seeds
                 var technicianTechniques = new List<TechnicianTechnique>();
 
                 // Base index cho từng nhóm
+                int cccdAdmin = 90000000;
+                int phoneAdmin = 890000000;
+
                 int cccdManager = 100000000;
                 int phoneManager = 900000000;
 
@@ -190,19 +193,42 @@ namespace AptCare.Repository.Seeds
                 int cccdResident = 200000000;
                 int phoneResident = 910000000;
 
+                // ===== 0. Admin =====
+                var adminUser = new User
+                {
+                    FirstName = "Ban",
+                    LastName = "Quản Trị",
+                    Email = "BanQuanTri@aptcare.vn",
+                    PhoneNumber = $"0{phoneAdmin:D9}",
+                    CitizenshipIdentity = $"{cccdAdmin}",
+                    Status = ActiveStatus.Active
+                };
+                var adminAccount = new Account
+                {
+                    Username = "BanQuanTri@aptcare.vn",
+                    Role = AccountRole.Admin,
+                    EmailConfirmed = true,
+                    LockoutEnabled = false,
+                    MustChangePassword = false,
+                    User = adminUser
+                };
+                adminAccount.PasswordHash = passwordHasher.HashPassword(adminAccount, "string");
+                users.Add(adminUser);
+                accounts.Add(adminAccount);
+
                 // ===== 1. Manager =====
                 var managerUser = new User
                 {
-                    FirstName = "Quản",
-                    LastName = "Lý",
-                    Email = "manager@aptcare.vn",
+                    FirstName = "Ban",
+                    LastName = "Quản Lí",
+                    Email = "BanQuanLi@aptcare.vn",
                     PhoneNumber = $"0{phoneManager:D9}",
                     CitizenshipIdentity = $"{cccdManager}",
                     Status = ActiveStatus.Active
                 };
                 var managerAccount = new Account
                 {
-                    Username = "manager@aptcare.vn",
+                    Username = "BanQuanLi@aptcare.vn",
                     Role = AccountRole.Manager,
                     EmailConfirmed = true,
                     LockoutEnabled = false,
@@ -299,12 +325,16 @@ namespace AptCare.Repository.Seeds
                     }
                 }
 
-                // ===== 5. Residents =====
                 var apartments = context.Apartments.ToList();
+                int totalApartments = apartments.Count;
+                int occupiedApartmentsCount = totalApartments / 2;
+
+                var occupiedApartments = apartments.Take(occupiedApartmentsCount).ToList();
+
                 int residentIndex = 1;
-                foreach (var apartment in apartments)
+                foreach (var apartment in occupiedApartments)
                 {
-                    for (int u = 1; u <= 2; u++)
+                    for (int u = 1; u <= 4; u++)
                     {
                         string firstName = u == 1 ? "Chủ" : "Cư Dân";
                         string lastName = $"{apartment.Room}_{u}";
@@ -336,8 +366,6 @@ namespace AptCare.Repository.Seeds
                         residentIndex++;
                     }
                 }
-
-                // ===== 6. Save all =====
                 context.Accounts.AddRange(accounts);
                 context.TechnicianTechniques.AddRange(technicianTechniques);
                 await context.SaveChangesAsync();
@@ -352,11 +380,13 @@ namespace AptCare.Repository.Seeds
                 var apartments = context.Apartments.OrderBy(a => a.ApartmentId).AsNoTracking().ToList();
                 var users = context.Users.OrderBy(u => u.UserId).AsNoTracking().ToList();
 
-                // Bỏ qua manager, techlead, 2 receptionist, 10 technician đầu tiên
-                int userIdx = 14;
-                foreach (var apartment in apartments)
+                int totalApartments = apartments.Count;
+                int occupiedApartmentsCount = totalApartments / 2;
+                var occupiedApartments = apartments.Take(occupiedApartmentsCount).ToList();
+                int userIdx = 15;
+                foreach (var apartment in occupiedApartments)
                 {
-                    for (int u = 1; u <= 2; u++)
+                    for (int u = 1; u <= 4; u++)
                     {
                         var user = users[userIdx];
                         userApartments.Add(new UserApartment
@@ -364,7 +394,8 @@ namespace AptCare.Repository.Seeds
                             UserId = user.UserId,
                             ApartmentId = apartment.ApartmentId,
                             RoleInApartment = u == 1 ? RoleInApartmentType.Owner : RoleInApartmentType.Member,
-                            CreatedAt = DateTime.Now
+                            CreatedAt = DateTime.Now,
+                            Status = ActiveStatus.Active
                         });
                         userIdx++;
                     }
@@ -443,8 +474,6 @@ namespace AptCare.Repository.Seeds
             if (!context.CommonAreaObjects.Any())
             {
                 var areaObjects = new List<CommonAreaObject>();
-
-                // Lấy danh sách CommonArea từ DB để ánh xạ ID (nếu đã seed)
                 var areas = context.CommonAreas.AsNoTracking().ToList();
 
                 foreach (var area in areas)
