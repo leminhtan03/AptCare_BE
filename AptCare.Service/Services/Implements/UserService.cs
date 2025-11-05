@@ -219,9 +219,8 @@ namespace AptCare.Service.Services.Implements
                     if (!Enum.TryParse<ActiveStatus>(updateUserDto.Status, true, out var statusEnum))
                         throw new AppValidationException($"Trạng thái '{updateUserDto.Status}' không hợp lệ.");
                     user.Status = statusEnum;
-                }
 
-                //await SyncUserApartments(user, updateUserDto.Apartments);
+                }
 
                 userRepo.UpdateAsync(user);
                 await _unitOfWork.CommitAsync();
@@ -694,7 +693,7 @@ namespace AptCare.Service.Services.Implements
                     RoleInApartment = roleEnum,
                     RelationshipToOwner = aptDto.RelationshipToOwner,
                     Status = ActiveStatus.Active,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 };
 
                 await uaRepo.InsertAsync(userApartment);

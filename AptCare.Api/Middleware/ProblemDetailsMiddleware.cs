@@ -12,10 +12,7 @@ namespace AptCare.Api.Middleware
         private readonly IWebHostEnvironment _env;
         private readonly bool _exposeDetailInProd;
 
-        public ProblemDetailsMiddleware(RequestDelegate next,
-            ILogger<ProblemDetailsMiddleware> log,
-            IWebHostEnvironment env,
-            IConfiguration config)
+        public ProblemDetailsMiddleware(RequestDelegate next, ILogger<ProblemDetailsMiddleware> log, IWebHostEnvironment env, IConfiguration config)
         {
             _next = next; _log = log; _env = env;
             _exposeDetailInProd = config.GetValue("Errors:ExposeDetail", false);
@@ -38,21 +35,37 @@ namespace AptCare.Api.Middleware
             catch (Exception ex)
             {
                 _log.LogError(ex, "Unhandled exception");
-                var detail = _env.IsDevelopment() || _exposeDetailInProd
-                    ? ex.Message
-                    : "Unexpected error occurred. Please contact support with the traceId.";
-                await WriteProblem(ctx, 500, title: "Internal Server Error", detail: detail);
+                var detail = ex.Message;
+                var errorExtras = new Dictionary<string, object>
+                {
+                    ["message"] = ex.Message,
+                    ["type"] = ex.GetType().Name
+                };
+                if (_env.IsDevelopment() || _exposeDetailInProd)
+                {
+                    errorExtras["stackTrace"] = ex.StackTrace ?? "No stack trace available";
+                    if (ex.InnerException != null)
+                    {
+                        errorExtras["innerException"] = new
+                        {
+                            message = ex.InnerException.Message,
+                            type = ex.InnerException.GetType().Name,
+                            stackTrace = ex.InnerException.StackTrace
+                        };
+                    }
+                }
+                await WriteProblem(ctx, 500,
+                    title: "Internal Server Error",
+                    detail: detail,
+                    extras: errorExtras);
                 return;
             }
 
-            if (!ctx.Response.HasStarted &&
-                ctx.Response.ContentLength is null &&
-                ctx.Response.StatusCode >= 400)
+            if (!ctx.Response.HasStarted && ctx.Response.ContentLength is null && ctx.Response.StatusCode >= 400)
             {
                 await WriteProblem(ctx, ctx.Response.StatusCode, "HTTP Error", null);
             }
         }
-
         private static async Task WriteProblem(HttpContext ctx, int statusCode, string title, string? detail, object? extras = null)
         {
             ctx.Response.StatusCode = statusCode;
@@ -65,14 +78,15 @@ namespace AptCare.Api.Middleware
                 Detail = detail,
                 Instance = ctx.Request.Path
             };
-
-            // kèm traceId để tra log
             problem.Extensions["traceId"] = ctx.TraceIdentifier;
 
             if (extras is not null)
                 problem.Extensions["data"] = extras;
 
-            await ctx.Response.WriteAsync(JsonSerializer.Serialize(problem));
+            await ctx.Response.WriteAsync(JsonSerializer.Serialize(problem, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            }));
         }
     }
 }

@@ -239,7 +239,7 @@ namespace AptCare.Service.Services.Implements
             foreach (var member in existingMembers)
             {
                 member.Status = ActiveStatus.Inactive;
-                member.DisableAt = DateTime.UtcNow;
+                member.DisableAt = DateTime.Now;
                 uaRepo.UpdateAsync(member);
             }
         }
@@ -273,7 +273,7 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 ua.Status = ActiveStatus.Inactive;
-                ua.DisableAt = DateTime.UtcNow;
+                ua.DisableAt = DateTime.Now;
                 uaRepo.UpdateAsync(ua);
             }
             foreach (var userId in usersToAdd)
@@ -287,8 +287,9 @@ namespace AptCare.Service.Services.Implements
                     RoleInApartment = residentDto.RoleInApartment,
                     RelationshipToOwner = residentDto.RelationWithOwner,
                     Status = ActiveStatus.Active,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.Now
                 };
+               await uaRepo.InsertAsync(newUserApartment);
             }
             foreach (var userId in usersToUpdate)
             {

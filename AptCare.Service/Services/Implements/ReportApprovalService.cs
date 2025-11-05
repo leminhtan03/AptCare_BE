@@ -291,7 +291,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         AppointmentId = appointment.AppointmentId,
                         Status = AppointmentStatus.Completed,
-                        UpdatedAt = DateTime.UtcNow.AddHours(7),
+                        UpdatedAt = DateTime.Now,
                         UpdatedBy = userId,
                         Note = "Báo cáo sửa chữa đã được phê duyệt, chờ nghiệm thu."
                     };
@@ -309,7 +309,7 @@ namespace AptCare.Service.Services.Implements
                     foreach (var assign in appointmentAssign)
                     {
                         assign.Status = WorkOrderStatus.Completed;
-                        assign.ActualEndTime = DateTime.UtcNow.AddHours(7);
+                        assign.ActualEndTime = DateTime.Now;
                         _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(assign);
                     }
                 }

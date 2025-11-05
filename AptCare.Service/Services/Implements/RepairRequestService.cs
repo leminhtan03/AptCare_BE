@@ -592,7 +592,7 @@ namespace AptCare.Service.Services.Implements
                                         ? $"Cuộc hẹn bị hủy do yêu cầu sửa chữa bị hủy. Lý do: {dto.Note}"
                                         : $"Cuộc hẹn bị hủy do yêu cầu sửa chữa bị từ chối. Lý do: {dto.Note}",
                                     UpdatedBy = userId,
-                                    UpdatedAt = DateTime.UtcNow.AddHours(7)
+                                    UpdatedAt = DateTime.Now
                                 });
 
                                 // ✅ Xóa tất cả AppointmentAssign liên quan

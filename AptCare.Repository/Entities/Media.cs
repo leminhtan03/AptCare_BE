@@ -1,6 +1,7 @@
 ﻿using AptCare.Repository.Enum;
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AptCare.Repository.Entities
 {
@@ -17,6 +18,7 @@ namespace AptCare.Repository.Entities
         public string FileName { get; set; } = null!;
         [Required]
         public string ContentType { get; set; } = null!;
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
         public ActiveStatus Status { get; set; }
     }
