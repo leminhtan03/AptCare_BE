@@ -32,77 +32,59 @@ namespace AptCare.Service.Services.Implements
             _mailSender = mailSender;
         }
 
-        public async Task<string> CreateAccountForUserAsync(CreateAccountForUserDto dto)
+        public async Task<string> CreateAccountForUserAsync(int id)
         {
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
-
-
                 var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
-                    predicate: u => u.UserId == dto.UserId && u.Status == ActiveStatus.Active,
-                    include: source => source.Include(u => u.UserApartments)
+                    predicate: u => u.UserId == id && u.Status == ActiveStatus.Active,
+                    include: source => source
+                        .Include(u => u.UserApartments.Where(ua => ua.Status == ActiveStatus.Active))
+                        .Include(u => u.TechnicianTechniques)
+                        .Include(u => u.Account)
                 );
+
                 if (user == null)
                 {
-                    throw new AppValidationException($"Người dùng với ID '{dto.UserId}' không tồn tại.");
+                    throw new AppValidationException(
+                        $"Người dùng với ID '{id}' không tồn tại hoặc đã bị vô hiệu hóa.");
                 }
-                if (!Enum.TryParse<AccountRole>(dto.Role, true, out var roleEnum))
+                if (user.Account != null)
                 {
-                    throw new Exception($"Vai trò '{dto.Role}'của userExist không hợp lệ.");
+                    throw new AppValidationException(
+                        $"Người dùng đã có tài khoản trong hệ thống. " +
+                        $"Username: {user.Account.Username}, Role: {user.Account.Role}");
                 }
-                if (roleEnum != AccountRole.Resident && user.UserApartments != null)
-                {
-                    throw new AppValidationException($"Chỉ có Resident mới được phép tạo tài khoản với User đã có căn hộ.");
-                }
-
-                var Password = GenerateRandomPassword();
+                AccountRole determinedRole = DetermineUserRoleAutomatically(user);
+                var password = GenerateRandomPassword();
 
                 user.Account = new Account
                 {
                     AccountId = user.UserId,
                     Username = user.Email,
                     PasswordHash = string.Empty,
-                    Role = roleEnum,
+                    Role = determinedRole,
                     LockoutEnabled = false,
                     EmailConfirmed = false,
                     MustChangePassword = true
                 };
-                user.Account.PasswordHash = _pwdHasher.HashPassword(user.Account, Password);
+                user.Account.PasswordHash = _pwdHasher.HashPassword(user.Account, password);
 
                 await _unitOfWork.GetRepository<Account>().InsertAsync(user.Account);
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
+                await SendAccountCredentialsEmail(user, password, determinedRole);
 
-                var replacements = new Dictionary<string, string>
-                {
-                    ["SystemName"] = "AptCare",
-                    ["FullName"] = user.FirstName + " " + user.LastName,
-                    ["Username"] = user.Email,
-                    ["TemporaryPassword"] = Password,
-                    ["LoginUrl"] = "https://app.aptcare.vn/login",
-                    ["ExpireAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
-                    ["SupportEmail"] = "support@aptcare.vn",
-                    ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                    ["Year"] = DateTime.Now.Year.ToString()
-                };
-
-                await _mailSender.SendEmailWithTemplateAsync(
-                    toEmail: user.Email,
-                    subject: "[AptCare] Thông tin đăng nhập của bạn",
-                    templateName: "AccountCredentials",
-                    replacements: replacements
-                );
-
-                return "Đã khởi tạo Account thành công!!";
+                return $"Đã khởi tạo tài khoản thành công với vai trò {determinedRole}!";
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Error creating account for user ID {UserId}", id);
                 throw new Exception("Lỗi khi tạo tài khoản: " + ex.Message);
             }
         }
-
         public async Task<IPaginate<UserDto>> GetSystemUserPageAsync(string searchQuery, string role, string status, int page, int pageSize)
         {
             AccountRole? roleEnum = null;
@@ -216,6 +198,48 @@ namespace AptCare.Service.Services.Implements
             }
 
             return new string(passwordArray);
+        }
+        private AccountRole DetermineUserRoleAutomatically(User user)
+        {
+            var hasActiveApartments = user.UserApartments?.Any(ua => ua.Status == ActiveStatus.Active) ?? false;
+            if (hasActiveApartments)
+            {
+                _logger.LogInformation(
+                    "User {UserId} has {Count} active apartments → Role: Resident",
+                    user.UserId,
+                    user.UserApartments?.Count(ua => ua.Status == ActiveStatus.Active));
+                return AccountRole.Resident;
+            }
+            throw new AppValidationException(
+                $"Không thể tạo tài khoản cho user ID {user.UserId}. ");
+        }
+        private async Task SendAccountCredentialsEmail(User user, string password, AccountRole role)
+        {
+            var replacements = new Dictionary<string, string>
+            {
+                ["SystemName"] = "AptCare",
+                ["FullName"] = $"{user.FirstName} {user.LastName}",
+                ["Username"] = user.Email,
+                ["TemporaryPassword"] = password,
+                ["LoginUrl"] = "https://app.aptcare.vn/login",
+                ["ExpireAt"] = DateTime.Now.AddDays(7).ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
+                ["SupportEmail"] = "support@aptcare.vn",
+                ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
+                ["Year"] = DateTime.Now.Year.ToString()
+            };
+
+            await _mailSender.SendEmailWithTemplateAsync(
+                toEmail: user.Email,
+                subject: "[AptCare] Thông tin đăng nhập của bạn",
+                templateName: "AccountCredentials",
+                replacements: replacements
+            );
+
+            _logger.LogInformation(
+                "Account credentials email sent to {Email} for user ID {UserId} with role {Role}",
+                user.Email,
+                user.UserId,
+                role);
         }
 
     }

@@ -69,47 +69,31 @@ namespace AptCare.Api.Controllers
             return Ok(result);
         }
         /// <summary>
-        /// Tạo tài khoản mới cho người dùng trong hệ thống.
+        /// Tạo tài khoản cho user đã tồn tại (chủ yếu dành cho Resident chưa có account).
         /// </summary>
         /// <remarks>
-        /// <para>Endpoint này tạo tài khoản đăng nhập cho người dùng đã tồn tại trong hệ thống.</para>
-        /// <para>Người dùng cần được tạo trước khi có thể tạo tài khoản đăng nhập.</para>
-        /// <para><strong>Lưu ý:</strong> Endpoint này yêu cầu quyền Manager.</para>
+        /// <para><strong>⚠️ LƯU Ý QUAN TRỌNG:</strong></para>
+        /// <para>Endpoint này CHỦ YẾU dành cho việc tạo account cho <strong>Resident</strong> 
+        /// đã có UserData nhưng chưa có account (CreateAccount = false khi tạo UserData).</para>
         /// 
-        /// <para><strong>Ví dụ request body:</strong></para>
-        /// <code>
-        /// {
-        ///   "userId": 123,
-        ///   "role": "Receptionist"
-        /// }
-        /// </code>
-        /// </remarks>
-        /// <param name="dto">Đối tượng chứa thông tin tạo tài khoản.
-        /// <para><strong>Các thuộc tính bao gồm:</strong></para>
+        /// <para><strong>Đối với Staff roles (Technician/Manager/etc):</strong></para>
         /// <list type="bullet">
-        /// <item><description><strong>UserId:</strong> ID của người dùng cần tạo tài khoản - bắt buộc</description></item>
-        /// <item><description><strong>Role:</strong> Vai trò của tài khoản (Enum: "Manager", "Receptionist", "Technician", "TechnicianLead", "Resident") - bắt buộc</description></item>
+        /// <item><description>Account đã được tạo TỰ ĐỘNG khi tạo UserData</description></item>
+        /// <item><description>KHÔNG cần gọi endpoint này</description></item>
+        /// <item><description>Nếu gọi sẽ báo lỗi "Người dùng đã có tài khoản"</description></item>
         /// </list>
-        /// </param>
-        /// <returns>
-        /// <para><strong>Các trường hợp trả về:</strong></para>
-        /// <list type="table">
-        /// <item><term>200 OK</term><description>Tạo tài khoản thành công, trả về thông báo xác nhận</description></item>
-        /// <item><term>400 Bad Request</term><description>Dữ liệu đầu vào không hợp lệ (UserId không tồn tại, Role không hợp lệ, hoặc tài khoản đã tồn tại)</description></item>
-        /// <item><term>401 Unauthorized</term><description>Người dùng chưa đăng nhập</description></item>
-        /// <item><term>403 Forbidden</term><description>Người dùng không có quyền thực hiện chức năng này</description></item>
-        /// <item><term>500 Internal Server Error</term><description>Lỗi hệ thống trong quá trình xử lý</description></item>
+        /// 
+        /// <para><strong>Quy tắc xác định Role tự động:</strong></para>
+        /// <list type="number">
+        /// <item><description><strong>Resident:</strong> User có apartment (UserApartments)</description></item>
         /// </list>
-        /// </returns>
-        /// <exception cref="ArgumentException">Ném khi UserId hoặc Role không hợp lệ</exception>
-        /// <exception cref="InvalidOperationException">Ném khi người dùng đã có tài khoản hoặc có lỗi trong quá trình tạo</exception>
-        [HttpPost("create_account")]
+        /// </remarks>
+        [HttpPost("create_account/{userid}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult> CreateAccountForUser([FromBody] CreateAccountForUserDto dto)
+        public async Task<ActionResult> CreateAccountForUser(int userid)
         {
-            var result = await _accountService.CreateAccountForUserAsync(dto);
+            var result = await _accountService.CreateAccountForUserAsync(userid);
             return Ok(result);
         }
         /// <summary>
