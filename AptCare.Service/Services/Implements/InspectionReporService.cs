@@ -83,15 +83,6 @@ namespace AptCare.Service.Services.Implements
                 {
                     throw new AppValidationException("Có lỗi xảy ra khi cập nhật trạng thái cuộc hẹn.", StatusCodes.Status500InternalServerError);
                 }
-                if (!await _repairRequestService.ToggleRepairRequestStatusAsync(new ToggleRRStatus
-                {
-                    RepairRequestId = repairRequest.RepairRequestId,
-                    Note = "Hoàn thành kiểm tra - chờ duyệt báo cáo.",
-                    NewStatus = RequestStatus.Diagnosed
-                }))
-                {
-                    throw new AppValidationException("Có lỗi xảy ra khi cập nhật trạng thái yêu cầu sửa chữa.", StatusCodes.Status500InternalServerError);
-                }
                 if (!await _reportApprovalService.CreateApproveReportAsync(new ApproveReportCreateDto
                 {
                     ReportId = newInsReport.InspectionReportId,

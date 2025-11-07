@@ -303,7 +303,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     RepairRequestId = appointment.RepairRequestId,
                     NewStatus = RequestStatus.InProgress,
-                    Note = "Kỹ thuật đã check-in cho lịch hẹn."
+                    Note = "Kỹ thuật đã bắt đầu thực hiện yêu cầu sữa chữa."
                 });
                 var latestTracking = appointment.AppointmentTrackings
                                                 .OrderByDescending(at => at.UpdatedAt)
@@ -373,19 +373,12 @@ namespace AptCare.Service.Services.Implements
                 var latestTracking = appointment.AppointmentTrackings
                                                 .OrderByDescending(at => at.UpdatedAt)
                                                 .FirstOrDefault();
-                var validStatuses = new[]
-                {
-                    AppointmentStatus.InVisit,
-                    AppointmentStatus.Visited,
-                    AppointmentStatus.AwaitingIRApproval,
-                    AppointmentStatus.PreCheck
-                };
 
-                if (latestTracking == null || !validStatuses.Contains(latestTracking.Status))
+
+                if (IsValidStatusTransition(latestTracking.Status, AppointmentStatus.InRepair))
                 {
                     throw new AppValidationException(
-                        $"Không thể bắt đầu sửa chữa từ trạng thái '{latestTracking?.Status}'. " +
-                        "Yêu cầu phải ở trạng thái InVisit, Visited hoặc AwaitingIRApproval.");
+                        $"Không thể bắt đầu sửa chữa từ trạng thái '{latestTracking?.Status}'. Yêu cầu phải ở trạng thái InVisit, Visited hoặc AwaitingIRApproval.");
                 }
                 await _unitOfWork.BeginTransactionAsync();
 
@@ -400,7 +393,6 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
                 await _unitOfWork.CommitAsync();
 
-                // Cập nhật AppointmentAssign status
                 var appointmentAssigns = appointment.AppointmentAssigns;
                 foreach (var assign in appointmentAssigns)
                 {
@@ -483,40 +475,26 @@ namespace AptCare.Service.Services.Implements
                 {
                     AppointmentStatus.Confirmed,
                     AppointmentStatus.Cancelled,
-                    AppointmentStatus.Rescheduled
                 },
                 AppointmentStatus.Confirmed => new[]
                 {
                     AppointmentStatus.InVisit,
-                    AppointmentStatus.Cancelled,
-                    AppointmentStatus.Rescheduled
+                    AppointmentStatus.Cancelled
                 },
                 AppointmentStatus.InVisit => new[]
                 {
                     AppointmentStatus.AwaitingIRApproval,
-                    AppointmentStatus.Cancelled,
-                    AppointmentStatus.PreCheck
+                    AppointmentStatus.Cancelled
                 },
                 AppointmentStatus.AwaitingIRApproval => new[]
                 {
-                    AppointmentStatus.Visited,
-                    AppointmentStatus.Rescheduled,
-                    AppointmentStatus.InRepair
-                },
-                AppointmentStatus.PreCheck => new[]
-                {
-                    AppointmentStatus.Cancelled,
-                    AppointmentStatus.AwaitingIRApproval
+
+                    AppointmentStatus.InRepair,
+                    AppointmentStatus.Completed
                 },
                 AppointmentStatus.InRepair => new[]
                 {
-                    AppointmentStatus.Completed,
-                    AppointmentStatus.Cancelled
-                },
-                AppointmentStatus.Rescheduled => new[]
-                {
-                    AppointmentStatus.Assigned,
-                    AppointmentStatus.Cancelled
+                    AppointmentStatus.Completed
                 },
                 AppointmentStatus.Completed => Array.Empty<AppointmentStatus>(),
                 AppointmentStatus.Cancelled => Array.Empty<AppointmentStatus>(),
