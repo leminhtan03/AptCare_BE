@@ -181,20 +181,6 @@ namespace AptCare.Service.Services.Implements
                 reportApprovalRepo.UpdateAsync(currentApproval);
                 inspectionReport.Status = dto.Status;
 
-                if (dto.Status == ReportStatus.Approved && inspectionReport.Appointment?.RepairRequest != null)
-                {
-                    var repairRequest = inspectionReport.Appointment.RepairRequest;
-
-                    var requestTracking = new RequestTracking
-                    {
-                        RepairRequestId = repairRequest.RepairRequestId,
-                        Status = RequestStatus.CompletedPendingVerify,
-                        UpdatedAt = DateTime.Now,
-                        UpdatedBy = userId,
-                        Note = "Báo cáo kiểm tra đã được phê duyệt, đã xác định phạm vi sửa chữa."
-                    };
-                    await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(requestTracking);
-                }
             }
 
             inspectionRepo.UpdateAsync(inspectionReport);
