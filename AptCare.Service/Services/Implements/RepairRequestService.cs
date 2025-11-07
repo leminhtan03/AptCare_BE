@@ -1,21 +1,20 @@
-﻿using AptCare.Repository.Entities;
+﻿using AptCare.Repository;
+using AptCare.Repository.Entities;
+using AptCare.Repository.Enum;
+using AptCare.Repository.Enum.AccountUserEnum;
+using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
-using AptCare.Repository;
+using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.NotificationDtos;
+using AptCare.Service.Dtos.RepairRequestDtos;
+using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
-using Microsoft.Extensions.Logging;
-using AptCare.Service.Dtos.RepairRequestDtos;
-using AptCare.Repository.Enum.AccountUserEnum;
-using Microsoft.EntityFrameworkCore;
-using AptCare.Repository.Enum;
-using AptCare.Service.Exceptions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq.Dynamic.Core;
-using AptCare.Repository.Paginate;
-using AptCare.Service.Dtos;
 using System.Linq.Expressions;
-using AptCare.Service.Dtos.NotificationDtos;
-using Org.BouncyCastle.Crypto;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -514,7 +513,7 @@ namespace AptCare.Service.Services.Implements
             if (_userContext.IsResident)
             {
                 var isValid = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
-                predicate: p => p.RepairRequestId == id && 
+                predicate: p => p.RepairRequestId == id &&
                                 p.Apartment.UserApartments.Any(x => x.UserId == _userContext.CurrentUserId),
                 include: i => i.Include(x => x.Apartment)
                                     .ThenInclude(x => x.UserApartments)
@@ -573,26 +572,10 @@ namespace AptCare.Service.Services.Implements
             return result;
         }
 
-        private Func<IQueryable<RepairRequest>, IOrderedQueryable<RepairRequest>> BuildOrderBy(string sortBy)
-        {
-            if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.RepairRequestId);
-
-            return sortBy.ToLower() switch
-            {
-                "apartment" => q => q.OrderBy(p => p.ApartmentId),
-                "apartment_desc" => q => q.OrderByDescending(p => p.ApartmentId),
-                "issue" => q => q.OrderBy(p => p.IssueId),
-                "issue_desc" => q => q.OrderByDescending(p => p.IssueId),
-                _ => q => q.OrderByDescending(p => p.RepairRequestId) // Default sort
-            };
-        }
-
         public async Task<bool> ToggleRepairRequestStatusAsync(ToggleRRStatus dto)
         {
             try
             {
-                await _unitOfWork.BeginTransactionAsync();
-
                 var request = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
                     predicate: x => x.RepairRequestId == dto.RepairRequestId,
                     include: i => i.Include(x => x.RequestTrackings)
@@ -624,57 +607,13 @@ namespace AptCare.Service.Services.Implements
                     UpdatedBy = userId
                 });
 
-                if (dto.NewStatus == RequestStatus.Cancelled || dto.NewStatus == RequestStatus.Rejected)
+                if (dto.NewStatus == RequestStatus.Cancelled)
                 {
                     var appointments = request.Appointments?.ToList();
-
-                    if (appointments != null && appointments.Any())
-                    {
-                        var appointmentTrackingRepo = _unitOfWork.GetRepository<AppointmentTracking>();
-                        var appointmentAssignRepo = _unitOfWork.GetRepository<AppointmentAssign>();
-
-                        foreach (var appointment in appointments)
-                        {
-                            var currentAppointmentStatus = appointment.AppointmentTrackings?
-                                .OrderByDescending(at => at.UpdatedAt)
-                                .FirstOrDefault()?.Status;
-                            if (currentAppointmentStatus != AppointmentStatus.Completed &&
-                                currentAppointmentStatus != AppointmentStatus.Cancelled)
-                            {
-                                await appointmentTrackingRepo.InsertAsync(new AppointmentTracking
-                                {
-                                    AppointmentId = appointment.AppointmentId,
-                                    Status = AppointmentStatus.Cancelled,
-                                    Note = dto.NewStatus == RequestStatus.Cancelled
-                                        ? $"Cuộc hẹn bị hủy do yêu cầu sửa chữa bị hủy. Lý do: {dto.Note}"
-                                        : $"Cuộc hẹn bị hủy do yêu cầu sửa chữa bị từ chối. Lý do: {dto.Note}",
-                                    UpdatedBy = userId,
-                                    UpdatedAt = DateTime.Now
-                                });
-
-                                // ✅ Xóa tất cả AppointmentAssign liên quan
-                                if (appointment.AppointmentAssigns != null && appointment.AppointmentAssigns.Any())
-                                {
-                                    appointmentAssignRepo.DeleteRangeAsync(appointment.AppointmentAssigns);
-
-                                    _logger.LogInformation(
-                                        "Deleted {Count} appointment assigns for appointment {AppointmentId} due to repair request {RepairRequestId} being {Status}",
-                                        appointment.AppointmentAssigns.Count,
-                                        appointment.AppointmentId,
-                                        dto.RepairRequestId,
-                                        dto.NewStatus
-                                    );
-                                }
-                            }
-                        }
-                    }
+                    await ToggleCancleRequestAsync(appointments, dto, userId);
                 }
-
-
                 await _unitOfWork.CommitAsync();
-
                 await SendNotificationForUserApartment(dto.RepairRequestId, dto.NewStatus);
-                await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation(
                     "Successfully toggled repair request {RepairRequestId} status from {OldStatus} to {NewStatus}",
@@ -693,6 +632,71 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
+        public async Task<string> ApprovalRepairRequestAsync(ToggleRRStatus dto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                await _unitOfWork.BeginTransactionAsync();
+                if (dto.NewStatus != RequestStatus.Approved && dto.NewStatus != RequestStatus.Cancelled)
+                    throw new AppValidationException(
+                        "Trạng thái mới phải là Approved hoặc Cancelled.",
+                        StatusCodes.Status400BadRequest
+                    );
+                await ToggleRepairRequestStatusAsync(dto);
+                return "Cập nhật thành công";
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Error toggling repair request status for RepairRequestId: {RepairRequestId}", dto.RepairRequestId);
+                throw new AppValidationException($"Lỗi hệ thống: {ex.Message}", StatusCodes.Status500InternalServerError);
+            }
+        }
+
+
+        private async Task ToggleCancleRequestAsync(List<Appointment>? appointments, ToggleRRStatus dto, int userId)
+        {
+            if (appointments != null && appointments.Any())
+            {
+                var appointmentTrackingRepo = _unitOfWork.GetRepository<AppointmentTracking>();
+                var appointmentAssignRepo = _unitOfWork.GetRepository<AppointmentAssign>();
+
+                foreach (var appointment in appointments)
+                {
+                    var currentAppointmentStatus = appointment.AppointmentTrackings?
+                        .OrderByDescending(at => at.UpdatedAt)
+                        .FirstOrDefault()?.Status;
+                    if (currentAppointmentStatus != AppointmentStatus.Completed &&
+                        currentAppointmentStatus != AppointmentStatus.Cancelled)
+                    {
+                        await appointmentTrackingRepo.InsertAsync(new AppointmentTracking
+                        {
+                            AppointmentId = appointment.AppointmentId,
+                            Status = AppointmentStatus.Cancelled,
+                            Note = dto.NewStatus == RequestStatus.Cancelled
+                                ? $"Cuộc hẹn bị hủy do yêu cầu sửa chữa bị hủy. Lý do: {dto.Note}"
+                                : $"Cuộc hẹn bị hủy do yêu cầu sửa chữa bị từ chối. Lý do: {dto.Note}",
+                            UpdatedBy = userId,
+                            UpdatedAt = DateTime.Now
+                        });
+                        if (appointment.AppointmentAssigns != null && appointment.AppointmentAssigns.Any())
+                        {
+                            appointmentAssignRepo.DeleteRangeAsync(appointment.AppointmentAssigns);
+
+                            _logger.LogInformation(
+                                "Deleted {Count} appointment assigns for appointment {AppointmentId} due to repair request {RepairRequestId} being {Status}",
+                                appointment.AppointmentAssigns.Count,
+                                appointment.AppointmentId,
+                                dto.RepairRequestId,
+                                dto.NewStatus
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
         private bool ValidateStatusTransition(RequestStatus? currentStatus, RequestStatus newStatus)
         {
             var validNextStatuses = currentStatus switch
@@ -700,36 +704,30 @@ namespace AptCare.Service.Services.Implements
                 RequestStatus.Pending => new[]
                 {
                     RequestStatus.Approved,
-                    RequestStatus.Rejected
+                    RequestStatus.Scheduling
                 },
                 RequestStatus.Approved => new[]
                 {
                     RequestStatus.InProgress,
-                    RequestStatus.Cancelled
+                    RequestStatus.Cancelled,
+                    RequestStatus.Scheduling
                 },
                 RequestStatus.InProgress => new[]
                 {
-                    RequestStatus.Diagnosed,
-                    RequestStatus.Cancelled
+                    RequestStatus.Scheduling,
+                    RequestStatus.Cancelled,
+                    RequestStatus.AcceptancePendingVerify
                 },
-                RequestStatus.Diagnosed => new[]
+                RequestStatus.Scheduling => new[]
                 {
-                    RequestStatus.CompletedPendingVerify,
                     RequestStatus.InProgress,
-                    RequestStatus.Cancelled
-                },
-                RequestStatus.CompletedPendingVerify => new[]
-                {
-                    RequestStatus.AcceptancePendingVerify,
-                    RequestStatus.InProgress
+                    RequestStatus.Approved
                 },
                 RequestStatus.AcceptancePendingVerify => new[]
                 {
-                    RequestStatus.Completed,
-                    RequestStatus.InProgress
+                    RequestStatus.Completed
                 },
                 RequestStatus.Completed => Array.Empty<RequestStatus>(),
-                RequestStatus.Rejected => Array.Empty<RequestStatus>(),
                 RequestStatus.Cancelled => Array.Empty<RequestStatus>(),
                 _ => Array.Empty<RequestStatus>()
             };
@@ -761,13 +759,8 @@ namespace AptCare.Service.Services.Implements
                 case RequestStatus.InProgress:
                     description = "Kỹ thuật viên đang tiến hành xử lý yêu cầu sửa chữa của bạn.";
                     break;
-
-                case RequestStatus.Diagnosed:
-                    description = "Yêu cầu sửa chữa của bạn đã được chẩn đoán và chờ xác nhận.";
-                    break;
-
-                case RequestStatus.CompletedPendingVerify:
-                    description = "Yêu cầu sửa chữa đã hoàn tất và đang chờ kiểm duyệt.";
+                case RequestStatus.Scheduling:
+                    description = "Yêu cầu sửa chữa của bạn đang trong quá trình thay đổi lịch trình.";
                     break;
 
                 case RequestStatus.AcceptancePendingVerify:
@@ -780,10 +773,6 @@ namespace AptCare.Service.Services.Implements
 
                 case RequestStatus.Cancelled:
                     description = "Yêu cầu sửa chữa của bạn đã bị hủy.";
-                    break;
-
-                case RequestStatus.Rejected:
-                    description = "Yêu cầu sửa chữa của bạn đã bị từ chối.";
                     break;
 
                 default:
@@ -830,5 +819,19 @@ namespace AptCare.Service.Services.Implements
                 _logger.LogError(e, "Lỗi khi gửi thông báo tự động.");
             }
         }
+        private Func<IQueryable<RepairRequest>, IOrderedQueryable<RepairRequest>> BuildOrderBy(string sortBy)
+        {
+            if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.RepairRequestId);
+
+            return sortBy.ToLower() switch
+            {
+                "apartment" => q => q.OrderBy(p => p.ApartmentId),
+                "apartment_desc" => q => q.OrderByDescending(p => p.ApartmentId),
+                "issue" => q => q.OrderBy(p => p.IssueId),
+                "issue_desc" => q => q.OrderByDescending(p => p.IssueId),
+                _ => q => q.OrderByDescending(p => p.RepairRequestId)
+            };
+        }
+
     }
 }

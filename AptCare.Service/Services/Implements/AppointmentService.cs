@@ -296,7 +296,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     RepairRequestId = appointment.RepairRequestId,
                     NewStatus = RequestStatus.InProgress,
-                    Note = "Kỹ thuật đã check-in cho lịch hẹn."
+                    Note = "Kỹ thuật đã bắt đầu thực hiện yêu cầu sữa chữa."
                 });
                 var latestTracking = appointment.AppointmentTrackings
                                                 .OrderByDescending(at => at.UpdatedAt)
