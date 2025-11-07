@@ -111,7 +111,7 @@ namespace AptCare.Api.Controllers
         /// 
         /// <para><strong>Ví dụ query parameters:</strong></para>
         /// </remarks>
-        /// <param name="getResidentDataFilterDto">Đối tượng chứa các tham số lọc và phân trang.
+        /// <param name="UserPaginateDto">Đối tượng chứa các tham số lọc và phân trang.
         /// <para><strong>Các thuộc tính bao gồm:</strong></para>
         /// <list type="bullet">
         /// <item><description><strong>SearchQuery:</strong> Từ khóa tìm kiếm (tìm trong tên, email, số điện thoại) - tùy chọn</description></item>
@@ -138,15 +138,15 @@ namespace AptCare.Api.Controllers
         /// </returns>
         /// <exception cref="ArgumentException">Ném khi các tham số phân trang không hợp lệ</exception>
         /// <exception cref="InvalidOperationException">Ném khi có lỗi trong quá trình truy vấn dữ liệu</exception>
-        [HttpGet("residents_data")]
+        [HttpGet("profile_data")]
         [ProducesResponseType(typeof(IPaginate<UserGetAllDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult> GetResidentDataPage([FromQuery] GetResidentDataFilterDto getResidentDataFilterDto)
+        public async Task<ActionResult> GetProfileDataPage([FromQuery] UserPaginateDto dto)
         {
-            var result = await _userService.GetReSidentDataPageAsync(getResidentDataFilterDto.SearchQuery, getResidentDataFilterDto.Status, getResidentDataFilterDto.Page, getResidentDataFilterDto.PageSize);
+            var result = await _userService.GetProfileDataPageAsync(dto);
             return Ok(result);
         }
 

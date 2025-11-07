@@ -6,6 +6,7 @@ using AptCare.Repository.Enum.Apartment;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.Repositories;
 using AptCare.Repository.UnitOfWork;
+using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.UserDtos;
@@ -135,13 +136,16 @@ namespace AptCare.Service.Services.Implements
             return _mapper.Map<UserDto>(user);
         }
 
-        public async Task<IPaginate<UserGetAllDto>> GetReSidentDataPageAsync(string searchQuery, string status, int page, int pageSize)
+        public async Task<IPaginate<UserGetAllDto>> GetProfileDataPageAsync(UserPaginateDto dto)
         {
 
+            int page = dto.page > 0 ? dto.page : 1;
+            int size = dto.size > 0 ? dto.size : 10;
+
             ActiveStatus? statusEnum = null;
-            if (!string.IsNullOrEmpty(status))
+            if (!string.IsNullOrEmpty(dto.filter))
             {
-                if (Enum.TryParse<ActiveStatus>(status, true, out ActiveStatus parsedStatus))
+                if (Enum.TryParse<ActiveStatus>(dto.filter, true, out ActiveStatus parsedStatus))
                 {
                     statusEnum = parsedStatus;
                 }
@@ -153,20 +157,21 @@ namespace AptCare.Service.Services.Implements
             var users = await _unitOfWork.GetRepository<User>().GetPagingListAsync(
                 selector: u => _mapper.Map<UserGetAllDto>(u),
                 predicate: u =>
-                    (string.IsNullOrEmpty(searchQuery) ||
-                        ((u.FirstName + " " + u.LastName).ToLower().Contains(searchQuery) ||
-                        u.Email.ToLower().Contains(searchQuery) ||
-                        u.PhoneNumber.ToLower().Contains(searchQuery) ||
-                        u.CitizenshipIdentity.ToLower().Contains(searchQuery))) &&
-                        (u.Account == null || u.Account.Role == AccountRole.Resident) &&
-                    (string.IsNullOrEmpty(status) || u.Status == statusEnum.Value),
+                    (string.IsNullOrEmpty(dto.search) ||
+                        ((u.FirstName + " " + u.LastName).ToLower().Contains(dto.search) ||
+                        u.Email.ToLower().Contains(dto.search) ||
+                        u.PhoneNumber.ToLower().Contains(dto.search) ||
+                        u.CitizenshipIdentity.ToLower().Contains(dto.search))) &&
+                    (string.IsNullOrEmpty(dto.filter) || u.Status == statusEnum.Value) &&
+                    (dto.Role == null || 
+                        (u.Account != null ? u.Account.Role : u.UserApartments.Any() ? AccountRole.Resident : null) == dto.Role ),
                 include: source => source
                     .Include(u => u.Account)
                     .Include(u => u.UserApartments)
                         .ThenInclude(ua => ua.Apartment),
                 orderBy: users => users.OrderBy(u => u.UserId),
                 page: page,
-                size: pageSize
+                size: size
             );
             var userIds = users.Items.Select(u => u.UserId).ToList();
             var profileImages = await _unitOfWork.GetRepository<Media>()

@@ -13,6 +13,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Asn1.Ocsp;
 using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
@@ -125,6 +126,12 @@ namespace AptCare.Service.Services.Implements
             {
                 throw new AppValidationException("Tầng không tồn tại", StatusCodes.Status404NotFound);
             }
+
+            var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                    selector: s => _mapper.Map<MediaDto>(s),
+                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == appointment.RepairRequest.RepairRequestId
+                    );
+            appointment.RepairRequest.Medias = medias.ToList();
 
             return appointment;
         }

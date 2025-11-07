@@ -142,11 +142,13 @@ namespace AptCare.Service.Services.Implements
             return result;
         }
 
-        public async Task<IEnumerable<ApartmentDto>> GetApartmentsByFloorAsync(int floorId)
+        public async Task<IEnumerable<ApartmentBasicDto>> GetApartmentsByFloorAsync(int floorId)
         {
             var result = await _unitOfWork.GetRepository<Apartment>().GetListAsync(
-                selector: s => _mapper.Map<ApartmentDto>(s),
+                selector: s => _mapper.Map<ApartmentBasicDto>(s),
                 predicate: p => p.FloorId == floorId,
+                include: i => i.Include(x => x.Floor)
+                               .Include(x => x.UserApartments),
                 orderBy: o => o.OrderBy(x => x.Room)
                 );
             return result;

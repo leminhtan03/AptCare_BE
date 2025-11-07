@@ -1,4 +1,6 @@
-﻿using System;
+﻿using AptCare.Repository.Enum;
+using AptCare.Repository.Enum.AccountUserEnum;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,5 +23,9 @@ namespace AptCare.Service.Dtos
 
         public DateOnly? Fromdate { get; set; }
         public DateOnly? Todate { get; set; }
+    }
+    public class UserPaginateDto : PaginateDto
+    {
+        public AccountRole? Role { get; set; }
     }
 }

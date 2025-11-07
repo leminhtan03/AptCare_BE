@@ -28,13 +28,15 @@ namespace AptCare.Service.Services.Implements
             _userContext = userContext;
         }
 
-        public async Task<string> AssignAppointmentAsync(int appointmentId, int userId)
+        public async Task<string> AssignAppointmentAsync(int appointmentId, IEnumerable<int> userIds)
         {
             try
             {
-                var appointmentTracking = _unitOfWork.GetRepository<AppointmentTracking>();
+                await _unitOfWork.BeginTransactionAsync();
+
                 var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
-                    predicate: x => x.AppointmentId == appointmentId
+                    predicate: x => x.AppointmentId == appointmentId,
+                    include: i => i.Include(x => x.AppointmentTrackings) 
                     );
                 if (appointment == null)
                 {
@@ -45,53 +47,76 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Lịch hẹn chưa có thời gian kết thúc.");
                 }
 
-                var isExistingTechnician = await _unitOfWork.GetRepository<User>().AnyAsync(
+                var lastStatus = appointment.AppointmentTrackings?.OrderByDescending(x => x.UpdatedAt).FirstOrDefault()?.Status;
+                if (lastStatus != AppointmentStatus.Pending && lastStatus != AppointmentStatus.Assigned)
+                {
+                    throw new AppValidationException($"Lịch hẹn đang ở trạng thái {lastStatus}. Không thể phân công.");
+                }
+
+                foreach (var userId in userIds)
+                {
+                    var isExistingTechnician = await _unitOfWork.GetRepository<User>().AnyAsync(
                     predicate: x => x.UserId == userId && x.Account.Role == AccountRole.Technician,
                     include: i => i.Include(x => x.Account)
                     );
-                if (!isExistingTechnician)
-                {
-                    throw new AppValidationException("Kĩ thuật viên không tồn tại.", StatusCodes.Status404NotFound);
-                }
-
-                var isExistingAppoAssign = await _unitOfWork.GetRepository<AppointmentAssign>().AnyAsync(
-                    predicate: x => x.TechnicianId == userId && x.AppointmentId == appointmentId
-                    );
-                if (isExistingAppoAssign)
-                {
-                    throw new AppValidationException("Kĩ thuật viên đã được phân công cho lịch hẹn này.");
-                }
-                var tracking = await appointmentTracking.GetListAsync(predicate: s => s.AppointmentId == appointmentId);
-                if (tracking.OrderByDescending(x => x.UpdatedAt).First().Status == AppointmentStatus.Pending)
-                {
-                    await appointmentTracking.InsertAsync(new AppointmentTracking
+                    if (!isExistingTechnician)
                     {
+                        throw new AppValidationException($"Kĩ thuật viên có ID {userId} không tồn tại.", StatusCodes.Status404NotFound);
+                    }
+
+                    var isExistingAppoAssign = await _unitOfWork.GetRepository<AppointmentAssign>().AnyAsync(
+                        predicate: x => x.TechnicianId == userId && x.AppointmentId == appointmentId
+                        );
+                    if (isExistingAppoAssign)
+                    {
+                        throw new AppValidationException($"Kĩ thuật viên có ID {userId} đã được phân công cho lịch hẹn này.");
+                    }
+                        
+                    var isConflictAppoAssign = await _unitOfWork.GetRepository<AppointmentAssign>().AnyAsync(
+                        predicate: x => x.TechnicianId == userId && DateOnly.FromDateTime(x.EstimatedStartTime) ==
+                                                                         DateOnly.FromDateTime(appointment.StartTime) &&
+                                                                    x.Status != WorkOrderStatus.Cancel &&
+                                                                    ((x.EstimatedStartTime >= appointment.StartTime &&
+                                                                        x.EstimatedStartTime <= appointment.EndTime) ||
+                                                                     (x.EstimatedEndTime >= appointment.StartTime &&
+                                                                        x.EstimatedEndTime <= appointment.EndTime))
+                        );
+                    if (isConflictAppoAssign)
+                    {
+                        throw new AppValidationException($"Kĩ thuật viên có ID {userId} bị mâu thuẫn lịch.");
+                    }
+
+                    if (lastStatus == AppointmentStatus.Pending)
+                    {
+                        await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(new AppointmentTracking
+                        {
+                            AppointmentId = appointmentId,
+                            Status = AppointmentStatus.Assigned,
+                            UpdatedAt = DateTime.Now,
+                            UpdatedBy = _userContext.CurrentUserId,
+                            Note = "Kỹ thuật viên trưởng đang phân công Kỹ thuật viên."
+                        });
+                    }
+
+                    await _unitOfWork.GetRepository<AppointmentAssign>().InsertAsync(new AppointmentAssign
+                    {
+                        TechnicianId = userId,
                         AppointmentId = appointmentId,
-                        Status = AppointmentStatus.Assigned,
-                        UpdatedAt = DateTime.Now,
-                        UpdatedBy = _userContext.CurrentUserId,
-                        Note = "Kỹ thuật viên trưởng đang phân công Kỹ thuật viên."
+                        EstimatedStartTime = appointment.StartTime,
+                        EstimatedEndTime = (DateTime)appointment.EndTime,
+                        AssignedAt = DateTime.Now,
+                        Status = WorkOrderStatus.Pending
                     });
-                    await _unitOfWork.CommitAsync();
                 }
 
-                var appoAssign = new AppointmentAssign
-                {
-                    TechnicianId = userId,
-                    AppointmentId = appointmentId,
-                    EstimatedStartTime = appointment.StartTime,
-                    EstimatedEndTime = (DateTime)appointment.EndTime,
-                    AssignedAt = DateTime.Now,
-                    Status = WorkOrderStatus.Pending
-                };
-
-                await _unitOfWork.GetRepository<AppointmentAssign>().InsertAsync(appoAssign);
                 await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
                 return "Phân công thành công.";
 
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new AppValidationException($"Phân công thất bại. Lỗi: {ex.Message}", StatusCodes.Status500InternalServerError);
             }
         }
@@ -234,9 +259,9 @@ namespace AptCare.Service.Services.Implements
             }
 
             var orderedTechnicians = technicians
-                .OrderByDescending(t => (t.GapFromPrevious == null || t.GapFromPrevious > 30 ? 30 : t.GapFromPrevious) +
+                .OrderBy(t => t.AssignCountThatDay)
+                    .ThenByDescending(t => (t.GapFromPrevious == null || t.GapFromPrevious > 30 ? 30 : t.GapFromPrevious) +
                                         (t.GapToNext == null || t.GapToNext > 30 ? 30 : t.GapToNext))
-                    .ThenBy(t => t.AssignCountThatDay)
                         .ThenBy(t => t.AssignCountThatMonth)
                 .ToList();
 

@@ -23,14 +23,14 @@ public class AppointmentAssignController : BaseApiController
     /// - Gán thời gian ước tính theo lịch hẹn.  
     /// </remarks>
     /// <param name="appointmentId">ID lịch hẹn</param>
-    /// <param name="userId">ID kỹ thuật viên</param>
+    /// <param name="userIds">ID các kỹ thuật viên</param>
     [HttpPost("assign")]
     [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}")]
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AssignAppointment(int appointmentId, int userId)
+    public async Task<IActionResult> AssignAppointment(int appointmentId, IEnumerable<int> userIds)
     {
-        var result = await _appointmentAssignService.AssignAppointmentAsync(appointmentId, userId);
+        var result = await _appointmentAssignService.AssignAppointmentAsync(appointmentId, userIds);
         return Ok(result);
     }
 
