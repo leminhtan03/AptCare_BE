@@ -58,7 +58,7 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Apartments, o => o.MapFrom(o => (List<ApartmentForUserDto>?)null))
                 .ForMember(d => d.AccountInfo, o => o.MapFrom(o => (AccountForAdminDto?)null))
                 .ForMember(d => d.IshaveAccount, o => o.MapFrom(s => s.Account != null))
-                .ForMember(d => d.Role, o => o.MapFrom(s => s.Account != null ? s.Account.Role.ToString() : "NULL"));
+                .ForMember(d => d.Role, o => o.MapFrom(s => s.Account != null ? s.Account.Role.ToString() : s.UserApartments.Any() ? AccountRole.Resident.ToString() : "NULL" ));
 
             CreateMap<User, UserBasicDto>();
 
@@ -77,6 +77,8 @@ namespace AptCare.Api.MapperProfile
             // ===== Floor =====
             CreateMap<Floor, FloorDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<Floor, FloorBasicDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
             CreateMap<Floor, GetAllFloorsDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
                 .ForMember(d => d.ApartmentCount, o => o.MapFrom(s => s.Apartments.Count))
@@ -94,6 +96,11 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
                 .ForMember(d => d.Floor, o => o.MapFrom(s => s.Floor.FloorNumber.ToString()))
                 .ForMember(d => d.Users, o => o.MapFrom(s => s.UserApartments));
+            CreateMap<Apartment, ApartmentBasicDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
+                .ForMember(d => d.Floor, o => o.MapFrom(s => s.Floor.FloorNumber.ToString()))
+                .ForMember(d => d.UserCount, o => o.MapFrom(s => s.UserApartments.Count(x => x.Status == ActiveStatus.Active)));
+
 
             CreateMap<UserApartment, UserInApartmentDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))

@@ -165,11 +165,11 @@ namespace AptCare.Service.Services.Implements
             return result;
         }
 
-        public async Task<IEnumerable<FloorDto>> GetFloorsAsync()
+        public async Task<IEnumerable<FloorBasicDto>> GetFloorsAsync()
         {
 
             var result = await _unitOfWork.GetRepository<Floor>().GetListAsync(
-                selector: x => _mapper.Map<FloorDto>(x),
+                selector: x => _mapper.Map<FloorBasicDto>(x),
                 predicate: p => p.Status == ActiveStatus.Active,
                 orderBy: o => o.OrderBy(x => x.FloorNumber)
                 );

@@ -700,33 +700,40 @@ namespace AptCare.Service.Services.Implements
                 RequestStatus.Pending => new[]
                 {
                     RequestStatus.Approved,
-                    RequestStatus.Rejected
+                    RequestStatus.Rejected,
+                    RequestStatus.Rescheduling
                 },
                 RequestStatus.Approved => new[]
                 {
                     RequestStatus.InProgress,
-                    RequestStatus.Cancelled
+                    RequestStatus.Cancelled,
+                    RequestStatus.Rescheduling
+
                 },
                 RequestStatus.InProgress => new[]
                 {
                     RequestStatus.Diagnosed,
-                    RequestStatus.Cancelled
+                    RequestStatus.Cancelled,
+                    RequestStatus.Rescheduling
                 },
                 RequestStatus.Diagnosed => new[]
                 {
                     RequestStatus.CompletedPendingVerify,
                     RequestStatus.InProgress,
-                    RequestStatus.Cancelled
+                    RequestStatus.Cancelled,
+                    RequestStatus.Rescheduling
                 },
                 RequestStatus.CompletedPendingVerify => new[]
                 {
                     RequestStatus.AcceptancePendingVerify,
-                    RequestStatus.InProgress
+                    RequestStatus.InProgress,
+                    RequestStatus.Rescheduling
                 },
                 RequestStatus.AcceptancePendingVerify => new[]
                 {
                     RequestStatus.Completed,
-                    RequestStatus.InProgress
+                    RequestStatus.InProgress,
+                    RequestStatus.Rescheduling
                 },
                 RequestStatus.Completed => Array.Empty<RequestStatus>(),
                 RequestStatus.Rejected => Array.Empty<RequestStatus>(),

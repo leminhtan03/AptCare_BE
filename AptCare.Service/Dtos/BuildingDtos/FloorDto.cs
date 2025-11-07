@@ -18,6 +18,15 @@ namespace AptCare.Service.Dtos.BuildingDtos
         public List<ApartmentDto>? Apartments { get; set; }
         public List<CommonAreaDto>? CommonAreas { get; set; }
     }
+
+    public class FloorBasicDto
+    {
+        public int FloorId { get; set; }
+        public int FloorNumber { get; set; }
+        public string Status { get; set; } = null!;
+        public string Description { get; set; } = null!;
+    }
+
     public sealed class GetAllFloorsDto : FloorDto
     {
         public int ApartmentCount { get; set; }

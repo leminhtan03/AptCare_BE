@@ -58,7 +58,7 @@ namespace AptCare.Api.Controllers
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet("list")]
         [Authorize]
-        [ProducesResponseType(typeof(IEnumerable<FloorDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IEnumerable<FloorBasicDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> GetFloors()
         {
