@@ -16,6 +16,7 @@ namespace AptCare.Service.Dtos.UserDtos
         public DateTime? Birthday { get; set; }
         public List<ApartmentForUserDto>? Apartments { get; set; }
         public AccountForAdminDto? AccountInfo { get; set; }
+        public List<string>? Technique { get; set; }
         public string Status { get; set; } = null!;
         public string? ProfileImageUrl { get; set; }
         public bool HasAccount => AccountInfo != null;

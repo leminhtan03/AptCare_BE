@@ -51,14 +51,22 @@ namespace AptCare.Api.MapperProfile
             CreateMap<User, UserDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
                 .ForMember(d => d.Apartments, o => o.MapFrom(s => s.UserApartments))
+                .ForMember(d => d.Technique, o => o.MapFrom(s => s.TechnicianTechniques.Select(tt => tt.Technique.Name)))
                 .ForMember(d => d.AccountInfo, o => o.MapFrom(s => s.Account));
 
             CreateMap<User, UserGetAllDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
-                .ForMember(d => d.Apartments, o => o.MapFrom(o => (List<ApartmentForUserDto>?)null))
-                .ForMember(d => d.AccountInfo, o => o.MapFrom(o => (AccountForAdminDto?)null))
+                .ForMember(d => d.Apartments, o => o.MapFrom(s => s.UserApartments ?? null))
+                .ForMember(d => d.Technique, o => o.MapFrom(s => s.TechnicianTechniques != null
+                    ? s.TechnicianTechniques.Select(tt => tt.Technique.Name)
+                    : null))
+                .ForMember(d => d.AccountInfo, o => o.MapFrom(s => s.Account))
                 .ForMember(d => d.IshaveAccount, o => o.MapFrom(s => s.Account != null))
-                .ForMember(d => d.Role, o => o.MapFrom(s => s.Account != null ? s.Account.Role.ToString() : s.UserApartments.Any() ? AccountRole.Resident.ToString() : "NULL" ));
+                .ForMember(d => d.Role, o => o.MapFrom(s => s.Account != null
+                    ? s.Account.Role.ToString()
+                    : s.UserApartments != null && s.UserApartments.Any()
+                        ? AccountRole.Resident.ToString()
+                        : "NULL"));
 
             CreateMap<User, UserBasicDto>();
 
@@ -82,10 +90,12 @@ namespace AptCare.Api.MapperProfile
             CreateMap<Floor, GetAllFloorsDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()))
                 .ForMember(d => d.ApartmentCount, o => o.MapFrom(s => s.Apartments.Count))
+                .ForMember(d => d.ApartmentInUseCount, o => o.MapFrom(s => s.Apartments.Count(a => a.UserApartments != null && a.UserApartments.Any(x => x.Status == ActiveStatus.Active))))
                 .ForMember(d => d.CommonAreaCount, o => o.MapFrom(s => s.CommonAreas.Count))
                 .ForMember(d => d.ResidentCount, o => o.MapFrom(s => s.Apartments.Sum(a => a.UserApartments.Count)))
                 .ForMember(d => d.Apartments, o => o.Ignore())
-                .ForMember(d => d.CommonAreas, o => o.Ignore());
+                .ForMember(d => d.CommonAreas, o => o.Ignore())
+                .ForMember(d => d.LimitResidentCount, o => o.MapFrom(s => s.Apartments.Sum(a => a.Limit)));
             CreateMap<FloorCreateDto, Floor>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
             CreateMap<FloorUpdateDto, Floor>()

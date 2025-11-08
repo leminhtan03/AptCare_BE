@@ -13,6 +13,7 @@ using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -32,7 +33,6 @@ namespace AptCare.Service.Services.Implements
             _pwdHasher = pwdHasher;
             _cloudinaryService = cloudinaryService;
         }
-
 
         public async Task<CreateUserResponseDto> CreateUserAsync(CreateUserDto createUserDto)
         {
@@ -115,7 +115,6 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception("Lỗi khi tạo người dùng: " + ex.Message);
             }
         }
-
         public async Task<UserDto?> GetUserByIdAsync(int userId)
         {
             var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.UserId == userId,
@@ -135,7 +134,6 @@ namespace AptCare.Service.Services.Implements
                 user.ProfileImageUrl = media.FilePath;
             return _mapper.Map<UserDto>(user);
         }
-
         public async Task<IPaginate<UserGetAllDto>> GetProfileDataPageAsync(UserPaginateDto dto)
         {
 
@@ -163,13 +161,16 @@ namespace AptCare.Service.Services.Implements
                         u.PhoneNumber.ToLower().Contains(dto.search) ||
                         u.CitizenshipIdentity.ToLower().Contains(dto.search))) &&
                     (string.IsNullOrEmpty(dto.filter) || u.Status == statusEnum.Value) &&
-                    (dto.Role == null || 
-                        (u.Account != null ? u.Account.Role : u.UserApartments.Any() ? AccountRole.Resident : null) == dto.Role ),
+                    (dto.Role == null ||
+                        (u.Account != null && u.Account.Role == dto.Role) ||
+                        (u.Account == null && dto.Role == AccountRole.Resident && u.UserApartments.Any())),
                 include: source => source
                     .Include(u => u.Account)
                     .Include(u => u.UserApartments)
-                        .ThenInclude(ua => ua.Apartment),
-                orderBy: users => users.OrderBy(u => u.UserId),
+                        .ThenInclude(ua => ua.Apartment)
+                    .Include(u => u.TechnicianTechniques)
+                        .ThenInclude(u => u.Technique),
+                orderBy: BuildOrderBy(dto.sortBy),
                 page: page,
                 size: size
             );
@@ -190,7 +191,18 @@ namespace AptCare.Service.Services.Implements
             }
             return users;
         }
-        public async Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto updateUserDto)
+        private Func<IQueryable<User>, IOrderedQueryable<User>> BuildOrderBy(string sortBy)
+        {
+            if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.UserId);
+
+            return sortBy.ToLower() switch
+            {
+                "id" => q => q.OrderBy(p => p.UserId),
+                "id_desc" => q => q.OrderByDescending(p => p.UserId),
+                _ => q => q.OrderByDescending(p => p.UserId) // Default sort
+            };
+        }
+        public async Task<string> UpdateUserAsync(int userId, UpdateUserDto updateUserDto)
         {
             var userRepo = _unitOfWork.GetRepository<User>();
             var uaRepo = _unitOfWork.GetRepository<UserApartment>();
@@ -219,14 +231,6 @@ namespace AptCare.Service.Services.Implements
                 if (!string.IsNullOrWhiteSpace(updateUserDto.PhoneNumber))
                     user.PhoneNumber = updateUserDto.PhoneNumber;
 
-                if (!string.IsNullOrWhiteSpace(updateUserDto.Status))
-                {
-                    if (!Enum.TryParse<ActiveStatus>(updateUserDto.Status, true, out var statusEnum))
-                        throw new AppValidationException($"Trạng thái '{updateUserDto.Status}' không hợp lệ.");
-                    user.Status = statusEnum;
-
-                }
-
                 userRepo.UpdateAsync(user);
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
@@ -235,16 +239,14 @@ namespace AptCare.Service.Services.Implements
                 var media = await mediaRepo.SingleOrDefaultAsync(
                     predicate: m => m.EntityId == userId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
                 if (media != null) resultUser.ProfileImageUrl = media.FilePath;
-                return resultUser;
+                return "Cập nhật người dùng thành công!!";
             }
             catch
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 throw;
             }
-
         }
-
         public async Task<ImportResultDto> ImportResidentsFromExcelAsync(Stream fileStream)
         {
             var result = new ImportResultDto();
@@ -283,7 +285,6 @@ namespace AptCare.Service.Services.Implements
             return result;
 
         }
-
         public async Task UpdateUserProfileImageAsync(UpdateUserImageProfileDto dto)
         {
             try
@@ -320,7 +321,6 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception("Lỗi khi cập nhật ảnh đại diện: " + ex.Message);
             }
         }
-
         private async Task ProcessUsersSheet(ExcelWorksheet worksheet, ImportResultDto result)
         {
             var rowCount = worksheet.Dimension.Rows;
@@ -380,7 +380,6 @@ namespace AptCare.Service.Services.Implements
             }
 
         }
-
         private async Task ProcessUserApartmentsSheet(ExcelWorksheet worksheet, ImportResultDto result)
         {
             var rowCount = worksheet.Dimension.Rows;
@@ -541,7 +540,6 @@ namespace AptCare.Service.Services.Implements
 
             await _unitOfWork.CommitAsync();
         }
-
         private string GenerateRandomPassword(int length = 12)
         {
             const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -606,14 +604,6 @@ namespace AptCare.Service.Services.Implements
                                 $"Căn hộ '{apartment.Room}' (ID: {apartment.ApartmentId}) đã đầy " +
                                 $"({activeCount}/{apartment.Limit} người). Không thể thêm cư dân mới.");
                         }
-                    }
-
-                    var hasOwner = dto.Apartments.Any(a =>
-                        a.RoleInApartment == RoleInApartmentType.Owner);
-                    if (!hasOwner)
-                    {
-                        throw new AppValidationException(
-                            "Resident phải là Owner của ít nhất một căn hộ.");
                     }
 
                     if (dto.TechniqueIds?.Any() == true)
@@ -805,8 +795,108 @@ namespace AptCare.Service.Services.Implements
                 Status = ActiveStatus.Active
             };
             await mediaRepo.InsertAsync(newMedia);
+            await _unitOfWork.CommitAsync();
         }
 
+        public async Task<string> InactivateUserAsync(int userId, InactivateUserDto dto)
+        {
+            var userRepo = _unitOfWork.GetRepository<User>();
+            var accountRepo = _unitOfWork.GetRepository<Account>();
+            var uaRepo = _unitOfWork.GetRepository<UserApartment>();
+            var ttRepo = _unitOfWork.GetRepository<TechnicianTechnique>();
+            var appoAssignRepo = _unitOfWork.GetRepository<AppointmentAssign>();
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var user = await userRepo.SingleOrDefaultAsync(
+                    predicate: u => u.UserId == userId,
+                    include: i => i.Include(u => u.Account)
+                                  .Include(u => u.UserApartments.Where(ua => ua.Status == ActiveStatus.Active))
+                                      .ThenInclude(ua => ua.Apartment)
+                                        .ThenInclude(a => a.Floor)
+                                  .Include(u => u.TechnicianTechniques)
+                                  .Include(u => u.AppointmentAssigns.Where(aa => aa.Status == WorkOrderStatus.Working || aa.Status == WorkOrderStatus.Pending))
+                );
+                if (user == null)
+                    throw new KeyNotFoundException($"Người dùng với ID {userId} không tồn tại.");
+                if (user.Account.Role == AccountRole.Admin)
+                    throw new AppValidationException("Không thể vô hiệu hóa người dùng với vai trò Admin.");
+                if (user.Account.Role == AccountRole.Manager)
+                    throw new AppValidationException(
+                        "Không thể vô hiệu hóa người dùng này vì họ là Manager hoạt động cuối cùng trong hệ thống. "
+                    );
+                if (user.Status == ActiveStatus.Inactive)
+                    throw new AppValidationException("Người dùng đã ở trạng thái Inactive.");
+
+                var fullName = $"{user.FirstName} {user.LastName}";
+                var ownerApartments = user.UserApartments?
+                    .Where(ua => ua.RoleInApartment == RoleInApartmentType.Owner)
+                    .ToList();
+
+                if (ownerApartments?.Any() == true)
+                {
+                    var apartmentDetails = string.Join(", ", ownerApartments.Select(ua =>
+                        $"Căn {ua.Apartment.Room} (Tầng {ua.Apartment.Floor.FloorNumber})"
+                    ));
+
+                    throw new AppValidationException(
+                        $"Không thể vô hiệu hóa người dùng '{fullName}' vì họ đang là chủ sở hữu (Owner) của các căn hộ: {apartmentDetails}. "
+                        + $"Vui lòng cơ cấu lại quyền sở hữu trước.", StatusCodes.Status409Conflict
+                    );
+                }
+                user.Status = ActiveStatus.Inactive;
+                userRepo.UpdateAsync(user);
+                await _unitOfWork.CommitAsync();
+
+                if (user.Account != null)
+                {
+                    user.Account.LockoutEnabled = true;
+                    user.Account.LockoutEnd = DateTime.Now.AddYears(100);
+                    accountRepo.UpdateAsync(user.Account);
+                    await _unitOfWork.CommitAsync();
+                }
+
+                var memberApartments = user.UserApartments?
+                    .Where(ua => ua.RoleInApartment == RoleInApartmentType.Member)
+                    .ToList();
+
+                if (memberApartments?.Any() == true)
+                {
+                    foreach (var ua in memberApartments)
+                    {
+                        ua.Status = ActiveStatus.Inactive;
+                        ua.DisableAt = DateTime.Now;
+                        uaRepo.UpdateAsync(ua);
+                    }
+                    await _unitOfWork.CommitAsync();
+                }
+
+                // 7. Hủy lịch hẹn Pending
+                var pendingAppointments = user.AppointmentAssigns?
+                    .Where(aa => aa.Status == WorkOrderStatus.Pending)
+                    .ToList();
+
+                if (pendingAppointments?.Any() == true)
+                {
+                    foreach (var aa in pendingAppointments)
+                    {
+                        aa.Status = WorkOrderStatus.Cancel;
+                        appoAssignRepo.UpdateAsync(aa);
+                    }
+                    await _unitOfWork.CommitAsync();
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
+                return $"Đã vô hiệu hóa người dùng '{fullName}' thành công.";
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, $"❌ Error inactivating User {userId}");
+                throw new Exception($"Lỗi khi vô hiệu hóa người dùng: {ex.Message}", ex);
+            }
+        }
     }
 
 }
