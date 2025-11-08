@@ -15,7 +15,7 @@ namespace AptCare.Service.Dtos.BuildingDtos
         public int FloorNumber { get; set; }
         public string Status { get; set; } = null!;
         public string Description { get; set; } = null!;
-        public List<ApartmentDto>? Apartments { get; set; }
+        public List<ApartmentBasicDto>? Apartments { get; set; }
         public List<CommonAreaDto>? CommonAreas { get; set; }
     }
 

@@ -124,14 +124,6 @@ namespace AptCare.Service.Services.Implements
             {
                 throw new AppValidationException("Tầng không tồn tại", StatusCodes.Status404NotFound);
             }
-            if (floor.Apartments != null)
-            {
-                foreach (var apartment in floor.Apartments)
-                {
-                    await LoadUserProfileImagesAsync(apartment);
-                }
-            }
-
             return floor;
         }
 
