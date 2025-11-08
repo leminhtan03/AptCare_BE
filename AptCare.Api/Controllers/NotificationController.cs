@@ -76,5 +76,29 @@ namespace AptCare.API.Controllers
             var result = await _notificationService.GetMyNotificationPaginateAsync(dto);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Đánh dấu các thông báo là đã đọc.
+        /// </summary>
+        /// <remarks>
+        /// Người dùng chỉ có thể đánh dấu thông báo thuộc về chính mình.
+        /// </remarks>
+        /// <param name="ids">Danh sách ID các thông báo cần đánh dấu là đã đọc.</param>
+        /// <returns>Thông báo trạng thái thành công.</returns>
+        /// <response code="200">Đánh dấu thành công.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Cố gắng đánh dấu thông báo không thuộc quyền sở hữu.</response>
+        /// <response code="500">Lỗi hệ thống.</response>
+        [HttpPatch("mark-as-read")]
+        [Authorize]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<string>> MarkAsRead([FromBody] IEnumerable<int> ids)
+        {
+            var result = await _notificationService.MarkAsReadAsync(ids);
+            return Ok(result);
+        }
     }
 }

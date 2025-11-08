@@ -1,28 +1,29 @@
-﻿using AptCare.Repository.UnitOfWork;
-using AptCare.Repository;
-using AptCare.Service.Services.Interfaces;
-using AutoMapper;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
-using AptCare.Service.Dtos.SlotDtos;
-using AptCare.Service.Exceptions;
-using Microsoft.AspNetCore.Http;
-using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Repository.Enum;
-using Microsoft.EntityFrameworkCore;
-using AptCare.Repository.Enum.TokenEnum;
 using AptCare.Repository.Enum.AccountUserEnum;
-using System.Collections;
+using AptCare.Repository.Enum.TokenEnum;
 using AptCare.Repository.Paginate;
+using AptCare.Repository.UnitOfWork;
+using AptCare.Service.Constants;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.AppointmentDtos;
+using AptCare.Service.Dtos.NotificationDtos;
+using AptCare.Service.Dtos.SlotDtos;
+using AptCare.Service.Exceptions;
+using AptCare.Service.Services.Interfaces;
+using AutoMapper;
+using CloudinaryDotNet.Actions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
-using AptCare.Service.Constants;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -99,19 +100,30 @@ namespace AptCare.Service.Services.Implements
                 size: size
                 );
 
-            var notifications = await _unitOfWork.GetRepository<Notification>().GetListAsync(
-                predicate: predicate                
-                );
-            var notificationNotread = notifications.Skip(page * size).Take(size).Where(x => !x.IsRead);
+            return result;
+        }
 
-            foreach (var noti in notificationNotread)
+        public async Task<string> MarkAsReadAsync(IEnumerable<int> ids)
+        {
+            var userId = _userContext.CurrentUserId;
+
+            var notifications = await _unitOfWork.GetRepository<Notification>().GetListAsync(
+                predicate: p => ids.Contains(p.NotificationId)
+                );
+            
+            foreach (var noti in notifications)
             {
+                if (noti.ReceiverId != userId)
+                {
+                    throw new AppValidationException($"Bạn không có thông báo ID {noti.NotificationId}.");
+                }
+
                 noti.IsRead = true;
             }
 
             _unitOfWork.GetRepository<Notification>().UpdateRange(notifications);
             await _unitOfWork.CommitAsync();
-            return result;
+            return "Thành công";
         }
 
         public async Task SendAndPushNotificationAsync(NotificationPushRequestDto dto)
@@ -135,10 +147,6 @@ namespace AptCare.Service.Services.Implements
                 var image = string.IsNullOrEmpty(dto.Image) ? Constant.LOGO_IMAGE : dto.Image;
 
                 var isPushed = await _fcmService.PushMulticastAsync(fcmTokens, dto.Title, dto.Description, image);
-                //if (!isPushed)
-                //{
-                //    throw new AppValidationException("Push notification thất bại.", StatusCodes.Status500InternalServerError);
-                //}
 
                 await _unitOfWork.GetRepository<Notification>().InsertRangeAsync(notifications);
                 await _unitOfWork.CommitAsync();
@@ -173,7 +181,6 @@ namespace AptCare.Service.Services.Implements
             try
             {                
                 var appointments = await _unitOfWork.GetRepository<Appointment>().GetListAsync(
-                    //selector: s => s.T~oken,
                     predicate: p => DateOnly.FromDateTime(p.StartTime) == 
                                         DateOnly.FromDateTime(dateTime).AddDays(APPOINTMENT_REMINDER) &&
                                     p.AppointmentTrackings.OrderByDescending(x => x.UpdatedAt).First().Status == 
