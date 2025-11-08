@@ -38,7 +38,7 @@ namespace AptCare.Api.Controllers
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet]
         [Authorize]
-        [ProducesResponseType(typeof(IPaginate<FloorDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IPaginate<GetAllFloorsDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> GetPaginateFloor([FromQuery] PaginateDto dto)
         {

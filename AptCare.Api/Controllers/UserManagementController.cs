@@ -3,6 +3,7 @@ using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.UserDtos;
+using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -63,7 +64,6 @@ namespace AptCare.Api.Controllers
         /// <item><description><strong>CitizenshipIdentity:</strong> Số CCCD/CMND (tối đa 50 ký tự)</description></item>
         /// <item><description><strong>Birthday:</strong> Ngày sinh (định dạng DateTime)</description></item>
         /// <item><description><strong>PhoneNumber:</strong> Số điện thoại (tối đa 20 ký tự, có validation)</description></item>
-        /// <item><description><strong>Status:</strong> Trạng thái người dùng</description></item>
         /// <item><description><strong>Email:</strong> Địa chỉ email (tối đa 256 ký tự, có validation)</description></item>
         /// <item><description><strong>AccountRole:</strong> Vai trò tài khoản (Enum: "Manager", "Resident", "Receptionist", "Technician","TechnicianLead")</description></item>
         /// <item><description><strong>UserApartments:</strong> Danh sách căn hộ được phân công: <br/>
@@ -320,6 +320,24 @@ namespace AptCare.Api.Controllers
             await _userService.UpdateUserProfileImageAsync(dto);
             return Ok("Cập nhật ảnh đại diện thành công.");
         }
-
+        /// <summary>
+        /// Vô hiệu hóa người dùng
+        /// </summary>
+        /// <remarks>
+        /// API tự động xử lý:
+        /// - Kiểm tra Owner (nếu là Owner → từ chối)
+        /// - Vô hiệu hóa User
+        /// - Khóa Account
+        /// - Ngắt quan hệ Member
+        /// - Vô hiệu hóa Techniques
+        /// - Hủy lịch hẹn Pending
+        /// </remarks>
+        [HttpPut("{userId}/inactivate")]
+        [Authorize(Roles = "Admin,Manager")]
+        public async Task<IActionResult> InactivateUser(int userId, [FromBody] InactivateUserDto dto)
+        {
+            var message = await _userService.InactivateUserAsync(userId, dto);
+            return Ok(message);
+        }
     }
 }

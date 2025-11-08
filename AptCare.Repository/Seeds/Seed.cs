@@ -23,6 +23,7 @@ namespace AptCare.Repository.Seeds
             await SeedTechniques(context);
             await SeedIssues(context);
             await SeedUsersAndAccounts(context);
+            await SeedUserMedias(context);
             await SeedUserApartments(context);
             await SeedCommonAreas(context);
             await SeedCommonAreaObjects(context);
@@ -568,7 +569,6 @@ namespace AptCare.Repository.Seeds
                 await context.SaveChangesAsync();
             }
         }
-
         private static async Task SeedAccessories(AptCareSystemDBContext context)
         {
             if (!context.Accessories.Any())
@@ -661,7 +661,31 @@ namespace AptCare.Repository.Seeds
                 await context.SaveChangesAsync();
             }
         }
+        private static async Task SeedUserMedias(AptCareSystemDBContext context)
+        {
+            if (!context.Medias.Any(m => m.Entity == nameof(User)))
+            {
+                var users = context.Users.AsNoTracking().ToList();
+                var medias = new List<Media>();
 
+                foreach (var user in users)
+                {
+                    medias.Add(new Media
+                    {
+                        EntityId = user.UserId,
+                        Entity = nameof(User),
+                        FilePath = "https://res.cloudinary.com/dg9k8inku/image/authenticated/s--U3E35abm--/v1762282609/fyh4eg7lptnw17i1syha.jpg",
+                        FileName = $"Ảnh đại diện của user {user.UserId}",
+                        ContentType = "image/png",
+                        CreatedAt = DateTime.Now,
+                        Status = ActiveStatus.Active
+                    });
+                }
+
+                context.Medias.AddRange(medias);
+                await context.SaveChangesAsync();
+            }
+        }
 
     }
 }

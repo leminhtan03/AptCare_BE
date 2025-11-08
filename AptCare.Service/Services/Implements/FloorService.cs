@@ -171,7 +171,9 @@ namespace AptCare.Service.Services.Implements
             var result = await _unitOfWork.GetRepository<Floor>().GetListAsync(
                 selector: x => _mapper.Map<FloorBasicDto>(x),
                 predicate: p => p.Status == ActiveStatus.Active,
-                orderBy: o => o.OrderBy(x => x.FloorNumber)
+                orderBy: o => o.OrderBy(x => x.FloorNumber),
+                include: i => i.Include(x => x.Apartments)
+                                .ThenInclude(x => x.UserApartments)
                 );
             return result;
         }

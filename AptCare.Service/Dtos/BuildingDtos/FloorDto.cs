@@ -26,11 +26,13 @@ namespace AptCare.Service.Dtos.BuildingDtos
         public string Status { get; set; } = null!;
         public string Description { get; set; } = null!;
     }
-
     public sealed class GetAllFloorsDto : FloorDto
     {
         public int ApartmentCount { get; set; }
+        public int ApartmentInUseCount { get; set; }
         public int CommonAreaCount { get; set; }
         public int ResidentCount { get; set; }
+        public int LimitResidentCount { get; set; }
+
     }
 }

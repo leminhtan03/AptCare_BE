@@ -21,8 +21,6 @@ namespace AptCare.Service.Dtos.UserDtos
 
         public DateTime? Birthday { get; set; }
 
-        public string? Status { get; set; }
-
         [Phone(ErrorMessage = "Số điện thoại không hợp lệ.")]
         [MaxLength(20, ErrorMessage = "Số điện thoại không được vượt quá 20 ký tự.")]
         public string? PhoneNumber { get; set; }
