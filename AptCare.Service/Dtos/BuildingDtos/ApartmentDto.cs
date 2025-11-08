@@ -39,11 +39,11 @@ namespace AptCare.Service.Dtos.BuildingDtos
     public class UserInApartmentDto
     {
         public UserDto User { get; set; } = null!;
-
         public RoleInApartmentType RoleInApartment { get; set; }
-
         public string RelationshipToOwner { get; set; } = null!;
-
+        public DateTime CreatedAt { get; set; }
         public ActiveStatus Status { get; set; }
+        public DateTime? DisableAt { get; set; }
+
     }
 }
