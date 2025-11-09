@@ -59,6 +59,44 @@ public class FCMService : IFCMService
         return response.IsSuccessStatusCode;
     }
 
+    public async Task<bool> PushNotificationWebAsync(string fcmToken, string title, string body, string? image = null)
+    {
+        var accessToken = await _googleCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+        var requestUrl = $"https://fcm.googleapis.com/v1/projects/{_projectId}/messages:send";
+
+        var message = new
+        {
+            message = new
+            {
+                token = fcmToken,
+                webpush = new
+                {
+                    notification = new
+                    {
+                        title = title,
+                        body = body,
+                        icon = image 
+                    },
+                    headers = new
+                    {
+                        TTL = "4500"
+                    }
+                }
+            }
+        };
+
+        var json = JsonSerializer.Serialize(message);
+        var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.SendAsync(request);
+        var result = await response.Content.ReadAsStringAsync();
+
+        Console.WriteLine($"[FCM Response] {response.StatusCode}: {result}");
+        return response.IsSuccessStatusCode;
+    }
+
     public async Task<bool> PushMulticastAsync(IEnumerable<string> fcmTokens, string title, string body, string? image = null)
     {
         var tokens = fcmTokens?.Where(t => !string.IsNullOrWhiteSpace(t)).ToList();

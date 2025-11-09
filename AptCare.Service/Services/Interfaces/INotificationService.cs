@@ -16,5 +16,6 @@ namespace AptCare.Service.Services.Interfaces
         Task SendAndPushNotificationAsync(NotificationPushRequestDto dto);
         Task PushNotificationAsync(NotificationPushRequestDto dto);
         Task SendAndPushNotificationForAppointmentAsync(DateTime dateTime);
+        Task<string> MarkAsReadAsync(IEnumerable<int> ids);
     }
 }
