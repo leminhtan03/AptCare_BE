@@ -637,13 +637,13 @@ namespace AptCare.Service.Services.Implements
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
-                await _unitOfWork.BeginTransactionAsync();
                 if (dto.NewStatus != RequestStatus.Approved && dto.NewStatus != RequestStatus.Cancelled)
                     throw new AppValidationException(
                         "Trạng thái mới phải là Approved hoặc Cancelled.",
                         StatusCodes.Status400BadRequest
                     );
                 await ToggleRepairRequestStatusAsync(dto);
+                await _unitOfWork.CommitTransactionAsync();
                 return "Cập nhật thành công";
             }
             catch (Exception ex)
