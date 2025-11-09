@@ -71,5 +71,6 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public List<MediaDto>? Medias { get; set; }
         public DateTime CreatedAt { get; set; }
         public UserBasicDto? CreateUser { get; set; } = null!;
+
     }
 }

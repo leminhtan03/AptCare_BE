@@ -27,10 +27,6 @@ namespace AptCare.Service.Services.Implements
         {
             _userContext = userContext;
         }
-
-        /// <summary>
-        /// Tạo approval pending cho TechnicianLead khi Technician tạo báo cáo
-        /// </summary>
         public async Task<bool> CreateApproveReportAsync(ApproveReportCreateDto dto)
         {
             try
@@ -115,10 +111,7 @@ namespace AptCare.Service.Services.Implements
 
         #region InspectionReport Processing
 
-        private async Task CreateInspectionReportApprovalAsync(
-            ApproveReportCreateDto dto,
-            int approverId,
-            AccountRole approverRole)
+        private async Task CreateInspectionReportApprovalAsync(ApproveReportCreateDto dto, int approverId, AccountRole approverRole)
         {
             var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
 
@@ -131,7 +124,6 @@ namespace AptCare.Service.Services.Implements
                 Comment = dto.Comment ?? "Chờ phê duyệt",
                 CreatedAt = DateTime.Now
             };
-
             await reportApprovalRepo.InsertAsync(reportApproval);
 
         }
@@ -328,7 +320,6 @@ namespace AptCare.Service.Services.Implements
                         include: i => i.Include(u => u.Account));
                     if (manager == 0)
                         throw new AppValidationException("Không tìm thấy Manager trong hệ thống.");
-
                     return (manager, AccountRole.Manager);
 
                 default:

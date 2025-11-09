@@ -1,9 +1,11 @@
-﻿using System;
+﻿using AptCare.Repository.Enum;
+using AptCare.Service.Dtos.AppointmentDtos;
+using AptCare.Service.Dtos.ApproveReportDtos;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using AptCare.Repository.Enum;
 
 namespace AptCare.Service.Dtos.RepairReportDtos
 {
@@ -26,5 +28,7 @@ namespace AptCare.Service.Dtos.RepairReportDtos
         public string? ApartmentOrAreaName { get; set; }
 
         public List<MediaDto>? Medias { get; set; }
+        public List<ApprovelReportDto>? ReportApprovals { get; set; }
+        public AppointmentDto? Appointment { get; set; }
     }
 }

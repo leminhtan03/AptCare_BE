@@ -1,6 +1,7 @@
 ﻿using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
+using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos.ApproveReportDtos;
 using AptCare.Service.Dtos.UserDtos;
 using System;
@@ -28,5 +29,6 @@ namespace AptCare.Service.Dtos.InspectionReporDtos
         public TechnicanDto Technican { get; set; }
         public List<MediaDto>? Medias { get; set; }
         public List<ApprovelReportDto>? ReportApprovals { get; set; }
+        public AppointmentDto? Appointment { get; set; }
     }
 }
