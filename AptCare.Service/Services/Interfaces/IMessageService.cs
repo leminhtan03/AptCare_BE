@@ -15,7 +15,7 @@ namespace AptCare.Service.Services.Interfaces
         Task<MessageDto> CreateFileMessageAsync(int conversationId, IFormFile file);
         Task<IPaginate<MessageDto>> GetPaginateMessagesAsync(int conversationId, DateTime? before = null, int pageSize = 20);
         Task<MessageDto> GetMessageByIdAsync(int id);
-        Task MarkAsDeliveredAsync(int conversationId);
-        Task MarkAsReadAsync(int conversationId);
+        Task<(IEnumerable<int>, string)> MarkAsDeliveredAsync(int conversationId);
+        Task<(IEnumerable<int>, string)> MarkAsReadAsync(int conversationId);
     }
 }
