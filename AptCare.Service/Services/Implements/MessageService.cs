@@ -335,7 +335,7 @@ namespace AptCare.Service.Services.Implements
                 );
 
                 if (!messages.Any())
-                    return default;
+                    return (null, conversationSlug);
 
                 foreach (var msg in messages)
                 {
@@ -378,7 +378,7 @@ namespace AptCare.Service.Services.Implements
                 );
 
                 if (!messages.Any())
-                    return default;
+                    return (null, conversationSlug);
 
                 foreach (var msg in messages)
                 {
