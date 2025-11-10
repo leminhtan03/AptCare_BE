@@ -637,7 +637,7 @@ namespace AptCare.Service.Services.Implements
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
-                if (dto.NewStatus != RequestStatus.Approved && dto.NewStatus != RequestStatus.Cancelled)
+                if (dto.NewStatus != RequestStatus.Approved && dto.NewStatus != RequestStatus.Cancelled && dto.NewStatus != RequestStatus.Scheduling)
                     throw new AppValidationException(
                         "Trạng thái mới phải là Approved hoặc Cancelled.",
                         StatusCodes.Status400BadRequest
@@ -653,7 +653,6 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException($"Lỗi hệ thống: {ex.Message}", StatusCodes.Status500InternalServerError);
             }
         }
-
 
         private async Task ToggleCancleRequestAsync(List<Appointment>? appointments, ToggleRRStatus dto, int userId)
         {
