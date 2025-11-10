@@ -140,6 +140,10 @@ namespace AptCare.Api.Controllers
         public async Task<ActionResult> MarkAsDeliveried(int conversationId)
         {
             var result = await _messageService.MarkAsDeliveredAsync(conversationId);
+            if (result.Item1 == null)
+            {
+                return Ok();
+            }
             await _hubContext.Clients.Group(result.Item2).SendAsync("MarkAsDeliveried", result.Item1);
             return Ok(result.Item1);
         }
@@ -164,6 +168,10 @@ namespace AptCare.Api.Controllers
         public async Task<ActionResult> MarkAsRead(int conversationId)
         {
             var result = await _messageService.MarkAsReadAsync(conversationId);
+            if (result.Item1 == null)
+            {
+                return Ok();
+            }
             await _hubContext.Clients.Group(result.Item2).SendAsync("MarkAsRead", result.Item1);
             return Ok(result.Item1);
         }
