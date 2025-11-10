@@ -4,37 +4,46 @@ namespace AptCare.Service.Hub;
 
 public class ChatHub: Microsoft.AspNetCore.SignalR.Hub
 {
-        public async Task SendMessage(MessageDto message)
+    public async Task SendMessage(MessageDto message)
+    {
+        await Clients.Group(message.Slug).SendAsync("ReceiveMessage", message);
+    }
+    public async Task JoinConversation(string slug)
+    {
+        try
         {
-            await Clients.Group(message.Slug).SendAsync("ReceiveMessage", message);
+            await Groups.AddToGroupAsync(Context.ConnectionId, slug);
+            Console.WriteLine("User joined conversation:  "+ slug);
+            //await Clients.OthersInGroup(slug).SendAsync("UserJoined", new { User = Context.UserIdentifier, Slug = slug });
         }
-        public async Task JoinConversation(string slug)
+        catch (Exception e)
         {
-            try
-            {
-                await Groups.AddToGroupAsync(Context.ConnectionId, slug);
-                Console.WriteLine("User joined conversation:  "+ slug);
-                //await Clients.OthersInGroup(slug).SendAsync("UserJoined", new { User = Context.UserIdentifier, Slug = slug });
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
+            Console.WriteLine(e);
+            throw;
+        }
             
-        }
-        public async Task LeaveConversation(string slugConversation)
+    }
+    public async Task LeaveConversation(string slugConversation)
+    {
+        try
         {
-            try
-            {
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, slugConversation);
-                //await Clients.All.SendAsync("User left conversation: "+ slugConversation);
-                Console.WriteLine("User left conversation: "+ slugConversation);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }           
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, slugConversation);
+            //await Clients.All.SendAsync("User left conversation: "+ slugConversation);
+            Console.WriteLine("User left conversation: "+ slugConversation);
         }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }           
+    }
+
+    public async Task MarkAsDeliveried(IEnumerable<int> messageIds, string slug)
+    {
+        await Clients.Group(slug).SendAsync("MarkAsDeliveried", messageIds);
+    }
+    public async Task MarkAsRead(IEnumerable<int> messageIds, string slug)
+    {
+        await Clients.Group(slug).SendAsync("MarkAsRead", messageIds);
+    }
 }

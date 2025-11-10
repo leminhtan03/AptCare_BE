@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using AptCare.Repository.Enum;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Helpers;
+using AptCare.Service.Constants;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -91,34 +92,41 @@ namespace AptCare.Service.Services.Implements
         {
             var userId = _userContext.CurrentUserId;
             var conversations = await _unitOfWork.GetRepository<Conversation>().GetListAsync(
-                    selector: s => ConvertToConversationDto(s, userId),
                     predicate: x => x.ConversationParticipants.Any(cp => cp.ParticipantId == userId),
                     include: i => i.Include(x => x.ConversationParticipants)
                                         .ThenInclude(x => x.Participant)
                                    .Include(x => x.Messages)
                     );
-            return conversations;
+
+            List<ConversationDto> result = new List<ConversationDto>();
+
+            foreach (var conversation in conversations)
+            {
+                result.Add(await ConvertToConversationDto(conversation, userId));
+            }
+
+            return result;
         }
 
         public async Task<ConversationDto> GetConversationByIdAsync(int id)
         {
             var userId = _userContext.CurrentUserId;
             var conversation = await _unitOfWork.GetRepository<Conversation>().SingleOrDefaultAsync(
-                    selector: s => ConvertToConversationDto(s, userId),
                     predicate: x => x.ConversationId == id,
                     include: i => i.Include(x => x.ConversationParticipants)
                                         .ThenInclude(x => x.Participant)
                                    .Include(x => x.Messages)
                     );
+
             if (conversation == null)
             {
                 throw new AppValidationException("Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
             }
-            if (!conversation.Participants.Any(x => x.UserId == userId))
+            if (!conversation.ConversationParticipants.Any(x => x.ParticipantId == userId))
             {
                 throw new AppValidationException("Bạn không sở hữu cuộc trò chuyện này.");
             }
-            return conversation;
+            return await ConvertToConversationDto(conversation, userId);
         }
 
         public async Task<string> MuteConversationAsync(int id)
@@ -157,14 +165,24 @@ namespace AptCare.Service.Services.Implements
             return "Bật thông báo thành công.";
         }
 
-        public static ConversationDto ConvertToConversationDto(Conversation conversation, int userId)
+        public async Task<ConversationDto> ConvertToConversationDto(Conversation conversation, int userId)
         {
-            var title = "conversation.Title";
+            var title = conversation.Title;
+            string image = "";
+
             if (conversation.ConversationParticipants.Count == 2)
             {
-                title = conversation.ConversationParticipants.Where(x => x.ParticipantId != userId)
+                var id = conversation.ConversationParticipants.Select(x => x.ParticipantId).FirstOrDefault(x => x != userId);
+                                                             
+                title = conversation.ConversationParticipants.Where(x => x.ParticipantId == id)
                                                              .Select(x => $"{x.Participant.FirstName} {x.Participant.LastName}")
                                                              .First();
+                 
+                image = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                    selector: s => s.FilePath,
+                    predicate: p => p.Entity == nameof(User) && p.EntityId == id
+                    );
+
             }
 
             var isMuted = conversation.ConversationParticipants.Where(x => x.ParticipantId == userId)
@@ -234,7 +252,9 @@ namespace AptCare.Service.Services.Implements
                 Title = title,
                 IsMuted = isMuted,
                 LastMessage = lastMessage,
-                Participants = participants
+                Participants = participants,
+                Slug = conversation.Slug,
+                Image = string.IsNullOrEmpty(image) ? Constant.AVATAR_DEFAULT_IMAGE : image
             };
         }
     }
