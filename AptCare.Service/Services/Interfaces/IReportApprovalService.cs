@@ -13,10 +13,6 @@ namespace AptCare.Service.Services.Interfaces
         /// Tạo approval pending cho TechnicianLead/Manager
         /// </summary>
         Task<bool> CreateApproveReportAsync(ApproveReportCreateDto dto);
-
-        /// <summary>
-        /// Approve/Reject hoặc escalate lên cấp cao hơn
-        /// </summary>
         Task<bool> ApproveReportAsync(ApproveReportCreateDto dto);
     }
 }

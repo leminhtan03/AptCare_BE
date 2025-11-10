@@ -213,6 +213,7 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<IPaginate<RepairReportBasicDto>> GetPaginateRepairReportsAsync(RepairReportFilterDto filterDto)
         {
+            var userId = _userContext.CurrentUserId;
             int page = filterDto.page > 0 ? filterDto.page : 1;
             int size = filterDto.size > 0 ? filterDto.size : 10;
             string search = filterDto.search?.ToLower() ?? string.Empty;
@@ -227,6 +228,9 @@ namespace AptCare.Service.Services.Implements
                    (rr.Appointment.RepairRequest.MaintenanceRequest != null &&
                     rr.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject != null &&
                     rr.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name.ToLower().Contains(search))))) &&
+                    rr.Appointment.RepairReport != null &&
+                    (rr.Appointment.RepairReport.ReportApprovals.Any(s => s.UserId == userId) ||
+                    (rr.Appointment.RepairReport.Appointment.AppointmentAssigns.Any(s => s.TechnicianId == userId))) &&
                 (string.IsNullOrEmpty(filter) ||
                  rr.Status.ToString().ToLower().Contains(filter)) &&
                 (!filterDto.Fromdate.HasValue ||

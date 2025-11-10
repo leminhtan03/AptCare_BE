@@ -330,7 +330,8 @@ namespace AptCare.Api.MapperProfile
                         ? src.Appointment.RepairRequest.Apartment.Room
                         : src.Appointment.RepairRequest.MaintenanceRequest != null
                             ? src.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name
-                            : "N/A"));
+                            : "N/A"))
+                .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals));
         }
     }
 }

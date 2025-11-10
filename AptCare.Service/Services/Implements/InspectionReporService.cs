@@ -234,6 +234,9 @@ namespace AptCare.Service.Services.Implements
                      p.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name.ToLower().Contains(search))
                      )) ||
                     (!string.IsNullOrEmpty(p.Solution) && p.Solution.ToLower().Contains(search))) &&
+                    p.Appointment.InspectionReports != null &&
+                    (p.Appointment.InspectionReports.Any(ir => ir.ReportApprovals != null && ir.ReportApprovals.Any(s => s.UserId == userId)) ||
+                    (p.Appointment.RepairReport.Appointment.AppointmentAssigns.Any(s => s.TechnicianId == userId))) &&
                     (string.IsNullOrEmpty(filter) ||
                     p.Status.ToString().ToLower().Contains(filter)) &&
                     (string.IsNullOrEmpty(faultTypeFilter) ||
@@ -262,7 +265,10 @@ namespace AptCare.Service.Services.Implements
                                     .Include(ws => ws.Appointment)
                                         .ThenInclude(a => a.RepairRequest)
                                             .ThenInclude(rr => rr.MaintenanceRequest)
-                                                .ThenInclude(mr => mr.CommonAreaObject),
+                                                .ThenInclude(mr => mr.CommonAreaObject)
+                                    .Include(ra => ra.ReportApprovals)
+                                        .ThenInclude(ra => ra.User)
+                                            .ThenInclude(u => u.Account),
                     orderBy: BuildOrderBy(filterDto.sortBy ?? string.Empty),
                     selector: s => _mapper.Map<InspectionBasicReportDto>(s)
                 );

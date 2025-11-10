@@ -37,7 +37,7 @@ namespace AptCare.Api.Controllers
         /// </remarks>
         /// <param name="dto">Thông tin báo cáo kiểm tra bao gồm AppointmentId, FaultOwner (enum), SolutionType (enum), Description và Solution</param>
         /// <returns>Thông báo xác nhận tạo báo cáo thành công</returns>
-        [HttpPost("generate-inspection-report")]
+        [HttpPost("inspection-report")]
         [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -72,7 +72,7 @@ namespace AptCare.Api.Controllers
         /// </remarks>
         /// <param name="id">ID của báo cáo kiểm tra cần lấy thông tin</param>
         /// <returns>Thông tin chi tiết của báo cáo kiểm tra</returns>
-        [HttpGet("get-inspection-report-by-id/{id}")]
+        [HttpGet("inspection-report/{id}")]
         [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -136,7 +136,7 @@ namespace AptCare.Api.Controllers
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         /// <response code="500">Lỗi hệ thống.</response>
-        [HttpGet("get-paginate-inspection-reports")]
+        [HttpGet("inspection-report/paginate")]
         [ProducesResponseType(typeof(IPaginate<InspectionBasicReportDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -215,7 +215,7 @@ namespace AptCare.Api.Controllers
         /// </remarks>
         /// <param name="id">ID của lịch hẹn cần lấy báo cáo kiểm tra</param>
         /// <returns>Thông tin cơ bản của báo cáo kiểm tra liên quan đến lịch hẹn</returns>
-        [HttpGet("get-inspection-report-by-appointment-id/{id}")]
+        [HttpGet("inspection-report/by-appointment-id/{id}")]
         [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]

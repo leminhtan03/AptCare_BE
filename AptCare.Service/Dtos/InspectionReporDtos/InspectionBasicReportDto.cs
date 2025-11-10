@@ -17,7 +17,6 @@ namespace AptCare.Service.Dtos.InspectionReporDtos
         public DateTime CreatedAt { get; set; }
         public string? AreaName { get; set; }
         public TechnicanDto Technican { get; set; }
-
         public List<MediaDto>? Medias { get; set; }
 
     }
