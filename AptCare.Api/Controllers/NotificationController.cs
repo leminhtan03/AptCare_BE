@@ -100,5 +100,26 @@ namespace AptCare.API.Controllers
             var result = await _notificationService.MarkAsReadAsync(ids);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Lấy số lượng thông báo chưa đọc của người dùng hiện tại.
+        /// </summary>
+        /// <remarks>
+        /// Tự động xác định người dùng qua token. Trả về số nguyên (0 nếu không có).
+        /// </remarks>
+        /// <returns>Số thông báo chưa đọc.</returns>
+        /// <response code="200">Trả về số lượng thông báo chưa đọc.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="500">Lỗi hệ thống.</response>
+        [HttpGet("my/unread-count")]
+        [Authorize]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<int>> GetMyUnreadCount()
+        {
+            var count = await _notificationService.GetMyUnreadCountAsync();
+            return Ok(count);
+        }
     }
 }

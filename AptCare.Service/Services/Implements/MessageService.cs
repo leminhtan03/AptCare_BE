@@ -78,13 +78,18 @@ namespace AptCare.Service.Services.Implements
 
                 var result = await _unitOfWork.GetRepository<Message>().ProjectToSingleOrDefaultAsync<MessageDto>(
                     configuration: _mapper.ConfigurationProvider,
-                    //parameters: new { CurrentUserId = userId },
                     predicate: m => m.MessageId == message.MessageId,
                     include: i => i.Include(x => x.Sender)
                                    .Include(x => x.ReplyMessage)
                                        .ThenInclude(x => x.Sender)
                                    .Include(x => x.Conversation)
                 );
+
+                var image = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                    predicate: p => p.Entity == nameof(User) && p.EntityId == userId
+                    );
+                result.SenderAvatar = image.FilePath;
+
                 return result;
             }
             catch (Exception e)
@@ -146,13 +151,18 @@ namespace AptCare.Service.Services.Implements
 
                 var result = await _unitOfWork.GetRepository<Message>().ProjectToSingleOrDefaultAsync<MessageDto>(
                     configuration: _mapper.ConfigurationProvider,
-                    //parameters: new { CurrentUserId = userId },
                     predicate: m => m.MessageId == message.MessageId,
                     include: i => i.Include(x => x.Sender)
                                    .Include(x => x.ReplyMessage)
                                        .ThenInclude(x => x.Sender)
                                    .Include(x => x.Conversation)
                 );
+
+                var image = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                    predicate: p => p.Entity == nameof(User) && p.EntityId == userId
+                    );
+                result.SenderAvatar = image.FilePath;
+
                 return result;
             }
             catch (Exception e)
@@ -266,6 +276,11 @@ namespace AptCare.Service.Services.Implements
             foreach (var msg in messages.Items)
             {
                 msg.IsMine = msg.SenderId == userId;
+
+                var image = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                    predicate: p => p.Entity == nameof(User) && p.EntityId == msg.SenderId
+                    );
+                msg.SenderAvatar = image.FilePath;
             }
 
             return messages;
@@ -289,14 +304,30 @@ namespace AptCare.Service.Services.Implements
             }
 
             message.IsMine = message.SenderId == userId;
+
+            var image = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                predicate: p => p.Entity == nameof(User) && p.EntityId == message.SenderId
+                );
+            message.SenderAvatar = image.FilePath;
+
             return message;
         }
 
-        public async Task MarkAsDeliveredAsync(int conversationId)
+        public async Task<(IEnumerable<int>, string)> MarkAsDeliveredAsync(int conversationId)
         {
             try
             {
                 var userId = _userContext.CurrentUserId;
+
+                var conversationSlug = await _unitOfWork.GetRepository<Conversation>().SingleOrDefaultAsync(
+                    selector: s => s.Slug,
+                    predicate: m => m.ConversationId == conversationId
+                );
+                if (string.IsNullOrEmpty(conversationSlug))
+                {
+                    throw new AppValidationException($"Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
+                }
+
                 var messages = await _unitOfWork.GetRepository<Message>().GetListAsync(
                     predicate: m => m.ConversationId == conversationId
                                  && m.SenderId != userId
@@ -304,7 +335,7 @@ namespace AptCare.Service.Services.Implements
                 );
 
                 if (!messages.Any())
-                    return;
+                    return default;
 
                 foreach (var msg in messages)
                 {
@@ -313,6 +344,7 @@ namespace AptCare.Service.Services.Implements
 
                 _unitOfWork.GetRepository<Message>().UpdateRange(messages);
                 await _unitOfWork.CommitAsync();
+                return (messages.Select(x => x.MessageId), conversationSlug);
             }
             catch (Exception e)
             {
@@ -320,19 +352,33 @@ namespace AptCare.Service.Services.Implements
             }            
         }
 
-        public async Task MarkAsReadAsync(int conversationId)
+        public async Task<(IEnumerable<int>, string)> MarkAsReadAsync(int conversationId)
         {
             try
             {
                 var userId = _userContext.CurrentUserId;
+
+                var conversationSlug = await _unitOfWork.GetRepository<Conversation>().SingleOrDefaultAsync(
+                   selector: s => s.Slug,
+                   predicate: m => m.ConversationId == conversationId
+               );
+                if (string.IsNullOrEmpty(conversationSlug))
+                {
+                    throw new AppValidationException($"Cuộc trò chuyện không tồn tại.", StatusCodes.Status404NotFound);
+                }
+
                 var messages = await _unitOfWork.GetRepository<Message>().GetListAsync(
                     predicate: m => m.ConversationId == conversationId
                                  && m.SenderId != userId
-                                 && m.Status != MessageStatus.Read
+                                 && m.Status != MessageStatus.Read,
+                    include: i => i.Include(x => x.Sender)
+                                   .Include(x => x.ReplyMessage)
+                                       .ThenInclude(x => x.Sender)
+                                   .Include(x => x.Conversation)
                 );
 
                 if (!messages.Any())
-                    return;
+                    return default;
 
                 foreach (var msg in messages)
                 {
@@ -341,6 +387,7 @@ namespace AptCare.Service.Services.Implements
 
                 _unitOfWork.GetRepository<Message>().UpdateRange(messages);
                 await _unitOfWork.CommitAsync();
+                return (messages.Select(x => x.MessageId), conversationSlug);
             }
             catch (Exception e)
             {

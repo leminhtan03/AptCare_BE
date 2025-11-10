@@ -126,6 +126,25 @@ namespace AptCare.Service.Services.Implements
             return "Thành công";
         }
 
+        public async Task<int> GetMyUnreadCountAsync()
+        {
+            try
+            {
+                var userId = _userContext.CurrentUserId;
+
+                var unreadIds = await _unitOfWork.GetRepository<Notification>().GetListAsync(
+                    selector: s => s.NotificationId,
+                    predicate: p => p.ReceiverId == userId && !p.IsRead
+                );
+
+                return unreadIds?.Count() ?? 0;
+            }
+            catch (Exception e)
+            {
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
+            }
+        }
+
         public async Task SendAndPushNotificationAsync(NotificationPushRequestDto dto)
         {
             try
