@@ -232,6 +232,29 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
+        public async Task SendNotificationForTechnicianInAppointment(int appointmentId, NotificationPushRequestDto dto)
+        {
+            var userIds = await _unitOfWork.GetRepository<AppointmentAssign>().GetListAsync(
+                    selector: s => s.TechnicianId,
+                    predicate: p => p.AppointmentId == appointmentId && p.Status != WorkOrderStatus.Cancel
+                    );
+
+            dto.UserIds = userIds;
+            await SendAndPushNotificationAsync(dto);
+        }
+
+        public async Task SendNotificationForResidentInRequest(int repairRequestId, NotificationPushRequestDto dto)
+        {
+            var userIds = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                    selector: s => s.Apartment.UserApartments.Where(ua => ua.Status == ActiveStatus.Active).Select(ua => ua.UserId),
+                    predicate: p => p.RepairRequestId == repairRequestId,
+                    include: i => i.Include(x => x.Apartment.UserApartments)
+                    );
+
+            dto.UserIds = userIds;
+            await SendAndPushNotificationAsync(dto);
+        }
+
         private Func<IQueryable<Notification>, IOrderedQueryable<Notification>> BuildOrderBy(string sortBy)
         {
             if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.CreatedAt);
