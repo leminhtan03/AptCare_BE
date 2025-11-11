@@ -474,7 +474,7 @@ namespace AptCare.Service.Services.Implements
                                             .OrderByDescending(at => at.UpdatedAt)
                                             .FirstOrDefault();
 
-            var currentStatus =  latestTracking?.Status ?? AppointmentStatus.Pending;
+            var currentStatus = latestTracking?.Status ?? AppointmentStatus.Pending;
 
             if (!IsValidStatusTransition(currentStatus, AppointmentStatus.Completed))
             {
