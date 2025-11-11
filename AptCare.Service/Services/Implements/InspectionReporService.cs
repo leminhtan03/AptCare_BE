@@ -58,7 +58,7 @@ namespace AptCare.Service.Services.Implements
                                 orderBy: q => q.OrderByDescending(r => r.InspectionReportId),
                                 include: i => i.Include(r => r.ReportApprovals)
                             );
-                if (existingReport.ReportApprovals.Any(s => s.Status == ReportStatus.Pending) != null)
+                if (existingReport != null && existingReport.ReportApprovals.Any(s => s.Status == ReportStatus.Pending))
                     throw new AppValidationException("Báo cáo kiểm tra cho cuộc hẹn này đang chờ phê duyệt. Vui lòng không tạo báo cáo mới.", StatusCodes.Status400BadRequest);
                 List<string> uploadedFilePaths = new List<string>();
                 if (dto.Files != null && dto.Files.Any())
