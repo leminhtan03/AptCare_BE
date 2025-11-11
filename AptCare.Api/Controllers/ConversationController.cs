@@ -113,5 +113,24 @@ namespace AptCare.Api.Controllers
             var result = await _conversationService.UnmuteConversationAsync(id);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Kiểm tra cuộc trò chuyện đã tồn tại giữa người dùng hiện tại và userId.
+        /// </summary>
+        /// <param name="userId">ID người dùng cần kiểm tra.</param>
+        /// <returns>ID cuộc trò chuyện nếu tồn tại, trả về null nếu chưa có.</returns>
+        /// <response code="200">Trả về ID cuộc trò chuyện hoặc null.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="500">Lỗi hệ thống.</response>
+        [HttpGet("check-existing/{userId}")]
+        [Authorize]
+        [ProducesResponseType(typeof(int?), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<int?>> CheckExistingConversation(int userId)
+        {
+            var conversationId = await _conversationService.CheckExistingConversationAsync(userId);
+            return Ok(conversationId);
+        }
     }
 }

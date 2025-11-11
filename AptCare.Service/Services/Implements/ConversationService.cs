@@ -85,7 +85,20 @@ namespace AptCare.Service.Services.Implements
             await _unitOfWork.GetRepository<Conversation>().InsertAsync(conversation);
             await _unitOfWork.CommitAsync();
 
-            return "Tạo cuộc trò chuyện thành công.";
+            return conversation.ConversationId.ToString();
+        }
+
+        public async Task<int?> CheckExistingConversationAsync(int userId)
+        {
+            var currentUserId = _userContext.CurrentUserId;
+            var conversationId = await _unitOfWork.GetRepository<Conversation>().SingleOrDefaultAsync(
+                selector: s => s.ConversationId,
+                predicate: x => x.ConversationParticipants.Count == 2 && 
+                                x.ConversationParticipants.All(cp => cp.ParticipantId == currentUserId || cp.ParticipantId == userId),
+                include: i => i.Include(x => x.ConversationParticipants)
+                );
+
+            return conversationId == 0 ? null : conversationId;
         }
 
         public async Task<IEnumerable<ConversationDto>> GetMyConversationsAsync()
@@ -95,7 +108,8 @@ namespace AptCare.Service.Services.Implements
                     predicate: x => x.ConversationParticipants.Any(cp => cp.ParticipantId == userId),
                     include: i => i.Include(x => x.ConversationParticipants)
                                         .ThenInclude(x => x.Participant)
-                                   .Include(x => x.Messages)
+                                   .Include(x => x.Messages),
+                    orderBy: o => o.OrderByDescending(x => x.Messages.OrderByDescending(m => m.CreatedAt).First().CreatedAt)
                     );
 
             List<ConversationDto> result = new List<ConversationDto>();
