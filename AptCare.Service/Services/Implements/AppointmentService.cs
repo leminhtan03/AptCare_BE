@@ -299,12 +299,23 @@ namespace AptCare.Service.Services.Implements
                 //{
                 //    throw new AppValidationException("Chưa đến thời gian check-in cho lịch hẹn này.");
                 //}
-                var StatusChange = await _repairRequestService.ToggleRepairRequestStatusAsync(new ToggleRRStatus
+
+                var latestRequestStaus = await _unitOfWork.GetRepository<RequestTracking>().SingleOrDefaultAsync(
+                    selector: s => s.Status,
+                    predicate: x => x.RepairRequestId == appointment.RepairRequestId,
+                    orderBy: o => o.OrderByDescending(x => x.UpdatedAt)
+                    );
+
+                if (latestRequestStaus != RequestStatus.InProgress)
                 {
-                    RepairRequestId = appointment.RepairRequestId,
-                    NewStatus = RequestStatus.InProgress,
-                    Note = "Kỹ thuật đã bắt đầu thực hiện yêu cầu sữa chữa."
-                });
+                    var StatusChange = await _repairRequestService.ToggleRepairRequestStatusAsync(new ToggleRRStatus
+                    {
+                        RepairRequestId = appointment.RepairRequestId,
+                        NewStatus = RequestStatus.InProgress,
+                        Note = "Kỹ thuật đã bắt đầu thực hiện yêu cầu sữa chữa."
+                    });
+                }
+
                 var latestTracking = appointment.AppointmentTrackings
                                                 .OrderByDescending(at => at.UpdatedAt)
                                                 .FirstOrDefault();
@@ -320,7 +331,7 @@ namespace AptCare.Service.Services.Implements
                     };
                     await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
                     await _unitOfWork.CommitAsync();
-                    var appointmentAssign = appointment.AppointmentAssigns;
+                    var appointmentAssign = appointment.AppointmentAssigns.Where(aa => aa.Status != WorkOrderStatus.Cancel);
                     foreach (var assign in appointmentAssign)
                     {
                         if (assign != null)
@@ -393,17 +404,6 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
                 await _unitOfWork.CommitAsync();
 
-                var appointmentAssigns = appointment.AppointmentAssigns;
-                foreach (var assign in appointmentAssigns)
-                {
-                    if (assign != null && assign.ActualStartTime != null)
-                    {
-                        assign.Status = WorkOrderStatus.Working;
-                        _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(assign);
-                    }
-                }
-
-                await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
                 return true;
             }
@@ -451,12 +451,72 @@ namespace AptCare.Service.Services.Implements
                 UpdatedAt = DateTime.Now
             };
 
-            if (appointmentStatus == AppointmentStatus.Confirmed)
+            await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
+            await _unitOfWork.CommitAsync();
+
+            return true;
+        }
+
+        public async Task<bool> CompleteAppointmentAsync(int id, string note, bool hasNextAppointment)
+        {
+            var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
+                predicate: x => x.AppointmentId == id,
+                include: i => i.Include(x => x.AppointmentTrackings)
+                               .Include(x => x.AppointmentAssigns)
+            );
+
+            if (appointment == null)
             {
-                await SendNotificationForTechnician(appointment);
+                throw new AppValidationException("Lịch hẹn không tồn tại.", StatusCodes.Status404NotFound);
+            }
+
+            var latestTracking = appointment.AppointmentTrackings
+                                            .OrderByDescending(at => at.UpdatedAt)
+                                            .FirstOrDefault();
+
+            var currentStatus =  latestTracking?.Status ?? AppointmentStatus.Pending;
+
+            if (!IsValidStatusTransition(currentStatus, AppointmentStatus.Completed))
+            {
+                throw new AppValidationException(
+                    $"Không thể chuyển trạng thái từ '{currentStatus}' sang 'Complete'.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var userId = _userContext.CurrentUserId;
+
+            var appointmentTracking = new AppointmentTracking
+            {
+                AppointmentId = id,
+                Status = AppointmentStatus.Completed,
+                Note = note ?? string.Empty,
+                UpdatedBy = userId,
+                UpdatedAt = DateTime.Now
+            };
+
+            if (hasNextAppointment)
+            {
+                await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
+                {
+                    RepairRequestId = appointment.RepairRequestId,
+                    Status = RequestStatus.Scheduling,
+                    UpdatedBy = userId,
+                    UpdatedAt = DateTime.Now
+                });
             }
 
             await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
+
+            var appointmentAssign = appointment.AppointmentAssigns.Where(aa => aa.Status == WorkOrderStatus.Working);
+            foreach (var assign in appointmentAssign)
+            {
+                if (assign != null)
+                {
+                    assign.ActualEndTime = DateTime.Now;
+                    assign.Status = WorkOrderStatus.Completed;
+                    _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(assign);
+                }
+            }
             await _unitOfWork.CommitAsync();
 
             return true;
@@ -484,6 +544,7 @@ namespace AptCare.Service.Services.Implements
                 AppointmentStatus.InVisit => new[]
                 {
                     AppointmentStatus.AwaitingIRApproval,
+                    AppointmentStatus.InRepair,
                     AppointmentStatus.Cancelled
                 },
                 AppointmentStatus.AwaitingIRApproval => new[]
@@ -501,22 +562,6 @@ namespace AptCare.Service.Services.Implements
                 _ => Array.Empty<AppointmentStatus>()
             };
             return validNextStatuses.Contains(newStatus);
-        }
-
-        private async Task SendNotificationForTechnician(Appointment appointment)
-        {
-            var userIds = await _unitOfWork.GetRepository<AppointmentAssign>().GetListAsync(
-                    selector: s => s.TechnicianId,
-                    predicate: p => p.AppointmentId == appointment.AppointmentId && p.Status != WorkOrderStatus.Cancel
-                    );
-
-            await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
-            {
-                Title = "Có yêu cầu sửa chữa mới được phân công cho bạn",
-                Type = NotificationType.Individual,
-                Description = $"Có yêu cầu sửa chữa mới được phân công cho bạn vào {appointment.StartTime.TimeOfDay} ngày {DateOnly.FromDateTime(appointment.StartTime)}",
-                UserIds = userIds
-            });
         }
     }
 }
