@@ -10,6 +10,7 @@ namespace AptCare.Service.Services.Interfaces
     public interface IConversationService
     {
         Task<string> CreateConversationAsync(ConversationCreateDto dto);
+        Task<int?> CheckExistingConversationAsync(int userId);
         Task<IEnumerable<ConversationDto>> GetMyConversationsAsync();
         Task<ConversationDto> GetConversationByIdAsync(int id);
         Task<string> MuteConversationAsync(int id);
