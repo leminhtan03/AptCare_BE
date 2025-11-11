@@ -332,6 +332,34 @@ namespace AptCare.Api.Controllers
             var result = await _appointmentService.StartRepairAsync(id);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Hoàn thành lịch hẹn.
+        /// </summary>
+        /// <remarks>
+        /// Gọi khi kỹ thuật viên hoàn tất công việc tại lịch hẹn.
+        /// - `note`: ghi chú hoàn thành (tùy chọn).
+        /// - `hasNextAppointment`: nếu true sẽ tạo tracking chuyển Request sang trạng thái Scheduling.
+        /// </remarks>
+        /// <param name="id">ID lịch hẹn cần hoàn thành.</param>
+        /// <param name="note">Ghi chú.</param>
+        /// <param name="hasNextAppointment">Có lịch hẹn tiếp theo không.</param>
+        /// <returns>True nếu hoàn thành thành công.</returns>
+        /// <response code="200">Hoàn thành thành công.</response>
+        /// <response code="400">Yêu cầu không hợp lệ hoặc chuyển trạng thái không hợp lệ.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="404">Không tìm thấy lịch hẹn.</response>
+        [HttpPost("{id}/complete")]
+        [Authorize(Roles = $"{nameof(AccountRole.Technician)}, {nameof(AccountRole.TechnicianLead)}")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CompleteAppointment(int id, string note, bool hasNextAppointment)
+        {
+            var result = await _appointmentService.CompleteAppointmentAsync(id, note, hasNextAppointment);
+            return Ok(result);
+        }
     }
 }
 
