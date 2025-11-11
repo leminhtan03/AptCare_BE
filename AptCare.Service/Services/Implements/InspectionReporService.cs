@@ -52,7 +52,14 @@ namespace AptCare.Service.Services.Implements
 
                 if (repairRequest == null)
                     throw new AppValidationException("Không tìm thấy yêu cầu sửa chữa liên quan");
-
+                var existingReport = await _unitOfWork.GetRepository<InspectionReport>()
+                            .SingleOrDefaultAsync(
+                                predicate: e => e.AppointmentId == dto.AppointmentId,
+                                orderBy: q => q.OrderByDescending(r => r.InspectionReportId),
+                                include: i => i.Include(r => r.ReportApprovals)
+                            );
+                if (existingReport.ReportApprovals.Any(s => s.Status == ReportStatus.Pending) != null)
+                    throw new AppValidationException("Báo cáo kiểm tra cho cuộc hẹn này đang chờ phê duyệt. Vui lòng không tạo báo cáo mới.", StatusCodes.Status400BadRequest);
                 List<string> uploadedFilePaths = new List<string>();
                 if (dto.Files != null && dto.Files.Any())
                 {
@@ -200,7 +207,7 @@ namespace AptCare.Service.Services.Implements
                 var result = _mapper.Map<InspectionReportDto>(inspectionReport);
                 var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                     selector: s => _mapper.Map<MediaDto>(s),
-                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == result.InspectionReportId
+                    predicate: p => p.Entity == nameof(InspectionReport) && p.EntityId == result.InspectionReportId
                     );
                 result.Medias = medias.ToList();
                 return result;
@@ -211,7 +218,7 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-        public async Task<IPaginate<InspectionBasicReportDto>> GetPaginateInspectionReportsAsync(InspectionReportFilterDto filterDto)
+        public async Task<IPaginate<InspectionReportDto>> GetPaginateInspectionReportsAsync(InspectionReportFilterDto filterDto)
         {
             try
             {
@@ -234,9 +241,8 @@ namespace AptCare.Service.Services.Implements
                      p.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name.ToLower().Contains(search))
                      )) ||
                     (!string.IsNullOrEmpty(p.Solution) && p.Solution.ToLower().Contains(search))) &&
-                    p.Appointment.InspectionReports != null &&
-                    (p.Appointment.InspectionReports.Any(ir => ir.ReportApprovals != null && ir.ReportApprovals.Any(s => s.UserId == userId)) ||
-                    (p.Appointment.RepairReport.Appointment.AppointmentAssigns.Any(s => s.TechnicianId == userId))) &&
+                    (p.ReportApprovals != null && p.ReportApprovals.Any(ra => ra.UserId == userId) ||
+                     p.Appointment.AppointmentAssigns.Any(s => s.TechnicianId == userId)) &&
                     (string.IsNullOrEmpty(filter) ||
                     p.Status.ToString().ToLower().Contains(filter)) &&
                     (string.IsNullOrEmpty(faultTypeFilter) ||
@@ -270,7 +276,7 @@ namespace AptCare.Service.Services.Implements
                                         .ThenInclude(ra => ra.User)
                                             .ThenInclude(u => u.Account),
                     orderBy: BuildOrderBy(filterDto.sortBy ?? string.Empty),
-                    selector: s => _mapper.Map<InspectionBasicReportDto>(s)
+                    selector: s => _mapper.Map<InspectionReportDto>(s)
                 );
 
                 foreach (var item in paginateEntityResult.Items)
@@ -281,7 +287,6 @@ namespace AptCare.Service.Services.Implements
                     );
                     item.Medias = medias.ToList();
                 }
-
                 return paginateEntityResult;
             }
             catch (Exception ex)
