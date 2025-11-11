@@ -1,16 +1,17 @@
-﻿using AptCare.Repository.Entities;
-using AptCare.Repository.UnitOfWork;
-using AptCare.Repository;
-using AptCare.Service.Services.Interfaces;
-using AutoMapper;
-using Microsoft.Extensions.Logging;
-using AptCare.Service.Exceptions;
-using Microsoft.AspNetCore.Http;
-using AptCare.Repository.Enum.AccountUserEnum;
-using Microsoft.EntityFrameworkCore;
+﻿using AptCare.Repository;
+using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
+using AptCare.Repository.Enum.AccountUserEnum;
+using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.AppointmentAssignDtos;
 using AptCare.Service.Dtos.AppointmentDtos;
+using AptCare.Service.Dtos.NotificationDtos;
+using AptCare.Service.Exceptions;
+using AptCare.Service.Services.Interfaces;
+using AutoMapper;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
@@ -18,14 +19,17 @@ namespace AptCare.Service.Services.Implements
     public class AppointmentAssignService : BaseService<AppointmentAssignService>, IAppointmentAssignService
     {
         private readonly IUserContext _userContext;
+        private readonly INotificationService _notificationService;
 
         public AppointmentAssignService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
             ILogger<AppointmentAssignService> logger,
             IMapper mapper,
+            INotificationService notificationService,
             IUserContext userContext) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
+            _notificationService = notificationService;
         }
 
         public async Task<string> AssignAppointmentAsync(int appointmentId, IEnumerable<int> userIds)
@@ -303,6 +307,22 @@ namespace AptCare.Service.Services.Implements
                     };
                     await AppoimentTrackingRepo.InsertAsync(n);
                     await _unitOfWork.CommitAsync();
+
+                    var dtoForTechnician = new NotificationPushRequestDto
+                    {
+                        Title = "Có yêu cầu sửa chữa mới được phân công cho bạn",
+                        Type = NotificationType.Individual,
+                        Description = $"Có yêu cầu sửa chữa mới được phân công cho bạn vào {Appoiment.StartTime.TimeOfDay} ngày {DateOnly.FromDateTime(Appoiment.StartTime)}",
+                    };
+                    await _notificationService.SendNotificationForTechnicianInAppointment(appointmentId, dtoForTechnician);
+
+                    var dtoForResident = new NotificationPushRequestDto
+                    {
+                        Title = "Hệ thống",
+                        Type = NotificationType.Individual,
+                        Description = $"Có lịch hẹn yêu cầu sửa chữa vào {Appoiment.StartTime.TimeOfDay} ngày {DateOnly.FromDateTime(Appoiment.StartTime)}"
+                    };
+                    await _notificationService.SendNotificationForResidentInRequest(appointmentId, dtoForResident);
                 }
                 else
                 {

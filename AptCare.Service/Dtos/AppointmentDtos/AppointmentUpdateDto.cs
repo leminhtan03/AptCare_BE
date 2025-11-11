@@ -12,6 +12,5 @@ namespace AptCare.Service.Dtos.AppointmentDtos
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public string? Note { get; set; }
-        public AppointmentStatus Status { get; set; }
     }
 }
