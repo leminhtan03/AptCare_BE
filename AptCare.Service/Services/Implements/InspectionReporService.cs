@@ -82,13 +82,10 @@ namespace AptCare.Service.Services.Implements
                 newInsReport.Status = ReportStatus.Pending;
                 await InspecRepo.InsertAsync(newInsReport);
                 await _unitOfWork.CommitAsync();
-
-                if (!await _appointmentService.ToogleAppoimnentStatus(
-                    dto.AppointmentId,
-                    "Hoàn thành kiểm tra - chờ duyệt báo cáo kiểm tra",
-                    AppointmentStatus.AwaitingIRApproval))
+                if (existingReport == null)
                 {
-                    throw new AppValidationException("Có lỗi xảy ra khi cập nhật trạng thái cuộc hẹn.", StatusCodes.Status500InternalServerError);
+                    if (!await _appointmentService.ToogleAppoimnentStatus(dto.AppointmentId, "Hoàn thành kiểm tra - chờ duyệt báo cáo kiểm tra", AppointmentStatus.AwaitingIRApproval))
+                        throw new AppValidationException("Có lỗi xảy ra khi cập nhật trạng thái cuộc hẹn.", StatusCodes.Status500InternalServerError);
                 }
                 if (!await _reportApprovalService.CreateApproveReportAsync(new ApproveReportCreateDto
                 {
@@ -136,12 +133,12 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-        public async Task<InspectionReportDto> GetInspectionReportByAppointmentIdAsync(int id)
+        public async Task<ICollection<InspectionReportDto>> GetInspectionReportByAppointmentIdAsync(int id)
         {
             try
             {
                 var InspecRepo = _unitOfWork.GetRepository<InspectionReport>();
-                var inspectionReport = await InspecRepo.SingleOrDefaultAsync(
+                var inspectionReport = await InspecRepo.GetListAsync(
                     predicate: e => e.AppointmentId == id,
                     include: q => q.Include(i => i.User)
                                     .ThenInclude(u => u.TechnicianTechniques)
@@ -157,19 +154,23 @@ namespace AptCare.Service.Services.Implements
                                                 .ThenInclude(mr => mr.CommonAreaObject)
                                     .Include(ra => ra.ReportApprovals)
                                         .ThenInclude(ra => ra.User)
-                                            .ThenInclude(u => u.Account)
+                                            .ThenInclude(u => u.Account),
+                    selector: s => _mapper.Map<InspectionReportDto>(s)
+
                 );
 
                 if (inspectionReport == null)
-                    return new InspectionReportDto();
+                    return [];
 
-                var result = _mapper.Map<InspectionReportDto>(inspectionReport);
-                var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
-                    selector: s => _mapper.Map<MediaDto>(s),
-                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == result.InspectionReportId
-                    );
-                result.Medias = medias.ToList();
-                return result;
+                foreach (var report in inspectionReport)
+                {
+                    var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                        selector: s => _mapper.Map<MediaDto>(s),
+                        predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == report.InspectionReportId
+                        );
+                    report.Medias = medias.ToList();
+                }
+                return inspectionReport;
             }
             catch (Exception ex)
             {

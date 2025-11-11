@@ -254,13 +254,13 @@ namespace AptCare.Api.MapperProfile
             CreateMap<InvoiceService, InvoiceServiceDto>();
 
             CreateMap<InvoiceInternalCreateDto, Invoice>()
-                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
+                .ForMember(d => d.Status, o => o.MapFrom(s => InvoiceStatus.Draft))
                 .ForMember(d => d.Type, o => o.MapFrom(s => InvoiceType.InternalRepair))
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
             .ForMember(d => d.InvoiceAccessories, o => o.MapFrom(s => new List<InvoiceAccessory>()))
             .ForMember(d => d.InvoiceServices, o => o.MapFrom(s => new List<InvoiceService>()));
             CreateMap<InvoiceExternalCreateDto, Invoice>()
-                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
+                .ForMember(d => d.Status, o => o.MapFrom(s => InvoiceStatus.Draft))
                 .ForMember(d => d.Type, o => o.MapFrom(s => InvoiceType.ExternalContractor))
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
                 .ForMember(d => d.InvoiceAccessories, o => o.MapFrom(s => new List<InvoiceAccessory>()))

@@ -87,9 +87,9 @@ namespace AptCare.Service.Services.Implements
                         totalAmount += service.Price;
 
                         invoice.InvoiceServices.Add(new Repository.Entities.InvoiceService
-                        {                           
+                        {
                             Name = service.Name,
-                            Price = service.Price,                            
+                            Price = service.Price,
                         });
                     }
                 }
@@ -130,7 +130,7 @@ namespace AptCare.Service.Services.Implements
                 if (dto.Accessories != null && dto.Accessories.Count != 0)
                 {
                     foreach (var accessory in dto.Accessories)
-                    {                        
+                    {
                         totalAmount += accessory.Price * accessory.Quantity;
                         invoice.InvoiceAccessories.Add(new InvoiceAccessory
                         {
@@ -182,7 +182,7 @@ namespace AptCare.Service.Services.Implements
 
             var invoices = await _unitOfWork.GetRepository<Invoice>().ProjectToListAsync<InvoiceDto>(
                 configuration: _mapper.ConfigurationProvider,
-                predicate: x => x.RepairRequestId == repairRequestId && x.Status == ActiveStatus.Active,
+                predicate: x => x.RepairRequestId == repairRequestId && x.Status != InvoiceStatus.Cancelled,
                 include: i => i.Include(x => x.InvoiceAccessories)
                                .Include(x => x.InvoiceServices)
                 );
