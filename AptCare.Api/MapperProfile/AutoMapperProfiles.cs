@@ -276,7 +276,9 @@ namespace AptCare.Api.MapperProfile
                     : s.Appointment.RepairRequest.Apartment != null
                         ? s.Appointment.RepairRequest.Apartment.Room
                         : string.Empty))
-                .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals));
+                .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals))
+                .ForMember(d => d.Solution, o => o.MapFrom(s => s.Solution))
+                .ForMember(d => d.Description, o => o.MapFrom(s => s.Description));
 
             CreateMap<ReportApproval, ApprovelReportDto>()
                 .ForMember(dest => dest.ReportId, opt => opt.MapFrom(src =>
@@ -284,13 +286,7 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src =>
                     src.User.FirstName + " " + src.User.LastName));  // ✅ Map FullName với khoảng trắng
 
-            CreateMap<InspectionReport, InspectionBasicReportDto>()
-                .ForMember(d => d.Technican, o => o.MapFrom(s => s.User))
-                .ForMember(d => d.AreaName, o => o.MapFrom(s => s.Appointment.RepairRequest.MaintenanceRequest != null
-                    ? s.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name
-                    : s.Appointment.RepairRequest.Apartment != null
-                        ? s.Appointment.RepairRequest.Apartment.Room
-                        : string.Empty));
+
 
             CreateMap<CreateInspectionReporDto, InspectionReport>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ReportStatus.Pending))
