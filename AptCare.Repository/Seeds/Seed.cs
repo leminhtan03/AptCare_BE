@@ -29,6 +29,7 @@ namespace AptCare.Repository.Seeds
             await SeedCommonAreaObjects(context);
             await SeedSlots(context);
             await SeedAccessories(context);
+            await SeedAccessoryMedias(context);
         }
 
         private static async Task SeedFloors(AptCareSystemDBContext context)
@@ -658,6 +659,80 @@ namespace AptCare.Repository.Seeds
                 };
 
                 context.Accessories.AddRange(accessories);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        private static async Task SeedAccessoryMedias(AptCareSystemDBContext context)
+        {
+            // Chỉ seed nếu chưa có media cho Accessory
+            if (!context.Medias.Any(m => m.Entity == nameof(Accessory)))
+            {
+                var accessories = context.Accessories.AsNoTracking().ToList();
+                if (!accessories.Any())
+                    return;
+
+                // Các ảnh mẫu public (Unsplash) - mỗi accessory sẽ nhận một ảnh phù hợp
+                var urls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["bulb"] = "https://tse3.mm.bing.net/th/id/OIP.im3DkrUPFL6P_LDh63hd9wHaFR?pid=Api&P=0&h=220",
+                    ["socket"] = "https://tse1.mm.bing.net/th/id/OIP.fa-oY-_GPHHKVq0PAYQ35gHaGa?pid=Api&P=0&h=220",
+                    ["lock"] = "https://tse4.mm.bing.net/th/id/OIP.9HIWdmBGQ5g0R5LjAgfLzwHaE7?pid=Api&P=0&h=220",
+                    ["pipe"] = "https://tse4.mm.bing.net/th/id/OIP.2HFc_CMPo4Vub-XO-_8vewHaFj?pid=Api&P=0&h=220",
+                    ["smoke"] = "https://tse3.mm.bing.net/th/id/OIP.KN1W1QeWGa-laA0sqPMplgHaE8?pid=Api&P=0&h=220",
+                    ["switch"] = "https://tse2.mm.bing.net/th/id/OIP.99hk6P_I4EQO97ZI96f4QwHaGq?pid=Api&P=0&h=220",
+                    ["fan"] = "https://tse3.mm.bing.net/th/id/OIP.Qbn-fHy4Vkhq0m47GaLTugHaIe?pid=Api&P=0&h=220",
+                    ["valve"] = "https://tse2.mm.bing.net/th/id/OIP.T5fLLXtJlW3ghk9udKWGvAHaIJ?pid=Api&P=0&h=220",
+                    ["hinge"] = "https://tse1.mm.bing.net/th/id/OIP.NgxmBpUc4kYPcZo8XTbS_QHaEo?pid=Api&P=0&h=220",
+                    ["wire"] = "https://tse1.mm.bing.net/th/id/OIP.N-fS3UF6DyyPFW5IQig3MAHaE7?pid=Api&P=0&h=220",
+                    ["default"] = "https://tse1.mm.bing.net/th/id/OIP.qVV8kcLdcLysZ5OOCzhKLAHaF7?pid=Api&P=0&h=220"
+                };
+
+                var medias = new List<Media>();
+
+                foreach (var acc in accessories)
+                {
+                    string name = acc.Name ?? string.Empty;
+                    string key = "default";
+
+                    // Quy tắc chọn ảnh dựa vào tên (tiếng Việt/tiếng Anh cơ bản)
+                    var lower = name.ToLowerInvariant();
+                    if (lower.Contains("đèn") || lower.Contains("bóng đèn") || lower.Contains("led"))
+                        key = "bulb";
+                    else if (lower.Contains("ổ cắm") || lower.Contains("cắm"))
+                        key = "socket";
+                    else if (lower.Contains("khóa") || lower.Contains("khóa cửa"))
+                        key = "lock";
+                    else if (lower.Contains("ống") || lower.Contains("pvc") || lower.Contains("ống nước"))
+                        key = "pipe";
+                    else if (lower.Contains("cảm biến") || lower.Contains("khói") || lower.Contains("smoke"))
+                        key = "smoke";
+                    else if (lower.Contains("công tắc") || lower.Contains("switch"))
+                        key = "switch";
+                    else if (lower.Contains("quạt") || lower.Contains("quạt hút"))
+                        key = "fan";
+                    else if (lower.Contains("van") || lower.Contains("valve"))
+                        key = "valve";
+                    else if (lower.Contains("bản lề") || lower.Contains("hinge"))
+                        key = "hinge";
+                    else if (lower.Contains("dây") || lower.Contains("dây điện") || lower.Contains("wire"))
+                        key = "wire";
+
+                    var url = urls.ContainsKey(key) ? urls[key] : urls["default"];
+
+                    medias.Add(new Media
+                    {
+                        Entity = nameof(Accessory),
+                        EntityId = acc.AccessoryId,
+                        FileName = $"{acc.Name} - image",
+                        FilePath = url,
+                        ContentType = "image/jpeg",
+                        CreatedAt = DateTime.Now,
+                        Status = ActiveStatus.Active
+                    });
+                }
+
+                context.Medias.AddRange(medias);
                 await context.SaveChangesAsync();
             }
         }

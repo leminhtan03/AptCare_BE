@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -16,5 +17,7 @@ namespace AptCare.Service.Dtos.AccessoryDto
         public decimal Price { get; set; }
         [Required]
         public int Quantity { get; set; }
+
+        public List<IFormFile>? Images { get; set; }
     }
 }

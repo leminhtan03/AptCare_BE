@@ -336,7 +336,7 @@ namespace AptCare.Api.MapperProfile
 
             CreateMap<AccessoryCreateDto, Accessory>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
-            CreateMap<AccessoryDto, Accessory>()
+            CreateMap<AccessoryUpdateDto, Accessory>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }

@@ -21,14 +21,23 @@ namespace AptCare.Service.Services.Implements
 {
     public class AccessoryService : BaseService<AccessoryService>, IAccessoryService
     {
-        public AccessoryService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<AccessoryService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
+        private readonly ICloudinaryService _cloudinaryService;
+
+        public AccessoryService(
+        IUnitOfWork<AptCareSystemDBContext> unitOfWork, 
+        ILogger<AccessoryService> logger, 
+        ICloudinaryService cloudinaryService,
+        IMapper mapper) : base(unitOfWork, logger, mapper)
         {
+            _cloudinaryService = cloudinaryService;
         }
 
         public async Task<string> CreateAccessoryAsync(AccessoryCreateDto dto)
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var isDup = await _unitOfWork.GetRepository<Accessory>().AnyAsync(
                     predicate: x => x.Name == dto.Name
                 );
@@ -38,10 +47,38 @@ namespace AptCare.Service.Services.Implements
                 var accessory = _mapper.Map<Accessory>(dto);
                 await _unitOfWork.GetRepository<Accessory>().InsertAsync(accessory);
                 await _unitOfWork.CommitAsync();
+
+                if (dto.Images != null && dto.Images.Any())
+                {
+                    foreach (var file in dto.Images)
+                    {
+                        if (file == null || file.Length == 0)
+                            throw new AppValidationException("File không hợp lệ.");
+
+                        var filePath = await _cloudinaryService.UploadImageAsync(file);
+                        if (string.IsNullOrEmpty(filePath))
+                            throw new AppValidationException("Có lỗi xảy ra khi gửi file.", StatusCodes.Status500InternalServerError);
+
+                        await _unitOfWork.GetRepository<Media>().InsertAsync(new Media
+                        {
+                            Entity = nameof(Accessory),
+                            EntityId = accessory.AccessoryId,
+                            FileName = file.FileName,
+                            FilePath = filePath,
+                            ContentType = file.ContentType,
+                            CreatedAt = DateTime.Now,
+                            Status = ActiveStatus.Active
+                        });
+                    }
+                }
+
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
                 return "Tạo phụ kiện thành công.";
             }
             catch (Exception e)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
@@ -50,6 +87,8 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var accessory = await _unitOfWork.GetRepository<Accessory>().SingleOrDefaultAsync(
                     predicate: x => x.AccessoryId == id
                 );
@@ -65,10 +104,52 @@ namespace AptCare.Service.Services.Implements
                 _mapper.Map(dto, accessory);
                 _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessory);
                 await _unitOfWork.CommitAsync();
+
+                if (dto.NewImages != null && dto.NewImages.Any())
+                {
+                    foreach (var file in dto.NewImages)
+                    {
+                        if (file == null || file.Length == 0)
+                            throw new AppValidationException("File không hợp lệ.");
+
+                        var filePath = await _cloudinaryService.UploadImageAsync(file);
+                        if (string.IsNullOrEmpty(filePath))
+                            throw new AppValidationException("Có lỗi xảy ra khi gửi file.", StatusCodes.Status500InternalServerError);
+
+                        await _unitOfWork.GetRepository<Media>().InsertAsync(new Media
+                        {
+                            Entity = nameof(Accessory),
+                            EntityId = accessory.AccessoryId,
+                            FileName = file.FileName,
+                            FilePath = filePath,
+                            ContentType = file.ContentType,
+                            CreatedAt = DateTime.Now,
+                            Status = ActiveStatus.Active
+                        });
+                    }
+                }
+
+                if (dto.RemoveMediaIds != null && dto.RemoveMediaIds.Any())
+                {
+                    foreach (var mediaId in dto.RemoveMediaIds)
+                    {
+                        var media = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                            predicate: x => x.MediaId == mediaId
+                        );
+                        if (media == null)
+                            throw new AppValidationException("Không tìm thấy media.", StatusCodes.Status404NotFound);
+
+                        _unitOfWork.GetRepository<Media>().DeleteAsync(media);
+                    }
+                }
+
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
                 return "Cập nhật phụ kiện thành công.";
             }
             catch (Exception e)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
@@ -99,10 +180,15 @@ namespace AptCare.Service.Services.Implements
                 configuration: _mapper.ConfigurationProvider,
                 predicate: p => p.AccessoryId == id
             );
-
             if (accessory == null)
                 throw new AppValidationException("Phụ kiện không tồn tại.", StatusCodes.Status404NotFound);
 
+            var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                selector: s => _mapper.Map<MediaDto>(s),
+                predicate: x => x.Entity == nameof(Accessory) && x.EntityId == id
+            );
+
+            accessory.Images = medias.ToList();
             return accessory;
         }
 
@@ -125,6 +211,16 @@ namespace AptCare.Service.Services.Implements
                 size: size
             );
 
+            foreach ( var item in result.Items )
+            {
+                var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                    selector: s => _mapper.Map<MediaDto>(s),
+                    predicate: x => x.Entity == nameof(Accessory) && x.EntityId == item.AccessoryId
+                );
+
+                item.Images = medias.ToList();
+            }
+
             return result;
         }
 
@@ -135,6 +231,16 @@ namespace AptCare.Service.Services.Implements
                 predicate: p => p.Status == ActiveStatus.Active,
                 orderBy: o => o.OrderBy(x => x.Name)
             );
+
+            foreach (var item in result)
+            {
+                var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                    selector: s => _mapper.Map<MediaDto>(s),
+                    predicate: x => x.Entity == nameof(Accessory) && x.EntityId == item.AccessoryId
+                );
+
+                item.Images = medias.ToList();
+            }
 
             return result;
         }
