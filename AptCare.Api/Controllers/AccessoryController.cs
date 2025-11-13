@@ -35,7 +35,7 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult> CreateAccessory([FromBody] AccessoryCreateDto dto)
+        public async Task<ActionResult> CreateAccessory([FromForm] AccessoryCreateDto dto)
         {
             var result = await _accessoryService.CreateAccessoryAsync(dto);
             return Created(string.Empty, result);
@@ -61,7 +61,7 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult> UpdateAccessory(int id, [FromBody] AccessoryUpdateDto dto)
+        public async Task<ActionResult> UpdateAccessory(int id, [FromForm] AccessoryUpdateDto dto)
         {
             var result = await _accessoryService.UpdateAccessoryAsync(id, dto);
             return Ok(result);
@@ -114,7 +114,7 @@ namespace AptCare.Api.Controllers
 
         /// <summary>
         /// Lấy danh sách phụ kiện có phân trang, tìm kiếm và lọc.
-        /// </summary>
+        /// </summary> 
         /// <remarks>
         /// Role: TechnicianLead, Manager, Technician.  
         ///
