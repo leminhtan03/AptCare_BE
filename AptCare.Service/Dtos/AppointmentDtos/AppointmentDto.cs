@@ -22,7 +22,7 @@ namespace AptCare.Service.Dtos.AppointmentDtos
         public DateTime CreatedAt { get; set; }
         public RepairRequestBasicDto RepairRequest { get; set; } = null!;
         public List<UserBasicDto> Technicians { get; set; } = null!;
-        public List<AppointmentTrackingDto> AppointmentTrackings = null!;
+        public List<AppointmentTrackingDto> AppointmentTrackings { get; set; } = null!;
     }
 
     public class ResidentAppointmentScheduleDto

@@ -1,6 +1,7 @@
 ﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
+using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
@@ -14,6 +15,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Asn1.Ocsp;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
@@ -388,7 +390,30 @@ namespace AptCare.Service.Services.Implements
                 if (!IsValidStatusTransition(latestTracking.Status, AppointmentStatus.InRepair))
                 {
                     throw new AppValidationException(
-                        $"Không thể bắt đầu sửa chữa từ trạng thái '{latestTracking?.Status}'. Yêu cầu phải ở trạng thái InVisit, Visited hoặc AwaitingIRApproval.");
+                        $"Không thể bắt đầu sửa chữa từ trạng thái '{latestTracking?.Status}'. Yêu cầu phải ở trạng thái InVisit hoặc AwaitingIRApproval.");
+                }
+                if (latestTracking.Status == AppointmentStatus.AwaitingIRApproval)
+                {
+                    if (appointment.InspectionReports.OrderByDescending(x => x.CreatedAt)
+                                                        .FirstOrDefault().Status == ReportStatus.Approved)
+                    {
+                        throw new AppValidationException("Báo cáo khảo sát chưa được chấp thuận.");
+                    }
+                }
+                if (latestTracking.Status == AppointmentStatus.InVisit)
+                {
+                    var isValid = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
+                    predicate: p => p.RepairRequestId == appointment.RepairRequestId && 
+                                    p.Appointments.Any(a => a.InspectionReports.OrderByDescending(x => x.CreatedAt)
+                                                                               .FirstOrDefault().Status == ReportStatus.Approved),
+                    include: i => i.Include(x => x.Appointments)
+                                        .ThenInclude(x => x.InspectionReports)
+                    );
+
+                    if (!isValid)
+                    {
+                        throw new AppValidationException("Báo cáo khảo sát trước đó chưa được chấp thuận.");
+                    } 
                 }
                 await _unitOfWork.BeginTransactionAsync();
 
@@ -456,12 +481,15 @@ namespace AptCare.Service.Services.Implements
             return true;
         }
 
-        public async Task<bool> CompleteAppointmentAsync(int id, string note, bool hasNextAppointment)
+        public async Task<string> CompleteAppointmentAsync(int id, string note, bool hasNextAppointment)
         {
             var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
                 predicate: x => x.AppointmentId == id,
                 include: i => i.Include(x => x.AppointmentTrackings)
                                .Include(x => x.AppointmentAssigns)
+                               .Include(x => x.InspectionReports)
+                                    .ThenInclude(x => x.ReportApprovals)
+                               .Include(x => x.RepairReport)
             );
 
             if (appointment == null)
@@ -480,6 +508,31 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException(
                     $"Không thể chuyển trạng thái từ '{currentStatus}' sang 'Complete'.",
                     StatusCodes.Status400BadRequest);
+            }
+
+            if (currentStatus == AppointmentStatus.InRepair)
+            {
+                if (appointment.RepairReport == null)
+                {
+                    throw new AppValidationException("Chưa có báo cáo hoàn thành.");
+                }
+
+                if (appointment.RepairReport.Status == ReportStatus.Approved)
+                {
+                    throw new AppValidationException("Báo cáo hoàn thành chưa được chấp thuận.");
+                }
+            }
+            if (currentStatus == AppointmentStatus.AwaitingIRApproval)
+            {
+                if (appointment.InspectionReports != null && appointment.InspectionReports.Any())
+                {
+                    if (!appointment.InspectionReports.OrderByDescending(x => x.CreatedAt)
+                                                     .FirstOrDefault().ReportApprovals.Any(ra =>
+                                                            ra.Role == AccountRole.TechnicianLead && ra.Status == ReportStatus.Approved))
+                    {
+                        throw new AppValidationException("Báo cáo khảo sát chưa được trưởng kĩ thuật viên chấp thuận.");
+                    }
+                }
             }
 
             var userId = _userContext.CurrentUserId;
@@ -518,7 +571,7 @@ namespace AptCare.Service.Services.Implements
             }
             await _unitOfWork.CommitAsync();
 
-            return true;
+            return "Lịch hẹn đã được hoàn thành";
         }
 
         private bool IsValidStatusTransition(AppointmentStatus currentStatus, AppointmentStatus newStatus)

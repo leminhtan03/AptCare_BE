@@ -3,6 +3,7 @@ using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.Apartment;
 using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.AccessoryDto;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos.ApproveReportDtos;
@@ -328,6 +329,15 @@ namespace AptCare.Api.MapperProfile
                             ? src.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name
                             : "N/A"))
                 .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals));
+
+            //ACCESSORY
+            CreateMap<Accessory, AccessoryDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+
+            CreateMap<AccessoryCreateDto, Accessory>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
+            CreateMap<AccessoryUpdateDto, Accessory>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
 }

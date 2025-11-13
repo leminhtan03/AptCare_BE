@@ -252,40 +252,7 @@ namespace AptCare.Service.Services.Implements
                 currentApproval.CreatedAt = DateTime.Now;
 
                 reportApprovalRepo.UpdateAsync(currentApproval);
-                repairReport.Status = dto.Status;
-
-                if (dto.Status == ReportStatus.Approved && repairReport.Appointment?.RepairRequest != null)
-                {
-                    var repairRequest = repairReport.Appointment.RepairRequest;
-
-                    var appointment = repairReport.Appointment;
-
-                    var appointmentTracking = new AppointmentTracking
-                    {
-                        AppointmentId = appointment.AppointmentId,
-                        Status = AppointmentStatus.Completed,
-                        UpdatedAt = DateTime.Now,
-                        UpdatedBy = userId,
-                        Note = "Báo cáo sửa chữa đã được phê duyệt, chờ nghiệm thu."
-                    };
-                    await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
-                    var requestTracking = new RequestTracking
-                    {
-                        RepairRequestId = repairRequest.RepairRequestId,
-                        Status = RequestStatus.AcceptancePendingVerify,
-                        UpdatedAt = DateTime.Now,
-                        UpdatedBy = userId,
-                        Note = "Báo cáo sửa chữa đã được phê duyệt, chờ nghiệm thu."
-                    };
-                    await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(requestTracking);
-                    var appointmentAssign = repairReport.Appointment.AppointmentAssigns;
-                    foreach (var assign in appointmentAssign)
-                    {
-                        assign.Status = WorkOrderStatus.Completed;
-                        assign.ActualEndTime = DateTime.Now;
-                        _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(assign);
-                    }
-                }
+                repairReport.Status = dto.Status;                
             }
             repairRepo.UpdateAsync(repairReport);
         }
