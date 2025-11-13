@@ -126,7 +126,7 @@ namespace AptCare.Api
             app.UseAuthorization();
 
             app.MapHub<ChatHub>("/chatHub");
-
+            app.UseRouting();
             app.MapControllers();
             app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
             app.MapGet("/health", () => Results.Ok(new { status = "Healthy" })).AllowAnonymous();

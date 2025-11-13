@@ -371,7 +371,7 @@ namespace AptCare.Service.Services.Implements
                                     .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                                     .Include(x => x.RepairRequest)
-                                    .Include(x => x.InspectionReports) // Kiểm tra có IR không
+                                    .Include(x => x.InspectionReports)
                     );
 
                 if (appointment == null)
@@ -385,8 +385,7 @@ namespace AptCare.Service.Services.Implements
                                                 .OrderByDescending(at => at.UpdatedAt)
                                                 .FirstOrDefault();
 
-
-                if (IsValidStatusTransition(latestTracking.Status, AppointmentStatus.InRepair))
+                if (!IsValidStatusTransition(latestTracking.Status, AppointmentStatus.InRepair))
                 {
                     throw new AppValidationException(
                         $"Không thể bắt đầu sửa chữa từ trạng thái '{latestTracking?.Status}'. Yêu cầu phải ở trạng thái InVisit, Visited hoặc AwaitingIRApproval.");
@@ -549,7 +548,6 @@ namespace AptCare.Service.Services.Implements
                 },
                 AppointmentStatus.AwaitingIRApproval => new[]
                 {
-
                     AppointmentStatus.InRepair,
                     AppointmentStatus.Completed
                 },

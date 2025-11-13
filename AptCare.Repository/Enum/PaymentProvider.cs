@@ -8,7 +8,7 @@ namespace AptCare.Repository.Enum
 {
     public enum PaymentProvider
     {
-        Unknown = 0,
+        UnKnow = 0,
         PayOS = 1,
         //VNPay = 2, 
         //MoMo = 3, 

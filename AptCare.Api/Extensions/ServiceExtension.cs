@@ -5,6 +5,7 @@ using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Services.Background;
 using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.PayOSService;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -49,6 +50,10 @@ namespace AptCare.Api.Extensions
             service.AddTransient<INotificationService, NotificationService>();
             service.AddHttpClient<IFCMService, FCMService>();
             service.AddTransient<IRepairReportService, RepairReportService>();
+            service.AddHttpClient<IPayOSClient, PayOSClient>();
+            service.AddTransient<IPayOSWebhookService, PayOSWebhookService>();
+
+
 
             service.AddHostedService<NotificationBackgroundService>();
 
