@@ -4,7 +4,7 @@ using AptCare.Repository.Enum;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.ChatDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
-using AptCare.Service.Dtos.TransactionDtos;
+using AptCare.Service.Dtos.PayOSDto;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AptCare.Service.Services.PayOSService;

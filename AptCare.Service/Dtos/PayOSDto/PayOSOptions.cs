@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AptCare.Service.Dtos.TransactionDtos
+namespace AptCare.Service.Dtos.PayOSDto
 {
     public class PayOSOptions
     {

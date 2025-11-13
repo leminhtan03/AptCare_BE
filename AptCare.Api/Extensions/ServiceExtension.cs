@@ -4,7 +4,9 @@ using AptCare.Repository.Repositories;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Services.Background;
 using AptCare.Service.Services.Implements;
+using AptCare.Service.Services.Implements.S3File;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.IS3File;
 using AptCare.Service.Services.PayOSService;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -52,6 +54,7 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IRepairReportService, RepairReportService>();
             service.AddTransient<IAccessoryService, AccessoryService>();
             service.AddHttpClient<IPayOSClient, PayOSClient>();
+            service.AddSingleton<IS3FileService, S3FileService>();
             service.AddTransient<IPayOSWebhookService, PayOSWebhookService>();
 
 

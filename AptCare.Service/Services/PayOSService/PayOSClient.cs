@@ -1,4 +1,4 @@
-﻿using AptCare.Service.Dtos.TransactionDtos;
+﻿using AptCare.Service.Dtos.PayOSDto;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net.Http;

@@ -2,7 +2,8 @@
 using AptCare.Repository.Cloudinary;
 using AptCare.Repository.FCM;
 using AptCare.Repository.Repositories;
-using AptCare.Service.Dtos.TransactionDtos;
+using AptCare.Service.Dtos.PayOSDto;
+using AptCare.Service.Dtos.S3AWSDtos;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -27,6 +28,7 @@ namespace AptCare.Api.Extensions
                 options.ChecksumKey = Environment.GetEnvironmentVariable("PAYOS_CHECKSUM_KEY") ?? throw new Exception("PAYOS_CHECKSUM_KEY missing");
                 options.ReturnUrl = Environment.GetEnvironmentVariable("PAYOS_RETURN_URL") ?? "https://aptcare.vn/payment/return";
             });
+            service.Configure<S3Options>(configuration.GetSection("AWS"));
 
             return service;
         }

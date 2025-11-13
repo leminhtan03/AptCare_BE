@@ -13,6 +13,5 @@ namespace AptCare.Service.Services.Interfaces
         Task<string> CreateExternalInvoiceAsync(InvoiceExternalCreateDto dto);
         Task<IEnumerable<InvoiceDto>> GetInvoicesAsync(int repairRequestId);
         Task<string> CreateInvoicePaymentLinkAsync(int invoiceId);
-
     }
 }
