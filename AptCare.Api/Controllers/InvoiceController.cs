@@ -110,12 +110,7 @@ namespace AptCare.Api.Controllers
             return Ok(invoices);
         }
 
-        [HttpPost("{invoiceId:int}/payment-link")]
-        public async Task<IActionResult> CreatePaymentLink(int invoiceId)
-        {
-            var url = await _invoiceService.CreateInvoicePaymentLinkAsync(invoiceId);
-            return Ok(new { checkoutUrl = url });
-        }
+
     }
 
 }

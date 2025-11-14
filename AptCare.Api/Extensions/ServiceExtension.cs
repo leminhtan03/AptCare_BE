@@ -56,6 +56,8 @@ namespace AptCare.Api.Extensions
             service.AddHttpClient<IPayOSClient, PayOSClient>();
             service.AddSingleton<IS3FileService, S3FileService>();
             service.AddTransient<IPayOSWebhookService, PayOSWebhookService>();
+            service.AddTransient<IContractService, ContractService>();
+            service.AddScoped<ITransactionService, TransactionService>();
 
 
 

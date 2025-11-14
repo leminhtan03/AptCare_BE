@@ -10,7 +10,9 @@ namespace AptCare.Repository.Enum
     {
         Draft = 1,
         AwaitingPayment = 2,
-        Paid = 3,
-        Cancelled = 4
+        PartiallyPaid = 3,
+        PaidToContractor = 4,
+        Paid = 5,
+        Cancelled = 6
     }
 }

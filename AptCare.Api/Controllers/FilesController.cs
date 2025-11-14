@@ -30,8 +30,7 @@ namespace AptCare.Api.Controllers
             key = Uri.UnescapeDataString(key);
 
             var (bytes, contentType, fileName) = await _s3FileService.GetFileAsync(key);
-            
-            contentType = "application/pdf";
+
             Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
 
             return File(bytes, contentType);

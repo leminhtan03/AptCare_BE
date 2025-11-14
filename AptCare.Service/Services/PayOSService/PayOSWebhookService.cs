@@ -2,6 +2,7 @@
 using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
+using AptCare.Repository.Enum.TransactionEnum;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.PayOSDto;
 using Microsoft.EntityFrameworkCore;
