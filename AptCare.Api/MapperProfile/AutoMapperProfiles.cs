@@ -2,6 +2,7 @@
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.Apartment;
+using AptCare.Repository.Enum.TransactionEnum;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.AccessoryDto;
 using AptCare.Service.Dtos.Account;
@@ -9,6 +10,7 @@ using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos.ApproveReportDtos;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
+using AptCare.Service.Dtos.ContractDtos;
 using AptCare.Service.Dtos.InspectionReporDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Dtos.IssueDto;
@@ -17,6 +19,7 @@ using AptCare.Service.Dtos.RepairReportDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Dtos.TechniqueDto;
+using AptCare.Service.Dtos.TransactionDtos;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Dtos.WorkSlotDtos;
 using AutoMapper;
@@ -338,6 +341,49 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
             CreateMap<AccessoryUpdateDto, Accessory>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            // CONTRACT
+            CreateMap<Contract, ContractDto>();
+            CreateMap<ContractCreateDto, Contract>();
+            CreateMap<ContractUpdateDto, Contract>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            // Transaction Mappings
+            CreateMap<Transaction, TransactionDto>();
+            CreateMap<TransactionExpenseDepositDto, Transaction>()
+                .ForMember(d => d.Direction, o => o.MapFrom(s => TransactionDirection.Expense))
+                .ForMember(d => d.TransactionType, o => o.MapFrom(s => TransactionType.Cash))
+                .ForMember(d => d.Status, o => o.MapFrom(s => TransactionStatus.Success))
+                .ForMember(d => d.Provider, o => o.MapFrom(s => PaymentProvider.UnKnow))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
+                .ForMember(d => d.PaidAt, o => o.MapFrom(s => DateTime.Now));
+            CreateMap<TransactionExpenseFinalDto, Transaction>()
+                .ForMember(d => d.Direction, o => o.MapFrom(s => TransactionDirection.Expense))
+                .ForMember(d => d.TransactionType, o => o.MapFrom(s => TransactionType.Cash))
+                .ForMember(d => d.Status, o => o.MapFrom(s => TransactionStatus.Success))
+                .ForMember(d => d.Provider, o => o.MapFrom(s => PaymentProvider.UnKnow))
+                .ForMember(d => d.Description, o => o.Ignore())
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
+                .ForMember(d => d.PaidAt, o => o.MapFrom(s => DateTime.Now));
+            CreateMap<TransactionExpenseInternalDto, Transaction>()
+                .ForMember(d => d.Direction, o => o.MapFrom(s => TransactionDirection.Expense))
+                .ForMember(d => d.TransactionType, o => o.MapFrom(s => TransactionType.Cash))
+                .ForMember(d => d.Status, o => o.MapFrom(s => TransactionStatus.Success))
+                .ForMember(d => d.Provider, o => o.MapFrom(s => PaymentProvider.UnKnow))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
+                .ForMember(d => d.PaidAt, o => o.MapFrom(s => DateTime.Now));
+            CreateMap<TransactionIncomeCashDto, Transaction>()
+                .ForMember(d => d.Direction, o => o.MapFrom(s => TransactionDirection.Income))
+                .ForMember(d => d.TransactionType, o => o.MapFrom(s => TransactionType.Cash))
+                .ForMember(d => d.Status, o => o.MapFrom(s => TransactionStatus.Success))
+                .ForMember(d => d.Provider, o => o.MapFrom(s => PaymentProvider.UnKnow))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
+                .ForMember(d => d.PaidAt, o => o.MapFrom(s => DateTime.Now));
+            CreateMap<IFormFile, Media>()
+                .ForMember(d => d.FileName, o => o.MapFrom(s => s.FileName))
+                .ForMember(d => d.ContentType, o => o.MapFrom(s => s.ContentType))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
         }
     }
 }

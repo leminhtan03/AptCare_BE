@@ -373,7 +373,7 @@ namespace AptCare.Service.Services.Implements
                                     .Include(x => x.AppointmentAssigns)
                                     .ThenInclude(x => x.Technician)
                                     .Include(x => x.RepairRequest)
-                                    .Include(x => x.InspectionReports) // Kiểm tra có IR không
+                                    .Include(x => x.InspectionReports)
                     );
 
                 if (appointment == null)
@@ -387,7 +387,6 @@ namespace AptCare.Service.Services.Implements
                                                 .OrderByDescending(at => at.UpdatedAt)
                                                 .FirstOrDefault();
 
-
                 if (!IsValidStatusTransition(latestTracking.Status, AppointmentStatus.InRepair))
                 {
                     throw new AppValidationException(
@@ -396,7 +395,7 @@ namespace AptCare.Service.Services.Implements
                 if (latestTracking.Status == AppointmentStatus.AwaitingIRApproval)
                 {
                     if (appointment.InspectionReports.OrderByDescending(x => x.CreatedAt)
-                                                        .FirstOrDefault().Status == ReportStatus.Approved)
+                                                        .FirstOrDefault().Status != ReportStatus.Approved)
                     {
                         throw new AppValidationException("Báo cáo khảo sát chưa được chấp thuận.");
                     }
@@ -404,9 +403,9 @@ namespace AptCare.Service.Services.Implements
                 if (latestTracking.Status == AppointmentStatus.InVisit)
                 {
                     var isValid = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
-                    predicate: p => p.RepairRequestId == appointment.RepairRequestId && 
+                    predicate: p => p.RepairRequestId == appointment.RepairRequestId &&
                                     p.Appointments.Any(a => a.InspectionReports.OrderByDescending(x => x.CreatedAt)
-                                                                               .FirstOrDefault().Status == ReportStatus.Approved),
+                                                                               .FirstOrDefault().Status != ReportStatus.Approved),
                     include: i => i.Include(x => x.Appointments)
                                         .ThenInclude(x => x.InspectionReports)
                     );
@@ -414,7 +413,7 @@ namespace AptCare.Service.Services.Implements
                     if (!isValid)
                     {
                         throw new AppValidationException("Báo cáo khảo sát trước đó chưa được chấp thuận.");
-                    } 
+                    }
                 }
                 await _unitOfWork.BeginTransactionAsync();
 
@@ -502,7 +501,7 @@ namespace AptCare.Service.Services.Implements
                                             .OrderByDescending(at => at.UpdatedAt)
                                             .FirstOrDefault();
 
-            var currentStatus =  latestTracking?.Status ?? AppointmentStatus.Pending;
+            var currentStatus = latestTracking?.Status ?? AppointmentStatus.Pending;
 
             if (!IsValidStatusTransition(currentStatus, AppointmentStatus.Completed))
             {
@@ -602,7 +601,6 @@ namespace AptCare.Service.Services.Implements
                 },
                 AppointmentStatus.AwaitingIRApproval => new[]
                 {
-
                     AppointmentStatus.InRepair,
                     AppointmentStatus.Completed
                 },

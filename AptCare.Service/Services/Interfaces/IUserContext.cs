@@ -11,6 +11,7 @@ namespace AptCare.Service.Services.Interfaces
         bool IsTechnicianLead { get; }
         bool IsReceptionist { get; }
         bool IsAdmin { get; }
+
     }
 
 }

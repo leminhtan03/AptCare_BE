@@ -24,5 +24,6 @@ namespace AptCare.Service.Services.Implements
         public bool IsReceptionist => string.Equals(Role, nameof(AccountRole.Receptionist), StringComparison.OrdinalIgnoreCase);
         public bool IsAdmin => string.Equals(Role, nameof(AccountRole.Admin));
 
+
     }
 }

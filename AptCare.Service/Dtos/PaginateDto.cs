@@ -28,4 +28,14 @@ namespace AptCare.Service.Dtos
     {
         public AccountRole? Role { get; set; }
     }
+    public class TransactionFilterDto : PaginateDto
+    {
+        public int? InvoiceId { get; set; }
+        public int? UserId { get; set; }
+        public string? Direction { get; set; }
+        public string? Status { get; set; }
+        public string? Provider { get; set; }   // PayOS/UnKnow
+        public DateOnly? FromDate { get; set; }
+        public DateOnly? ToDate { get; set; }
+    }
 }

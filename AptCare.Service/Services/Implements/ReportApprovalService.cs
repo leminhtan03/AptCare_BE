@@ -33,9 +33,7 @@ namespace AptCare.Service.Services.Implements
             {
                 if (dto.Status != ReportStatus.Pending)
                 {
-                    throw new AppValidationException(
-                        "Chỉ có thể tạo approval với status Pending.",
-                        StatusCodes.Status400BadRequest);
+                    throw new AppValidationException("Chỉ có thể tạo approval với status Pending.", StatusCodes.Status400BadRequest);
                 }
 
                 var userId = _userContext.CurrentUserId;
@@ -181,10 +179,7 @@ namespace AptCare.Service.Services.Implements
 
         #region RepairReport Processing
 
-        private async Task CreateRepairReportApprovalAsync(
-            ApproveReportCreateDto dto,
-            int approverId,
-            AccountRole approverRole)
+        private async Task CreateRepairReportApprovalAsync(ApproveReportCreateDto dto, int approverId, AccountRole approverRole)
         {
             var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
             var repairRepo = _unitOfWork.GetRepository<RepairReport>();
@@ -262,7 +257,6 @@ namespace AptCare.Service.Services.Implements
             repairRepo.UpdateAsync(repairReport);
         }
 
-
         private async Task<(int userId, AccountRole role)> GetNextApproverAsync(AccountRole currentRole)
         {
             var userRepo = _unitOfWork.GetRepository<User>();
@@ -295,10 +289,6 @@ namespace AptCare.Service.Services.Implements
                         StatusCodes.Status403Forbidden);
             }
         }
-
-        /// <summary>
-        /// Escalate approval lên cấp cao hơn
-        /// </summary>
         private async Task EscalateApprovalAsync(
             ReportApproval currentApproval,
             ApproveReportCreateDto dto,
