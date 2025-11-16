@@ -132,7 +132,7 @@ namespace AptCare.Service.Services.Implements
                 predicate: m => m.EntityId == userId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
             if (media != null)
                 user.ProfileImageUrl = media.FilePath;
-            return _mapper.Map<UserDto>(user);
+            return user;
         }
         public async Task<IPaginate<UserGetAllDto>> GetProfileDataPageAsync(UserPaginateDto dto)
         {
