@@ -48,7 +48,7 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.GetRepository<Slot>().InsertAsync(slot);
                 await _unitOfWork.CommitAsync();
-                return "Taọ slot mới thành công";
+                return "Tạo slot mới thành công";
             }
             catch (Exception e)
             {
@@ -126,7 +126,7 @@ namespace AptCare.Service.Services.Implements
 
             if (slot == null)
             {
-                throw new AppValidationException("Tầng không tồn tại", StatusCodes.Status404NotFound);
+                throw new AppValidationException("Slot không tồn tại", StatusCodes.Status404NotFound);
             }
 
             return slot;

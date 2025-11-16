@@ -44,7 +44,7 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.GetRepository<Floor>().InsertAsync(floor);
                 await _unitOfWork.CommitAsync();
-                return "Taọ tầng mới thành công";
+                return "Tạo tầng mới thành công";
             }
             catch (Exception e)
             {
@@ -150,10 +150,6 @@ namespace AptCare.Service.Services.Implements
                     page: page,
                     size: size
                 );
-            foreach (var floor in result.Items)
-            {
-
-            }
             return result;
         }
 
