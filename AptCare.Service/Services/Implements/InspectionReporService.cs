@@ -60,6 +60,8 @@ namespace AptCare.Service.Services.Implements
                             );
                 if (existingReport != null && existingReport.ReportApprovals.Any(s => s.Status == ReportStatus.Pending))
                     throw new AppValidationException("Báo cáo kiểm tra cho cuộc hẹn này đang chờ phê duyệt. Vui lòng không tạo báo cáo mới.", StatusCodes.Status400BadRequest);
+                if (existingReport != null && existingReport.ReportApprovals.Any(s => s.Status != ReportStatus.Rejected))
+                    throw new AppValidationException("Đã tồn tại báo cáo kiểm tra được thông qua vui lòng kiểm tra lại phản hồi.", StatusCodes.Status400BadRequest);
                 List<string> uploadedFilePaths = new List<string>();
                 if (dto.Files != null && dto.Files.Any())
                 {

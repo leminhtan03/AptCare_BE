@@ -344,7 +344,9 @@ namespace AptCare.Api.MapperProfile
 
             // CONTRACT
             CreateMap<Contract, ContractDto>();
-            CreateMap<ContractCreateDto, Contract>();
+            CreateMap<ContractCreateDto, Contract>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
             CreateMap<ContractUpdateDto, Contract>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
