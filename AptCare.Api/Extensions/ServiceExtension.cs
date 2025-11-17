@@ -58,6 +58,7 @@ namespace AptCare.Api.Extensions
             service.AddTransient<IPayOSWebhookService, PayOSWebhookService>();
             service.AddTransient<IContractService, ContractService>();
             service.AddScoped<ITransactionService, TransactionService>();
+            service.AddScoped<ICommonAreaObjectService, CommonAreaObjectService>();
 
 
 
