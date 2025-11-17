@@ -44,7 +44,8 @@ namespace AptCare.Api
                 "http://aptcare.click",
                 "http://www.aptcare.click",
                 "https://aptcare.click",
-                "https://www.aptcare.click"
+                "https://www.aptcare.click",
+                "https://fe-capstone-project-apt-care.vercel.app"
             };
 
             builder.Services.AddCors(options =>
