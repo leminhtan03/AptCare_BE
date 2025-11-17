@@ -82,8 +82,10 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException(
                         "Số tiền thanh toán tối thiểu là 2,000 VND.",
                         StatusCodes.Status400BadRequest);
+                var lastTracking = invoice.RepairRequest.RequestTrackings?.OrderByDescending(t => t.UpdatedAt).FirstOrDefault();
+                if (lastTracking?.Status != RequestStatus.Completed && lastTracking?.Status != RequestStatus.AcceptancePendingVerify)
+                    throw new AppValidationException("Công việc sửa chữa chưa hoàn tất, chưa thể thu tiền từ cư dân.", StatusCodes.Status400BadRequest);
 
-                // Kiểm tra xem đã có transaction pending chưa
                 var existingTransaction = await txRepo.SingleOrDefaultAsync(
                     predicate: t => t.InvoiceId == invoiceId
                         && t.Provider == PaymentProvider.PayOS
@@ -172,7 +174,7 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.CommitTransactionAsync();
 
                 _logger.LogInformation(
-                    "✅ PayOS payment link created - InvoiceId: {InvoiceId}, OrderCode: {OrderCode}, LinkId: {LinkId}",
+                    "PayOS payment link created - InvoiceId: {InvoiceId}, OrderCode: {OrderCode}, LinkId: {LinkId}",
                     invoiceId, orderCode, createPaymentResult.PaymentLinkId);
 
                 return createPaymentResult.CheckoutUrl;
