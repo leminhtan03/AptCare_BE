@@ -473,7 +473,22 @@ namespace AptCare.Service.Services.Implements
                 (filterStatus == null || p.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status == filterStatus) &&
                 (isEmergency == null || p.IsEmergency == isEmergency) &&
                 (residentId == null || p.Apartment.UserApartments.Any(x => x.UserId == residentId)) &&
-                (technicianId == null || p.Appointments.Any(a => a.AppointmentAssigns.Any(aa => aa.TechnicianId == technicianId))) &&
+                (technicianId == null || 
+                    (p.IsEmergency == false && p.Appointments.Any(a =>  !new[]
+                                                                        {
+                                                                            AppointmentStatus.Pending,
+                                                                            AppointmentStatus.Assigned,
+                                                                            AppointmentStatus.Cancelled
+                                                                        }.Contains(
+                                                                            a.AppointmentTrackings
+                                                                                .OrderByDescending(at => at.UpdatedAt)
+                                                                                .Select(at => at.Status)
+                                                                                .FirstOrDefault()
+                                                                        )
+                                                                        && a.AppointmentAssigns.Any(aa => aa.TechnicianId == technicianId)
+                                                                    ) ||
+                    (p.IsEmergency == true && p.Appointments.Any(a => a.AppointmentTrackings.OrderByDescending(at => at.UpdatedAt).First().Status != AppointmentStatus.Cancelled &&
+                                                                       a.AppointmentAssigns.Any(aa => aa.TechnicianId == technicianId))))) &&
                 (apartmentId == null || p.ApartmentId == apartmentId) &&
                 (issueId == null || p.IssueId == issueId) &&
                 (maintenanceRequestId == null || p.MaintenanceRequestId == maintenanceRequestId);
@@ -485,6 +500,8 @@ namespace AptCare.Service.Services.Implements
                                .Include(x => x.ChildRequests)
                                .Include(x => x.Appointments)
                                     .ThenInclude(x => x.AppointmentAssigns)
+                                .Include(x => x.Appointments)
+                                    .ThenInclude(x => x.AppointmentTrackings)
                                .Include(x => x.Apartment)
                                     .ThenInclude(x => x.Floor)
                                 .Include(x => x.Apartment)
