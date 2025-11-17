@@ -148,9 +148,18 @@ namespace AptCare.Service.Services.Implements
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
 
+            AppointmentStatus? filterStatus = null;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                if (Enum.TryParse<AppointmentStatus>(filter, true, out var parsedStatus))
+                {
+                    filterStatus = parsedStatus;
+                }
+            }
+
             Expression<Func<Appointment, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.Note.Contains(search)) &&
-                (string.IsNullOrEmpty(filter) || filter.Equals(p.AppointmentTrackings.LastOrDefault().Status.ToString().ToLower())) &&
+                (string.IsNullOrEmpty(filter) || filterStatus.Equals(p.AppointmentTrackings.LastOrDefault().Status.ToString().ToLower())) &&
                 (fromDate == null || DateOnly.FromDateTime(p.StartTime) >= fromDate) &&
                 (toDate == null || DateOnly.FromDateTime(p.StartTime) <= toDate) &&
                 (isAprroved == null ||

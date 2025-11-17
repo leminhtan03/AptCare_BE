@@ -10,6 +10,7 @@ using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos.ApproveReportDtos;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
+using AptCare.Service.Dtos.CommonAreaObjectDtos;
 using AptCare.Service.Dtos.ContractDtos;
 using AptCare.Service.Dtos.InspectionReporDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
@@ -386,6 +387,16 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.ContentType, o => o.MapFrom(s => s.ContentType))
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
+
+            // COMMONAREAOBJECT
+            CreateMap<CommonAreaObject, CommonAreaObjectDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<CommonAreaObject, CommonAreaObjectBasicDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<CommonAreaObjectCreateDto, CommonAreaObject>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
+            CreateMap<CommonAreaObjectUpdateDto, CommonAreaObject>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
 }
