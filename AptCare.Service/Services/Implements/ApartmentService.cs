@@ -112,6 +112,15 @@ namespace AptCare.Service.Services.Implements
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
 
+            ApartmentStatus? filterStatus = null;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                if (Enum.TryParse<ApartmentStatus>(filter, true, out var parsedStatus))
+                {
+                    filterStatus = parsedStatus;
+                }
+            }
+
             if (floorId != null)
             {
                 var isExistingFloor = await _unitOfWork.GetRepository<Floor>().AnyAsync(predicate: x => x.FloorId == floorId);
@@ -123,9 +132,8 @@ namespace AptCare.Service.Services.Implements
             Expression<Func<Apartment, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.Room.ToString().Contains(search) ||
                                          (p.Description != null && p.Description.Contains(search))) &&
-                (string.IsNullOrEmpty(filter) ||
-                filter.Equals(p.Status.ToString().ToLower()) &&
-                floorId == null || p.FloorId == floorId);
+                (string.IsNullOrEmpty(filter) || filterStatus == p.Status) &&
+                (floorId == null || p.FloorId == floorId);
 
             var result = await _unitOfWork.GetRepository<Apartment>().GetPagingListAsync(
                 selector: s => _mapper.Map<ApartmentDto>(s),

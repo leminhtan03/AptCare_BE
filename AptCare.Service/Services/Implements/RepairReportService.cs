@@ -210,6 +210,15 @@ namespace AptCare.Service.Services.Implements
             string search = filterDto.search?.ToLower() ?? string.Empty;
             string filter = filterDto.filter?.ToLower() ?? string.Empty;
 
+            ReportStatus? filterStatus = null;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                if (Enum.TryParse<ReportStatus>(filter, true, out var parsedStatus))
+                {
+                    filterStatus = parsedStatus;
+                }
+            }
+
             Expression<Func<RepairReport, bool>> predicate = rr =>
                 (string.IsNullOrEmpty(search) ||
                  rr.Description.ToLower().Contains(search) ||
@@ -223,7 +232,7 @@ namespace AptCare.Service.Services.Implements
                     (rr.Appointment.RepairReport.ReportApprovals.Any(s => s.UserId == userId) ||
                     (rr.Appointment.RepairReport.Appointment.AppointmentAssigns.Any(s => s.TechnicianId == userId))) &&
                 (string.IsNullOrEmpty(filter) ||
-                 rr.Status.ToString().ToLower().Contains(filter)) &&
+                 rr.Status == filterStatus) &&
                 (!filterDto.Fromdate.HasValue ||
                  DateOnly.FromDateTime(rr.CreatedAt) >= filterDto.Fromdate.Value) &&
                 (!filterDto.Todate.HasValue ||

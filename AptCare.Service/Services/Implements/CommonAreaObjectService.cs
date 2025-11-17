@@ -173,7 +173,7 @@ namespace AptCare.Service.Services.Implements
             Expression<Func<CommonAreaObject, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.Name.ToLower().Contains(search) ||
                     (p.Description != null && p.Description.ToLower().Contains(search))) &&
-                (string.IsNullOrEmpty(filter) || filterStatus.Equals(p.Status.ToString().ToLower())) &&
+                (string.IsNullOrEmpty(filter) || filterStatus == p.Status) &&
                 (commonAreaId == null || p.CommonAreaId == commonAreaId);
 
             var result = await _unitOfWork.GetRepository<CommonAreaObject>().GetPagingListAsync(

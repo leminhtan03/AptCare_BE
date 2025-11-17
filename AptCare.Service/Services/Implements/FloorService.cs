@@ -1,6 +1,7 @@
 ﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
+using AptCare.Repository.Enum.Apartment;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
@@ -134,11 +135,20 @@ namespace AptCare.Service.Services.Implements
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
 
+            ActiveStatus? filterStatus = null;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                if (Enum.TryParse<ActiveStatus>(filter, true, out var parsedStatus))
+                {
+                    filterStatus = parsedStatus;
+                }
+            }
+
             Expression<Func<Floor, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.FloorNumber.ToString().Contains(search) ||
                                                  p.Description.Contains(search)) &&
                 (string.IsNullOrEmpty(filter) ||
-                filter.Equals(p.Status.ToString().ToLower()));
+                filterStatus == p.Status);
 
             var result = await _unitOfWork.GetRepository<Floor>().ProjectToPagingListAsync<GetAllFloorsDto>(
                 configuration: _mapper.ConfigurationProvider,

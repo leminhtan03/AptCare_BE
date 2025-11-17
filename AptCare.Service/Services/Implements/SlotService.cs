@@ -139,9 +139,18 @@ namespace AptCare.Service.Services.Implements
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
 
+            ActiveStatus? filterStatus = null;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                if (Enum.TryParse<ActiveStatus>(filter, true, out var parsedStatus))
+                {
+                    filterStatus = parsedStatus;
+                }
+            }
+
             Expression<Func<Slot, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.SlotName.Contains(search)) &&
-                (string.IsNullOrEmpty(filter) || filter.Equals(p.Status.ToString().ToLower()));
+                (string.IsNullOrEmpty(filter) || filterStatus == p.Status);
 
             var result = await _unitOfWork.GetRepository<Slot>().GetPagingListAsync(
                 selector: x => _mapper.Map<SlotDto>(x),

@@ -18,6 +18,7 @@ using AptCare.Service.Dtos.IssueDto;
 using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairReportDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
+using AptCare.Service.Dtos.ReportDtos;
 using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Dtos.TechniqueDto;
 using AptCare.Service.Dtos.TransactionDtos;
@@ -396,6 +397,17 @@ namespace AptCare.Api.MapperProfile
             CreateMap<CommonAreaObjectCreateDto, CommonAreaObject>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
             CreateMap<CommonAreaObjectUpdateDto, CommonAreaObject>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            // REPORT
+            CreateMap<Report, ReportDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<Report, ReportBasicDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<ReportCreateDto, Report>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
+            CreateMap<ReportUpdateDto, Report>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
