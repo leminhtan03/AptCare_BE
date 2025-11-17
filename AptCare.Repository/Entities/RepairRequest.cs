@@ -16,7 +16,7 @@ namespace AptCare.Repository.Entities
         public User User { get; set; } = null!;
 
         [ForeignKey("Apartment")]
-        public int? ApartmentId { get; set; }    
+        public int? ApartmentId { get; set; }
         public Apartment? Apartment { get; set; }
 
         [ForeignKey("ParentRequest")]
@@ -41,7 +41,7 @@ namespace AptCare.Repository.Entities
         public bool IsEmergency { get; set; }
         [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
-        [Column(TypeName = "timestamp without time zone")]
+        [Column(TypeName = "date")]
         public DateTime? AcceptanceTime { get; set; }
 
         public ICollection<RepairRequest>? ChildRequests { get; set; }

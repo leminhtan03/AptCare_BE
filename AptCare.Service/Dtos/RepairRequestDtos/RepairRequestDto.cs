@@ -1,16 +1,6 @@
-﻿using AptCare.Repository.Entities;
-using AptCare.Repository.Enum;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using AptCare.Service.Dtos.BuildingDtos;
+﻿using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Dtos.AppointmentDtos;
-using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.IssueDto;
 
 namespace AptCare.Service.Dtos.RepairRequestDtos

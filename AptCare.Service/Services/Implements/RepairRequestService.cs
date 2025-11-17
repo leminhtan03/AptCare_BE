@@ -797,8 +797,7 @@ namespace AptCare.Service.Services.Implements
                     predicate: p => p.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status ==
                                         RequestStatus.AcceptancePendingVerify &&
                                     p.AcceptanceTime != null &&
-                                    DateOnly.FromDateTime(p.AcceptanceTime.Value) ==
-                                        DateOnly.FromDateTime(dateTime),
+                                   p.AcceptanceTime.Value.Date == dateTime.Date, // Thay đổi so sánh
                     include: i => i.Include(x => x.RequestTrackings)
                     );
 
@@ -809,7 +808,7 @@ namespace AptCare.Service.Services.Implements
                         RepairRequestId = id,
                         Status = RequestStatus.Completed,
                         UpdatedAt = DateTime.Now,
-                        Note = "Yêu cầu sửa chửa được tự động hoàn thành "
+                        Note = "Yêu cầu sửa chữa được tự động hoàn thành "
                     });
                 }
             }

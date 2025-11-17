@@ -585,6 +585,7 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
+
         public async Task<TransactionDto> GetTransactionByIdAsync(int transactionId)
         {
             try
@@ -599,7 +600,6 @@ namespace AptCare.Service.Services.Implements
 
                 if (transaction == null)
                     throw new AppValidationException("Không tìm thấy giao dịch.", StatusCodes.Status404NotFound);
-
                 var result = _mapper.Map<TransactionDto>(transaction);
                 result.UserFullName = $"{transaction.User.FirstName} {transaction.User.LastName}";
 
@@ -620,6 +620,7 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
+
         public async Task<IPaginate<TransactionDto>> GetPaginateTransactionsAsync(TransactionFilterDto filterDto)
         {
             try

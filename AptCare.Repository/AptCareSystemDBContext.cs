@@ -380,7 +380,7 @@ namespace AptCare.Repository
 
             // Media generic (EntityType + EntityId)
             modelBuilder.Entity<Media>()
-                        .HasIndex(m => new { m.Entity, m.EntityId });
+                .HasIndex(m => new { m.Entity, m.EntityId });
         }
     }
 }

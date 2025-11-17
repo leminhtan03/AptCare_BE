@@ -19,9 +19,7 @@ namespace AptCare.Repository.Entities
         [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
         public InvoiceStatus Status { get; set; }
-
         public ICollection<InvoiceAccessory>? InvoiceAccessories { get; set; }
-
         public ICollection<InvoiceService>? InvoiceServices { get; set; }
         public ICollection<Transaction>? Transactions { get; set; }
     }
