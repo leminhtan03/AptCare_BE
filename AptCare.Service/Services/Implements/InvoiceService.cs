@@ -1,39 +1,24 @@
 ﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
-using AptCare.Repository.Enum.TransactionEnum;
 using AptCare.Repository.UnitOfWork;
-using AptCare.Service.Dtos.ChatDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
-using AptCare.Service.Dtos.PayOSDto;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
-using AptCare.Service.Services.PayOSService;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AptCare.Service.Services.Implements
 {
     public class InvoiceService : BaseService<InvoiceService>, IInvoiceService
     {
         private readonly IUserContext _userContext;
-        private readonly IPayOSClient _payOSClient;
-        private readonly PayOSOptions _payOSOptions;
 
-        public InvoiceService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InvoiceService> logger, IMapper mapper, IUserContext userContext, IPayOSClient payOSClient, IOptions<PayOSOptions> payOSOptions) : base(unitOfWork, logger, mapper)
+        public InvoiceService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InvoiceService> logger, IMapper mapper, IUserContext userContext, PayOS.PayOSClient @object, Microsoft.Extensions.Options.IOptions<PayOS.PayOSOptions> object1) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
-            _payOSClient = payOSClient;
-            _payOSOptions = payOSOptions.Value;
         }
         public async Task<string> CreateInternalInvoiceAsync(InvoiceInternalCreateDto dto)
         {

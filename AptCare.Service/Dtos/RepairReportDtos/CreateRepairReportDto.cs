@@ -14,10 +14,6 @@ namespace AptCare.Service.Dtos.RepairReportDtos
         [Required(ErrorMessage = "Mô tả công việc là bắt buộc")]
         public string WorkDescription { get; set; } = string.Empty;
         public string? Note { get; set; }
-
-        /// <summary>
-        /// Danh sách file đính kèm (ảnh trước/sau sửa chữa)
-        /// </summary>
         public List<IFormFile>? Files { get; set; }
     }
 }

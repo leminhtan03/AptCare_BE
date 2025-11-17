@@ -1208,10 +1208,10 @@ namespace AptCare.Repository.Migrations
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("PayOSCheckoutUrl")
+                    b.Property<string>("CheckoutUrl")
                         .HasColumnType("text");
 
-                    b.Property<long?>("PayOSOrderCode")
+                    b.Property<long?>("OrderCode")
                         .HasColumnType("bigint");
 
                     b.Property<string>("PayOSTransactionId")
