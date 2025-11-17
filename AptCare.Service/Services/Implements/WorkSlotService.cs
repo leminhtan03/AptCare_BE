@@ -284,6 +284,10 @@ namespace AptCare.Service.Services.Implements
                                             .ThenInclude(x => x.RepairRequest)
                                                 .ThenInclude(x => x.Apartment)
                                .Include(x => x.Slot)
+                               .Include(x => x.Technician)
+                                    .ThenInclude(x => x.AppointmentAssigns)
+                                        .ThenInclude(x => x.Appointment)
+                                            .ThenInclude(x => x.AppointmentTrackings)
             );
 
             if (workSlots == null || !workSlots.Any())
@@ -305,7 +309,18 @@ namespace AptCare.Service.Services.Implements
                                                 WorkSlotId = ws.WorkSlotId,
                                                 Status = ws.Status.ToString(),
                                                 Technician = _mapper.Map<UserBasicDto>(ws.Technician),
-                                                Appointments = ws.Technician.AppointmentAssigns.Select(aa => _mapper.Map<AppointmentDto>(aa.Appointment)).Where(aa => DateOnly.FromDateTime(aa.StartTime) == dateGroup.Key).ToList()
+                                                Appointments = ws.Technician.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) == dateGroup.Key &&
+                                                                        !new[]
+                                                                        {
+                                                                            AppointmentStatus.Pending,
+                                                                            AppointmentStatus.Assigned,
+                                                                            AppointmentStatus.Cancelled
+                                                                        }.Contains(
+                                                                            aa.Appointment.AppointmentTrackings
+                                                                                .OrderByDescending(at => at.UpdatedAt)
+                                                                                .Select(at => at.Status)
+                                                                                .FirstOrDefault()
+                                                                        )).Select(aa => _mapper.Map<AppointmentDto>(aa.Appointment)).ToList()
                                             })
                                             .ToList()
                                     })
