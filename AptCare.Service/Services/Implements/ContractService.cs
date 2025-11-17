@@ -80,7 +80,7 @@ namespace AptCare.Service.Services.Implements
                     FileName = dto.ContractFile.FileName,
                     FilePath = fileKey,
                     ContentType = dto.ContractFile.ContentType,
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.Now,
                     Status = ActiveStatus.Active
                 };
 
@@ -292,10 +292,10 @@ namespace AptCare.Service.Services.Implements
                     contract.ContractorName = dto.ContractorName;
 
                 if (dto.StartDate.HasValue)
-                    contract.StartDate = dto.StartDate.Value.ToUniversalTime();
+                    contract.StartDate = dto.StartDate.Value;
 
                 if (dto.EndDate.HasValue)
-                    contract.EndDate = dto.EndDate.Value.ToUniversalTime();
+                    contract.EndDate = dto.EndDate.Value;
 
                 if (dto.Amount.HasValue)
                     contract.Amount = dto.Amount.Value;
@@ -332,7 +332,7 @@ namespace AptCare.Service.Services.Implements
                         FileName = dto.ContractFile.FileName,
                         FilePath = fileKey,
                         ContentType = dto.ContractFile.ContentType,
-                        CreatedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.Now,
                         Status = ActiveStatus.Active
                     };
                     await mediaRepo.InsertAsync(newMedia);

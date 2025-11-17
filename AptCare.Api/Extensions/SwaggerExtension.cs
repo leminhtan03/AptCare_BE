@@ -45,7 +45,7 @@ namespace AptCare.Api.Extensions
                 });
 
                 // ✅ ADD THIS: Enable file upload support
-                options.OperationFilter<FileUploadOperationFilter>();
+                //options.OperationFilter<FileUploadOperationFilter>();
 
                 // Enable XML Comments (for Swagger API Documentation)
                 var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
