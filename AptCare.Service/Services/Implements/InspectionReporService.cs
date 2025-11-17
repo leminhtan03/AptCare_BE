@@ -233,6 +233,15 @@ namespace AptCare.Service.Services.Implements
                 string faultTypeFilter = filterDto.FaultType?.ToLower() ?? string.Empty;
                 string solutionTypeFilter = filterDto.SolutionType?.ToLower() ?? string.Empty;
 
+                ReportStatus? filterStatus = null;
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    if (Enum.TryParse<ReportStatus>(filter, true, out var parsedStatus))
+                    {
+                        filterStatus = parsedStatus;
+                    }
+                }
+
                 Expression<Func<InspectionReport, bool>> predicate = p =>
                     (string.IsNullOrEmpty(search) ||
                     p.Description.ToLower().Contains(search) ||
@@ -247,7 +256,7 @@ namespace AptCare.Service.Services.Implements
                     (p.ReportApprovals != null && p.ReportApprovals.Any(ra => ra.UserId == userId) ||
                      p.Appointment.AppointmentAssigns.Any(s => s.TechnicianId == userId)) &&
                     (string.IsNullOrEmpty(filter) ||
-                    p.Status.ToString().ToLower().Contains(filter)) &&
+                    p.Status == filterStatus) &&
                     (string.IsNullOrEmpty(faultTypeFilter) ||
                     p.FaultOwner.ToString().ToLower().Contains(faultTypeFilter)) &&
                     (string.IsNullOrEmpty(solutionTypeFilter) ||

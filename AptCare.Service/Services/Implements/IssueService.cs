@@ -1,5 +1,6 @@
 ﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
+using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
@@ -66,12 +67,22 @@ namespace AptCare.Service.Services.Implements
             int size = dto.size > 0 ? dto.size : 10;
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
+
+            ActiveStatus? filterStatus = null;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                if (Enum.TryParse<ActiveStatus>(filter, true, out var parsedStatus))
+                {
+                    filterStatus = parsedStatus;
+                }
+            }
+
             Expression<Func<Issue, bool>> predicate = p =>
                (string.IsNullOrEmpty(search) || p.Name.Contains(search) ||
                                                 p.Name.Contains(search) ||
                                                 p.Description.Contains(search)) &&
                (string.IsNullOrEmpty(filter) ||
-               filter.Equals(p.Status.ToString().ToLower()));
+               filterStatus == p.Status);
 
             var result = await _unitOfWork.GetRepository<Issue>().GetPagingListAsync(
                 selector: x => _mapper.Map<IssueListItemDto>(x),
