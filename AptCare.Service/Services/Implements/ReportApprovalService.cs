@@ -107,7 +107,6 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-        #region InspectionReport Processing
 
         private async Task CreateInspectionReportApprovalAsync(ApproveReportCreateDto dto, int approverId, AccountRole approverRole)
         {
@@ -175,10 +174,6 @@ namespace AptCare.Service.Services.Implements
 
             inspectionRepo.UpdateAsync(inspectionReport);
         }
-        #endregion
-
-        #region RepairReport Processing
-
         private async Task CreateRepairReportApprovalAsync(ApproveReportCreateDto dto, int approverId, AccountRole approverRole)
         {
             var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
@@ -252,7 +247,7 @@ namespace AptCare.Service.Services.Implements
                 currentApproval.CreatedAt = DateTime.Now;
 
                 reportApprovalRepo.UpdateAsync(currentApproval);
-                repairReport.Status = dto.Status;                
+                repairReport.Status = dto.Status;
             }
             repairRepo.UpdateAsync(repairReport);
         }
@@ -282,7 +277,14 @@ namespace AptCare.Service.Services.Implements
                     if (manager == 0)
                         throw new AppValidationException("Không tìm thấy Manager trong hệ thống.");
                     return (manager, AccountRole.Manager);
-
+                case AccountRole.Manager:
+                    var Admin = await userRepo.SingleOrDefaultAsync(
+                        selector: u => u.UserId,
+                        predicate: u => u.Account.Role == AccountRole.Admin,
+                        include: i => i.Include(u => u.Account));
+                    if (Admin == 0)
+                        throw new AppValidationException("Không tìm thấy Director trong hệ thống.");
+                    return (Admin, AccountRole.Admin);
                 default:
                     throw new AppValidationException(
                         $"Role {currentRole} không được phép tạo approval.",
@@ -318,7 +320,5 @@ namespace AptCare.Service.Services.Implements
 
             await reportApprovalRepo.InsertAsync(newApproval);
         }
-
-        #endregion
     }
 }

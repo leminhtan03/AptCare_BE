@@ -23,14 +23,7 @@ namespace AptCare.Service.Services.Implements
         private readonly IReportApprovalService _reportApprovalService;
         private readonly IAppointmentService _appointmentService;
 
-        public RepairReportService(
-            IUnitOfWork<AptCareSystemDBContext> unitOfWork,
-            ILogger<RepairReportService> logger,
-            IMapper mapper,
-            IUserContext userContext,
-            ICloudinaryService cloudinaryService,
-            IReportApprovalService reportApprovalService,
-            IAppointmentService appointmentService) : base(unitOfWork, logger, mapper)
+        public RepairReportService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<RepairReportService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService, IReportApprovalService reportApprovalService, IAppointmentService appointmentService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _cloudinaryService = cloudinaryService;
@@ -52,7 +45,8 @@ namespace AptCare.Service.Services.Implements
                     predicate: a => a.AppointmentId == dto.AppointmentId,
                     include: i => i.Include(a => a.AppointmentTrackings)
                                    .Include(a => a.RepairRequest)
-                                   .Include(a => a.RepairReport));
+                                   .Include(a => a.RepairReport)
+                                   .ThenInclude(a => a.ReportApprovals));
                 if (appointment == null)
                 {
                     throw new AppValidationException("Cuộc hẹn không tồn tại.", StatusCodes.Status404NotFound);
@@ -68,12 +62,9 @@ namespace AptCare.Service.Services.Implements
                 }
                 if (appointment.RepairReport != null)
                 {
-                    throw new AppValidationException(
-                        "Cuộc hẹn này đã có báo cáo sửa chữa.",
-                        StatusCodes.Status400BadRequest);
+                    throw new AppValidationException("Cuộc hẹn này đã có báo cáo sửa chữa.", StatusCodes.Status400BadRequest);
                 }
 
-                // Tạo RepairReport
                 var newReport = _mapper.Map<RepairReport>(dto);
                 newReport.UserId = _userContext.CurrentUserId;
                 newReport.Status = ReportStatus.Pending;

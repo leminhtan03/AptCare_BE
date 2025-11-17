@@ -140,7 +140,6 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
         public async Task<TransactionDto> CreateExpenseFinalAsync(TransactionExpenseFinalDto dto)
         {
             try
@@ -245,7 +244,6 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
         public async Task<TransactionDto> CreateExpenseInternalAsync(TransactionExpenseInternalDto dto)
         {
             try
@@ -343,7 +341,6 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
         public async Task<string> CreateIncomePaymentLinkAsync(int invoiceId)
         {
             try
@@ -433,7 +430,6 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
         public async Task<TransactionDto> CreateIncomeCashAsync(TransactionIncomeCashDto dto)
         {
             try
@@ -549,8 +545,6 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
-
         public async Task<IEnumerable<TransactionDto>> GetTransactionsByInvoiceIdAsync(int invoiceId)
         {
             try
@@ -591,7 +585,6 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
         public async Task<TransactionDto> GetTransactionByIdAsync(int transactionId)
         {
             try
@@ -627,7 +620,6 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
         public async Task<IPaginate<TransactionDto>> GetPaginateTransactionsAsync(TransactionFilterDto filterDto)
         {
             try
@@ -678,7 +670,6 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
         public async Task<(decimal TotalIncome, decimal TotalExpense)> GetInvoiceSummaryAsync(int invoiceId)
         {
             try
@@ -707,14 +698,12 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
         private long GenerateOrderCode(int invoiceId)
         {
             var now = DateTime.UtcNow;
             var prefix = long.Parse(now.ToString("yyMMddHHmmss"));
             return prefix * 1000 + (invoiceId % 1000);
         }
-
         private Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>> BuildOrderBy(string sortBy)
         {
             if (string.IsNullOrEmpty(sortBy))

@@ -68,19 +68,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     throw new AppValidationException("Có lỗi xảy ra khi upload file hợp đồng.", StatusCodes.Status500InternalServerError);
                 }
-                var contract = new Contract
-                {
-                    RepairRequestId = dto.RepairRequestId,
-                    ContractorName = dto.ContractorName,
-                    ContractCode = dto.ContractCode,
-                    StartDate = dto.StartDate.ToUniversalTime(),
-                    EndDate = dto.EndDate?.ToUniversalTime(),
-                    Amount = dto.Amount,
-                    Description = dto.Description,
-                    Status = ActiveStatus.Active,
-                    CreatedAt = DateTime.UtcNow
-                };
-
+                var contract = _mapper.Map<Contract>(dto);
                 await contractRepo.InsertAsync(contract);
                 await _unitOfWork.CommitAsync();
 
@@ -162,10 +150,7 @@ namespace AptCare.Service.Services.Implements
                         StatusCodes.Status404NotFound
                     );
                 }
-
                 var result = _mapper.Map<ContractDto>(contract);
-
-                // Lấy file PDF từ Media
                 var media = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
                     predicate: m => m.Entity == nameof(Contract)
                         && m.EntityId == contractId
