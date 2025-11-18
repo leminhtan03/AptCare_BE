@@ -25,13 +25,13 @@ namespace AptCare.Repository.Migrations
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(
-                name: "PayOSCheckoutUrl",
+                name: "CheckoutUrl",
                 table: "Transactions",
                 type: "text",
                 nullable: true);
 
             migrationBuilder.AddColumn<long>(
-                name: "PayOSOrderCode",
+                name: "OrderCode",
                 table: "Transactions",
                 type: "bigint",
                 nullable: true);
@@ -69,11 +69,11 @@ namespace AptCare.Repository.Migrations
                 table: "Transactions");
 
             migrationBuilder.DropColumn(
-                name: "PayOSCheckoutUrl",
+                name: "CheckoutUrl",
                 table: "Transactions");
 
             migrationBuilder.DropColumn(
-                name: "PayOSOrderCode",
+                name: "OrderCode",
                 table: "Transactions");
 
             migrationBuilder.DropColumn(

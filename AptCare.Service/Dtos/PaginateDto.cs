@@ -32,7 +32,6 @@ namespace AptCare.Service.Dtos
     {
         public int? InvoiceId { get; set; }
         public int? UserId { get; set; }
-        public string? Direction { get; set; }
         public string? Status { get; set; }
         public string? Provider { get; set; }   // PayOS/UnKnow
         public DateOnly? FromDate { get; set; }

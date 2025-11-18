@@ -11,7 +11,6 @@ namespace AptCare.Service.Dtos.TransactionDtos
         public int UserId { get; set; }
         public string UserFullName { get; set; } = null!;
         public int InvoiceId { get; set; }
-        public TransactionDirection Direction { get; set; }
         public TransactionType TransactionType { get; set; }
         public TransactionStatus Status { get; set; }
         public PaymentProvider Provider { get; set; }

@@ -1,9 +1,10 @@
-﻿using AptCare.Service.Dtos.PayOSDto;
+﻿
+using PayOS.Models.Webhooks;
 
 namespace AptCare.Service.Services.PayOSService
 {
     public interface IPayOSWebhookService
     {
-        Task HandleAsync(PayOSWebhookRequest req);
+        Task HandleAsync(Webhook req);
     }
 }

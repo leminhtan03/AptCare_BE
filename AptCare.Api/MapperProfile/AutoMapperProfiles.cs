@@ -354,30 +354,7 @@ namespace AptCare.Api.MapperProfile
 
             // Transaction Mappings
             CreateMap<Transaction, TransactionDto>();
-            CreateMap<TransactionExpenseDepositDto, Transaction>()
-                .ForMember(d => d.Direction, o => o.MapFrom(s => TransactionDirection.Expense))
-                .ForMember(d => d.TransactionType, o => o.MapFrom(s => TransactionType.Cash))
-                .ForMember(d => d.Status, o => o.MapFrom(s => TransactionStatus.Success))
-                .ForMember(d => d.Provider, o => o.MapFrom(s => PaymentProvider.UnKnow))
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
-                .ForMember(d => d.PaidAt, o => o.MapFrom(s => DateTime.Now));
-            CreateMap<TransactionExpenseFinalDto, Transaction>()
-                .ForMember(d => d.Direction, o => o.MapFrom(s => TransactionDirection.Expense))
-                .ForMember(d => d.TransactionType, o => o.MapFrom(s => TransactionType.Cash))
-                .ForMember(d => d.Status, o => o.MapFrom(s => TransactionStatus.Success))
-                .ForMember(d => d.Provider, o => o.MapFrom(s => PaymentProvider.UnKnow))
-                .ForMember(d => d.Description, o => o.Ignore())
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
-                .ForMember(d => d.PaidAt, o => o.MapFrom(s => DateTime.Now));
-            CreateMap<TransactionExpenseInternalDto, Transaction>()
-                .ForMember(d => d.Direction, o => o.MapFrom(s => TransactionDirection.Expense))
-                .ForMember(d => d.TransactionType, o => o.MapFrom(s => TransactionType.Cash))
-                .ForMember(d => d.Status, o => o.MapFrom(s => TransactionStatus.Success))
-                .ForMember(d => d.Provider, o => o.MapFrom(s => PaymentProvider.UnKnow))
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
-                .ForMember(d => d.PaidAt, o => o.MapFrom(s => DateTime.Now));
             CreateMap<TransactionIncomeCashDto, Transaction>()
-                .ForMember(d => d.Direction, o => o.MapFrom(s => TransactionDirection.Income))
                 .ForMember(d => d.TransactionType, o => o.MapFrom(s => TransactionType.Cash))
                 .ForMember(d => d.Status, o => o.MapFrom(s => TransactionStatus.Success))
                 .ForMember(d => d.Provider, o => o.MapFrom(s => PaymentProvider.UnKnow))

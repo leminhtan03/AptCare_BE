@@ -1,7 +1,7 @@
-﻿using AptCare.Service.Dtos.PayOSDto;
-using AptCare.Service.Services.PayOSService;
+﻿using AptCare.Service.Services.PayOSService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PayOS.Models.Webhooks;
 using System.Text.Json;
 
 [ApiController]
@@ -67,14 +67,14 @@ public class PayOSWebhookController : ControllerBase
                 _logger.LogWarning("[Webhook-{RequestId}] Missing 'data' property in payload", requestId);
                 return BadRequest(new { error = "Missing 'data' property", ok = false, requestId });
             }
-            var model = JsonSerializer.Deserialize<PayOSWebhookRequest>(payload);
-            if (model?.data == null)
+            var model = JsonSerializer.Deserialize<Webhook>(payload);
+            if (model?.Data == null)
             {
                 _logger.LogWarning("[Webhook-{RequestId}] Failed to deserialize payload", requestId);
                 return BadRequest(new { error = "Invalid payload structure", ok = false, requestId });
             }
 
-            _logger.LogInformation("[Webhook-{RequestId}] Processing orderCode: {OrderCode}, status: {Status}", requestId, model.data.orderCode, model.data.status);
+            _logger.LogInformation("[Webhook-{RequestId}] Processing orderCode: {OrderCode}, status: {Status}", requestId, model.Data.OrderCode, model.Success);
 
             await _svc.HandleAsync(model);
 
@@ -84,8 +84,8 @@ public class PayOSWebhookController : ControllerBase
                 message = "Webhook processed successfully",
                 ok = true,
                 requestId,
-                orderCode = model.data.orderCode,
-                status = model.data.status
+                orderCode = model.Data.OrderCode,
+                status = model.Success
             });
         }
         catch (JsonException jsonEx)

@@ -565,7 +565,17 @@ namespace AptCare.Service.Services.Implements
                     UpdatedAt = DateTime.Now
                 });
             }
+            else
+            {
+                await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
+                {
+                    RepairRequestId = appointment.RepairRequestId,
+                    Status = RequestStatus.AcceptancePendingVerify,
+                    UpdatedBy = userId,
+                    UpdatedAt = DateTime.Now
+                });
 
+            }
             await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
 
             var appointmentAssign = appointment.AppointmentAssigns.Where(aa => aa.Status == WorkOrderStatus.Working);

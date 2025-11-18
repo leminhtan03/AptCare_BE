@@ -13,7 +13,6 @@ namespace AptCare.Repository.Entities
         public int UserId { get; set; }
         public int InvoiceId { get; set; }
 
-        public TransactionDirection Direction { get; set; }
         public TransactionType TransactionType { get; set; }
         public TransactionStatus Status { get; set; }
         public PaymentProvider Provider { get; set; }
@@ -22,8 +21,8 @@ namespace AptCare.Repository.Entities
         public string Description { get; set; } = null!;
 
         // PayOS
-        public long? PayOSOrderCode { get; set; }
-        public string? PayOSCheckoutUrl { get; set; }
+        public long? OrderCode { get; set; }
+        public string? CheckoutUrl { get; set; }
         public string? PayOSTransactionId { get; set; }
 
         [Column(TypeName = "timestamp without time zone")]

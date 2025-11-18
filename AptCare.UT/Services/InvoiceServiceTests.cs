@@ -9,7 +9,7 @@ using AptCare.Repository.Enum;
 using AptCare.Repository.Repositories;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.InvoiceDtos;
-using AptCare.Service.Dtos.PayOSDto;
+using PayOS;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
@@ -37,7 +37,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<RepairRequest>> _repairRequestRepo = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<IUserContext> _userContext = new();
-        private readonly Mock<IPayOSClient> _payOSClient = new();
+        private readonly Mock<PayOSClient> _payOSClient = new();
         private readonly Mock<IOptions<PayOSOptions>> _payOSOptions = new();
         private readonly Mock<ILogger<InvoiceServiceImpl>> _logger = new();
 
@@ -91,11 +91,11 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
             )).ReturnsAsync(true);
 
-            var accessory = new Accessory 
-            { 
-                AccessoryId = 1, 
+            var accessory = new Accessory
+            {
+                AccessoryId = 1,
                 Name = "Test Accessory",
-                Price = 100, 
+                Price = 100,
                 Quantity = 10,
                 Status = ActiveStatus.Active
             };
@@ -106,8 +106,8 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<System.Linq.IQueryable<Accessory>, IIncludableQueryable<Accessory, object>>>()
             )).ReturnsAsync(accessory);
 
-            var invoice = new Invoice 
-            { 
+            var invoice = new Invoice
+            {
                 InvoiceId = 1,
                 InvoiceAccessories = new List<InvoiceAccessory>(),
                 InvoiceServices = new List<InvoiceServiceEntity>()
@@ -160,8 +160,8 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
             )).ReturnsAsync(true);
 
-            var invoice = new Invoice 
-            { 
+            var invoice = new Invoice
+            {
                 InvoiceAccessories = new List<InvoiceAccessory>(),
                 InvoiceServices = new List<InvoiceServiceEntity>()
             };
@@ -196,16 +196,16 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
             )).ReturnsAsync(true);
 
-            var accessory = new Accessory 
-            { 
-                AccessoryId = 1, 
+            var accessory = new Accessory
+            {
+                AccessoryId = 1,
                 Name = "Test Accessory",
                 Quantity = 10,
                 Status = ActiveStatus.Active
             };
 
-            var invoice = new Invoice 
-            { 
+            var invoice = new Invoice
+            {
                 InvoiceAccessories = new List<InvoiceAccessory>(),
                 InvoiceServices = new List<InvoiceServiceEntity>()
             };
@@ -236,8 +236,8 @@ namespace AptCare.UT.Services
                 IsChargeable = true,
                 Accessories = new List<InvoiceAccessoryExternalCreateDto>
                 {
-                    new InvoiceAccessoryExternalCreateDto 
-                    { 
+                    new InvoiceAccessoryExternalCreateDto
+                    {
                         Name = "External Accessory",
                         Quantity = 2,
                         Price = 150
@@ -254,8 +254,8 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
             )).ReturnsAsync(true);
 
-            var invoice = new Invoice 
-            { 
+            var invoice = new Invoice
+            {
                 InvoiceId = 1,
                 InvoiceAccessories = new List<InvoiceAccessory>(),
                 InvoiceServices = new List<InvoiceServiceEntity>()
