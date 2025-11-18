@@ -44,8 +44,7 @@ namespace AptCare.Api.Extensions
                     Example = new OpenApiString("2025-01-01")
                 });
 
-                // ✅ ADD THIS: Enable file upload support
-                //options.OperationFilter<FileUploadOperationFilter>();
+                options.OperationFilter<FileUploadOperationFilter>();
 
                 // Enable XML Comments (for Swagger API Documentation)
                 var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
