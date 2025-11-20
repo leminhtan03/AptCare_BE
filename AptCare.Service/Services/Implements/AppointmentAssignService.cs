@@ -322,7 +322,7 @@ namespace AptCare.Service.Services.Implements
                         Type = NotificationType.Individual,
                         Description = $"Có lịch hẹn yêu cầu sửa chữa vào {Appoiment.StartTime.TimeOfDay} ngày {DateOnly.FromDateTime(Appoiment.StartTime)}"
                     };
-                    await _notificationService.SendNotificationForResidentInRequest(appointmentId, dtoForResident);
+                    await _notificationService.SendNotificationForResidentInRequest(Appoiment.RepairRequestId, dtoForResident);
                 }
                 else
                 {

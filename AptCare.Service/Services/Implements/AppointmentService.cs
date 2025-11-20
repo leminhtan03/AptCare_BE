@@ -54,7 +54,15 @@ namespace AptCare.Service.Services.Implements
             }
 
             var appointment = _mapper.Map<Appointment>(dto);
+            appointment.AppointmentTrackings.Add(new AppointmentTracking
+            {
+                Status = AppointmentStatus.Pending,
+                Note = dto.Note,
+                UpdatedAt = DateTime.Now,
+                UpdatedBy = _userContext.CurrentUserId
+            });
             await _unitOfWork.GetRepository<Appointment>().InsertAsync(appointment);
+
             await _unitOfWork.CommitAsync();
             return "Tạo lịch hẹn thành công";
         }

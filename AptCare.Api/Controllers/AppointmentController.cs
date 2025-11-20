@@ -22,7 +22,7 @@ namespace AptCare.Api.Controllers
         /// Tạo lịch hẹn sửa chữa mới.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** TechnicianLead (Trưởng bộ phận kĩ thuật) 
+        /// **Chỉ role:** Technician (Kĩ thuật viên) và TechnicianLead (Trưởng bộ phận kĩ thuật) 
         /// Dùng khi trưởng bộ phận kĩ thuật muốn đặt lịch cho yêu cầu sửa chữa cụ thể.  
         /// 
         /// **Yêu cầu:**  
@@ -40,7 +40,7 @@ namespace AptCare.Api.Controllers
         /// <response code="403">Không đủ quyền.</response>
         /// <response code="500">Lỗi hệ thống.</response>
         [HttpPost]
-        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}")]
+        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Technician)}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -57,7 +57,7 @@ namespace AptCare.Api.Controllers
         /// Cập nhật lịch hẹn sửa chữa.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** TechnicianLead (Trưởng bộ phận kĩ thuật) 
+        /// **Chỉ role:** Technician (Kĩ thuật viên) và TechnicianLead (Trưởng bộ phận kĩ thuật) 
         /// Dùng khi muốn điều chỉnh thời gian hoặc thông tin của lịch hẹn hiện có.
         /// 
         /// /// **Các trạng thái (`Status`) có thể cập nhật:**
@@ -75,7 +75,7 @@ namespace AptCare.Api.Controllers
         /// <response code="200">Cập nhật lịch hẹn thành công.</response>
         /// <response code="404">Không tìm thấy lịch hẹn.</response>
         [HttpPut("{id:int}")]
-        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}")]
+        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Technician)}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
