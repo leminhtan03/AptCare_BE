@@ -14,6 +14,7 @@ using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
+using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<Floor>> _floorRepo = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<ApartmentService>> _logger = new();
+        private readonly Mock<IRedisCacheService> _cacheService = new(); // ✅ Thêm Redis cache mock
 
         private readonly ApartmentService _service;
 
@@ -38,7 +40,21 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.GetRepository<Floor>()).Returns(_floorRepo.Object);
             _uow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
 
-            _service = new ApartmentService(_uow.Object, _logger.Object, _mapper.Object);
+            // ✅ Setup cache service mocks
+            _cacheService.Setup(c => c.RemoveByPrefixAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.RemoveAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.GetAsync<ApartmentDto>(It.IsAny<string>()))
+                    .ReturnsAsync((ApartmentDto)null);
+
+            _cacheService.Setup(c => c.GetAsync<IEnumerable<ApartmentBasicDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IEnumerable<ApartmentBasicDto>)null);
+
+            _cacheService.Setup(c => c.GetAsync<IPaginate<ApartmentDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IPaginate<ApartmentDto>)null);
+
+            // ✅ Inject IRedisCacheService vào constructor
+            _service = new ApartmentService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);
         }
 
         #region CreateApartmentAsync Tests
@@ -86,6 +102,7 @@ namespace AptCare.UT.Services
             Assert.Equal("Tạo căn hộ mới thành công", result);
             _aptRepo.Verify(r => r.InsertAsync(apartment), Times.Once);
             _uow.Verify(u => u.CommitAsync(), Times.Once);
+            _cacheService.Verify(c => c.RemoveByPrefixAsync("apartment"), Times.Once); // ✅ Verify cache clear
         }
 
         [Fact]
@@ -272,6 +289,7 @@ namespace AptCare.UT.Services
             Assert.Equal("Xóa căn hộ thành công", result);
             _aptRepo.Verify(r => r.DeleteAsync(apartment), Times.Once);
             _uow.Verify(u => u.CommitAsync(), Times.Once);
+            _cacheService.Verify(c => c.RemoveByPrefixAsync("apartment"), Times.Once); // ✅ Verify cache clear
         }
 
         [Fact]

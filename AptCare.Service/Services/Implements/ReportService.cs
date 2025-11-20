@@ -19,16 +19,19 @@ namespace AptCare.Service.Services.Implements
     {
         private readonly IUserContext _userContext;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly IRedisCacheService _cacheService;
 
         public ReportService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
             ILogger<ReportService> logger,
             IMapper mapper,
             IUserContext userContext,
-            ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
+            ICloudinaryService cloudinaryService,
+            IRedisCacheService cacheService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _cloudinaryService = cloudinaryService;
+            _cacheService = cacheService;
         }
 
         public async Task<ReportDto> CreateReportAsync(ReportCreateDto dto)
@@ -104,6 +107,9 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
+                // Clear cache after create
+                await _cacheService.RemoveByPrefixAsync("report");
+
                 // Return created report with details
                 return await GetReportByIdAsync(newReport.ReportId);
             }
@@ -161,6 +167,11 @@ namespace AptCare.Service.Services.Implements
             reportRepo.UpdateAsync(report);
             await _unitOfWork.CommitAsync();
 
+            // Clear cache after update
+            await _cacheService.RemoveAsync($"report:{id}");
+            await _cacheService.RemoveByPrefixAsync("report:list");
+            await _cacheService.RemoveByPrefixAsync("report:paginate");
+
             return "Cập nhật báo cáo thành công.";
         }
 
@@ -189,11 +200,22 @@ namespace AptCare.Service.Services.Implements
             reportRepo.DeleteAsync(report);
             await _unitOfWork.CommitAsync();
 
+            // Clear cache after delete
+            await _cacheService.RemoveByPrefixAsync("report");
+
             return "Xóa báo cáo thành công.";
         }
 
         public async Task<ReportDto> GetReportByIdAsync(int id)
         {
+            var cacheKey = $"report:{id}";
+
+            var cachedReport = await _cacheService.GetAsync<ReportDto>(cacheKey);
+            if (cachedReport != null)
+            {
+                return cachedReport;
+            }
+
             var reportRepo = _unitOfWork.GetRepository<Report>();
 
             var report = await reportRepo.SingleOrDefaultAsync(
@@ -219,6 +241,9 @@ namespace AptCare.Service.Services.Implements
 
             result.Medias = medias.ToList();
 
+            // Cache for 20 minutes
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(20));
+
             return result;
         }
 
@@ -228,6 +253,15 @@ namespace AptCare.Service.Services.Implements
             int size = filterDto.size > 0 ? filterDto.size : 10;
             string search = filterDto.search?.ToLower() ?? string.Empty;
             string filter = filterDto.filter?.ToLower() ?? string.Empty;
+            string sortBy = filterDto.sortBy?.ToLower() ?? string.Empty;
+
+            var cacheKey = $"report:paginate:page:{page}:size:{size}:search:{search}:filter:{filter}:sort:{sortBy}:from:{filterDto.Fromdate}:to:{filterDto.Todate}:obj:{filterDto.CommonAreaObjectId}:user:{filterDto.UserId}";
+
+            var cachedResult = await _cacheService.GetAsync<Paginate<ReportDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
 
             ActiveStatus? filterStatus = null;
             if (!string.IsNullOrEmpty(filter))
@@ -237,6 +271,7 @@ namespace AptCare.Service.Services.Implements
                     filterStatus = parsedStatus;
                 }
             }
+            
             Expression<Func<Report, bool>> predicate = r =>
                 (string.IsNullOrEmpty(search) ||
                  r.Title.ToLower().Contains(search) ||
@@ -249,7 +284,9 @@ namespace AptCare.Service.Services.Implements
                 (!filterDto.Todate.HasValue ||
                  DateOnly.FromDateTime(r.CreatedAt) <= filterDto.Todate.Value) &&
                 (!filterDto.CommonAreaObjectId.HasValue ||
-                 r.CommonAreaObjectId == filterDto.CommonAreaObjectId.Value);
+                 r.CommonAreaObjectId == filterDto.CommonAreaObjectId.Value) &&
+                (!filterDto.UserId.HasValue ||
+                 r.UserId == filterDto.UserId.Value);
 
             var reportRepo = _unitOfWork.GetRepository<Report>();
 
@@ -273,11 +310,22 @@ namespace AptCare.Service.Services.Implements
                 item.Medias = medias.ToList();
             }
 
+            // Cache for 10 minutes
+            await _cacheService.SetAsync(cacheKey, paginateResult, TimeSpan.FromMinutes(10));
+
             return paginateResult;
         }
 
         public async Task<IEnumerable<ReportBasicDto>> GetReportsByCommonAreaObjectAsync(int commonAreaObjectId)
         {
+            var cacheKey = $"report:list:by_object:{commonAreaObjectId}";
+
+            var cachedResult = await _cacheService.GetAsync<IEnumerable<ReportBasicDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             var reportRepo = _unitOfWork.GetRepository<Report>();
 
             var reports = await reportRepo.GetListAsync(
@@ -289,6 +337,8 @@ namespace AptCare.Service.Services.Implements
                                     .ThenInclude(x => x.Floor),
                 orderBy: o => o.OrderByDescending(r => r.CreatedAt));
 
+            // Cache for 30 minutes
+            await _cacheService.SetAsync(cacheKey, reports, TimeSpan.FromMinutes(30));
 
             return reports;
         }
@@ -325,6 +375,11 @@ namespace AptCare.Service.Services.Implements
             reportRepo.UpdateAsync(report);
             await _unitOfWork.CommitAsync();
 
+            // Clear cache after activate
+            await _cacheService.RemoveAsync($"report:{id}");
+            await _cacheService.RemoveByPrefixAsync("report:list");
+            await _cacheService.RemoveByPrefixAsync("report:paginate");
+
             return "Kích hoạt báo cáo thành công.";
         }
 
@@ -352,6 +407,11 @@ namespace AptCare.Service.Services.Implements
             report.Status = ActiveStatus.Inactive;
             reportRepo.UpdateAsync(report);
             await _unitOfWork.CommitAsync();
+
+            // Clear cache after deactivate
+            await _cacheService.RemoveAsync($"report:{id}");
+            await _cacheService.RemoveByPrefixAsync("report:list");
+            await _cacheService.RemoveByPrefixAsync("report:paginate");
 
             return "Vô hiệu hóa báo cáo thành công.";
         }

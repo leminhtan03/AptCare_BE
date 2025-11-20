@@ -19,8 +19,15 @@ namespace AptCare.Service.Services.Implements
 {
     public class IssueService : BaseService<IssueService>, IIssueService
     {
-        public IssueService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<IssueService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
+        private readonly IRedisCacheService _cacheService;
+
+        public IssueService(
+            IUnitOfWork<AptCareSystemDBContext> unitOfWork, 
+            ILogger<IssueService> logger, 
+            IMapper mapper,
+            IRedisCacheService cacheService) : base(unitOfWork, logger, mapper)
         {
+            _cacheService = cacheService;
         }
 
         public async Task<IssueListItemDto> CreateAsync(IssueCreateDto dto)
@@ -36,6 +43,11 @@ namespace AptCare.Service.Services.Implements
             var newIssue = _mapper.Map<Issue>(dto);
             await _unitOfWork.GetRepository<Issue>().InsertAsync(newIssue);
             await _unitOfWork.CommitAsync();
+
+            // Clear cache after create
+            await _cacheService.RemoveByPrefixAsync("issue");
+            await _cacheService.RemoveByPrefixAsync($"technique:{dto.TechniqueId}");
+
             return _mapper.Map<IssueListItemDto>(newIssue);
         }
 
@@ -49,16 +61,33 @@ namespace AptCare.Service.Services.Implements
             issue!.Status = Repository.Enum.ActiveStatus.Inactive;
             _unitOfWork.GetRepository<Issue>().UpdateAsync(issue);
             await _unitOfWork.CommitAsync();
+
+            // Clear cache after delete
+            await _cacheService.RemoveByPrefixAsync("issue");
+            await _cacheService.RemoveByPrefixAsync($"technique:{issue.TechniqueId}");
         }
 
         public async Task<IssueListItemDto?> GetByIdAsync(int id)
         {
+            var cacheKey = $"issue:{id}";
+
+            var cachedIssue = await _cacheService.GetAsync<IssueListItemDto>(cacheKey);
+            if (cachedIssue != null)
+            {
+                return cachedIssue;
+            }
+
             if (!await _unitOfWork.GetRepository<Issue>().AnyAsync(predicate: i => i.IssueId == id))
             {
                 throw new ApplicationException("Issue không tồn tại");
             }
             var issue = await _unitOfWork.GetRepository<Issue>().SingleOrDefaultAsync(predicate: i => i.IssueId == id);
-            return _mapper.Map<IssueListItemDto>(issue);
+            var result = _mapper.Map<IssueListItemDto>(issue);
+
+            // Cache for 1 hour (issues rarely change)
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1));
+
+            return result;
         }
 
         public async Task<IPaginate<IssueListItemDto>> ListAsync(PaginateDto dto, int? techniqueId = null)
@@ -67,6 +96,15 @@ namespace AptCare.Service.Services.Implements
             int size = dto.size > 0 ? dto.size : 10;
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
+            string sortBy = dto.sortBy?.ToLower() ?? string.Empty;
+
+            var cacheKey = $"issue:paginate:page:{page}:size:{size}:search:{search}:filter:{filter}:technique:{techniqueId}:sort:{sortBy}";
+
+            var cachedResult = await _cacheService.GetAsync<Paginate<IssueListItemDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
 
             ActiveStatus? filterStatus = null;
             if (!string.IsNullOrEmpty(filter))
@@ -81,8 +119,8 @@ namespace AptCare.Service.Services.Implements
                (string.IsNullOrEmpty(search) || p.Name.Contains(search) ||
                                                 p.Name.Contains(search) ||
                                                 p.Description.Contains(search)) &&
-               (string.IsNullOrEmpty(filter) ||
-               filterStatus == p.Status);
+               (string.IsNullOrEmpty(filter) || filterStatus == p.Status) &&
+               (techniqueId == null || p.TechniqueId == techniqueId);
 
             var result = await _unitOfWork.GetRepository<Issue>().GetPagingListAsync(
                 selector: x => _mapper.Map<IssueListItemDto>(x),
@@ -91,6 +129,10 @@ namespace AptCare.Service.Services.Implements
                 page: page,
                 size: size
                 );
+
+            // Cache for 30 minutes
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(30));
+
             return result;
         }
 
@@ -105,11 +147,17 @@ namespace AptCare.Service.Services.Implements
                 }
                 if (!await _unitOfWork.GetRepository<Technique>().AnyAsync(predicate: i => i.TechniqueId == dto.TechniqueId))
                     throw new ApplicationException("Technique không tồn tại");
+                
                 _mapper.Map(dto, issue);
                 _unitOfWork.GetRepository<Issue>().UpdateAsync(issue);
                 await _unitOfWork.CommitAsync();
-                return "Cập nhật Issue thành công";
 
+                // Clear cache after update
+                await _cacheService.RemoveAsync($"issue:{id}");
+                await _cacheService.RemoveByPrefixAsync("issue:paginate");
+                await _cacheService.RemoveByPrefixAsync($"technique:{dto.TechniqueId}");
+
+                return "Cập nhật Issue thành công";
             }
             catch (Exception ex)
             {
@@ -125,7 +173,7 @@ namespace AptCare.Service.Services.Implements
             {
                 "issue_name" => q => q.OrderBy(p => p.Name),
                 "issue_name_desc" => q => q.OrderByDescending(p => p.Name),
-                _ => q => q.OrderByDescending(p => p.Name) // Default sort
+                _ => q => q.OrderByDescending(p => p.Name)
             };
         }
     }

@@ -7,20 +7,25 @@ using AptCare.Repository.Repositories;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Dtos.TechniqueDto;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
 {
     public class ApartmentService : BaseService<ApartmentService>, IApartmentService
     {
-        public ApartmentService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<ApartmentService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
+        private readonly IRedisCacheService _cacheService;
+
+        public ApartmentService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<ApartmentService> logger, IMapper mapper, IRedisCacheService cacheService) : base(unitOfWork, logger, mapper)
         {
+            _cacheService = cacheService;
         }
 
         public async Task<string> CreateApartmentAsync(ApartmentCreateDto dto)
@@ -44,6 +49,10 @@ namespace AptCare.Service.Services.Implements
 
             await _unitOfWork.GetRepository<Apartment>().InsertAsync(apartment);
             await _unitOfWork.CommitAsync();
+            
+            // Clear cache after create
+            await _cacheService.RemoveByPrefixAsync("apartment");
+            
             return "Tạo căn hộ mới thành công";
         }
 
@@ -75,6 +84,12 @@ namespace AptCare.Service.Services.Implements
             _mapper.Map(dto, apartment);
             _unitOfWork.GetRepository<Apartment>().UpdateAsync(apartment);
             await _unitOfWork.CommitAsync();
+            
+            // Clear cache after update
+            await _cacheService.RemoveAsync($"apartment:{id}");
+            await _cacheService.RemoveByPrefixAsync("apartment:list");
+            await _cacheService.RemoveByPrefixAsync("apartment:paginate");
+            
             return "Cập nhật căn hộ thành công";
         }
 
@@ -88,11 +103,23 @@ namespace AptCare.Service.Services.Implements
 
             _unitOfWork.GetRepository<Apartment>().DeleteAsync(apartment);
             await _unitOfWork.CommitAsync();
+            
+            // Clear cache after delete
+            await _cacheService.RemoveByPrefixAsync("apartment");
+            
             return "Xóa căn hộ thành công";
         }
 
         public async Task<ApartmentDto> GetApartmentByIdAsync(int id)
         {
+            var cacheKey = $"apartment:{id}";
+
+            var cachedApartment = await _cacheService.GetAsync<ApartmentDto>(cacheKey);
+            if (cachedApartment != null)
+            {
+                return cachedApartment;
+            }
+
             var apt = await _unitOfWork.GetRepository<Apartment>().SingleOrDefaultAsync(
                 selector: x => _mapper.Map<ApartmentDto>(x),
                 predicate: p => p.ApartmentId == id,
@@ -101,7 +128,12 @@ namespace AptCare.Service.Services.Implements
                                .ThenInclude(x => x.Account));
             if (apt == null)
                 throw new AppValidationException("Căn hộ không tồn tại.", StatusCodes.Status404NotFound);
+                
             await LoadUserProfileImagesAsync(apt);
+            
+            // Cache for 20 minutes
+            await _cacheService.SetAsync(cacheKey, apt, TimeSpan.FromMinutes(20));
+            
             return apt;
         }
 
@@ -111,6 +143,14 @@ namespace AptCare.Service.Services.Implements
             int size = dto.size > 0 ? dto.size : 10;
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
+
+            var cacheKey = $"technique:paginate:page:{page}:size:{size}:search:{search}:filter:{filter}:sort:{dto.sortBy}:floorId:{floorId}";
+
+            var cachedResult = await _cacheService.GetAsync<Paginate<ApartmentDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
 
             ApartmentStatus? filterStatus = null;
             if (!string.IsNullOrEmpty(filter))
@@ -142,23 +182,40 @@ namespace AptCare.Service.Services.Implements
                                 .ThenInclude(x => x.User)
                                 .ThenInclude(x => x.Account),
                 orderBy: BuildOrderBy(dto.sortBy ?? string.Empty),
-                    page: page,
-                    size: size
-                );
+                page: page,
+                size: size
+            );
+            
             foreach (var apartment in result.Items)
                 await LoadUserProfileImagesAsync(apartment);
+            
+            // Cache for 10 minutes
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(10));
+            
             return result;
         }
 
         public async Task<IEnumerable<ApartmentBasicDto>> GetApartmentsByFloorAsync(int floorId)
         {
+            var cacheKey = $"apartment:list:by_floor:{floorId}";
+
+            var cachedResult = await _cacheService.GetAsync<IEnumerable<ApartmentBasicDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             var result = await _unitOfWork.GetRepository<Apartment>().GetListAsync(
                 selector: s => _mapper.Map<ApartmentBasicDto>(s),
                 predicate: p => p.FloorId == floorId,
                 include: i => i.Include(x => x.Floor)
                                .Include(x => x.UserApartments),
                 orderBy: o => o.OrderBy(x => x.Room)
-                );
+            );
+            
+            // Cache for 30 minutes
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(30));
+            
             return result;
         }
 
@@ -206,6 +263,11 @@ namespace AptCare.Service.Services.Implements
                 }
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
+                
+                // Clear cache after update
+                await _cacheService.RemoveAsync($"apartment:{AptId}");
+                await _cacheService.RemoveByPrefixAsync("apartment:list");
+                await _cacheService.RemoveByPrefixAsync("apartment:paginate");
 
                 var updatedApartment = await aptRepo.SingleOrDefaultAsync(
                     predicate: a => a.ApartmentId == AptId,

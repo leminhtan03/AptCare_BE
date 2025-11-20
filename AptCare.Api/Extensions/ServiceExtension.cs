@@ -59,6 +59,7 @@ namespace AptCare.Api.Extensions
             service.AddScoped<ITransactionService, TransactionService>();
             service.AddScoped<ICommonAreaObjectService, CommonAreaObjectService>();
             service.AddScoped<IReportService, ReportService>();
+            service.AddScoped<IRedisCacheService, RedisCacheService>();
 
 
 

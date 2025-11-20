@@ -5,6 +5,7 @@ using AptCare.Repository.Repositories;
 using AptCare.Service.Dtos.S3AWSDtos;
 using Microsoft.EntityFrameworkCore;
 using PayOS;
+using StackExchange.Redis;
 
 namespace AptCare.Api.Extensions
 {
@@ -29,6 +30,26 @@ namespace AptCare.Api.Extensions
                 ?? throw new Exception("PAYOS_CHECKSUM_KEY missing");
 
             service.AddSingleton(new PayOSClient(payOSClientId, payOSApiKey, payOSChecksumKey));
+
+            // Add Redis Service
+            service.AddSingleton<IConnectionMultiplexer>(_ =>
+            {
+                var redisHost = Environment.GetEnvironmentVariable("Redis__Host")
+                ?? throw new Exception("Redis__Host missing");
+                var redisPort = Environment.GetEnvironmentVariable("Redis__Port")
+                ?? throw new Exception("Redis__Port missing");
+                var redisPassword = Environment.GetEnvironmentVariable("Redis__Password")
+                ?? throw new Exception("Redis__Password missing");
+
+                var options = new ConfigurationOptions
+                {
+                    EndPoints = { $"{redisHost}:{redisPort}" },
+                    Password = redisPassword,
+                    AbortOnConnectFail = false
+                };
+
+                return ConnectionMultiplexer.Connect(options);
+            });
 
             service.Configure<S3Options>(configuration.GetSection("AWS"));
 

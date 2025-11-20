@@ -24,8 +24,11 @@ namespace AptCare.Service.Services.Implements
 {
     public class FloorService : BaseService<FloorService>, IFloorService
     {
-        public FloorService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<FloorService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
+        private readonly IRedisCacheService _cacheService;
+
+        public FloorService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<FloorService> logger, IMapper mapper, IRedisCacheService cacheService) : base(unitOfWork, logger, mapper)
         {
+            _cacheService = cacheService;
         }
 
         public async Task<string> CreateFloorAsync(FloorCreateDto dto)
@@ -45,6 +48,10 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.GetRepository<Floor>().InsertAsync(floor);
                 await _unitOfWork.CommitAsync();
+
+                // Clear all floor-related cache
+                await _cacheService.RemoveByPrefixAsync("floor");
+
                 return "Tạo tầng mới thành công";
             }
             catch (Exception e)
@@ -67,7 +74,7 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 var isDupFloor = await _unitOfWork.GetRepository<Floor>().AnyAsync(
-                    predicate: x => x.FloorNumber == dto.FloorNumber
+                    predicate: x => x.FloorNumber == dto.FloorNumber && x.FloorId != id
                     );
 
                 if (isDupFloor)
@@ -79,6 +86,12 @@ namespace AptCare.Service.Services.Implements
                 _mapper.Map(dto, floor);
                 _unitOfWork.GetRepository<Floor>().UpdateAsync(floor);
                 await _unitOfWork.CommitAsync();
+
+                // Clear specific floor cache and all related caches
+                await _cacheService.RemoveAsync($"floor:{id}");
+                await _cacheService.RemoveByPrefixAsync("floor:list");
+                await _cacheService.RemoveByPrefixAsync("floor:paginate");
+
                 return "Cập nhật tầng thành công";
             }
             catch (Exception e)
@@ -102,6 +115,10 @@ namespace AptCare.Service.Services.Implements
 
                 _unitOfWork.GetRepository<Floor>().DeleteAsync(floor);
                 await _unitOfWork.CommitAsync();
+
+                // Clear all floor-related cache
+                await _cacheService.RemoveByPrefixAsync("floor");
+
                 return "Xóa tầng thành công";
             }
             catch (Exception e)
@@ -112,6 +129,16 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<FloorDto> GetFloorByIdAsync(int id)
         {
+            var cacheKey = $"floor:{id}";
+
+            // Try to get from cache first
+            var cachedFloor = await _cacheService.GetAsync<FloorDto>(cacheKey);
+            if (cachedFloor != null)
+            {
+                return cachedFloor;
+            }
+
+            // If not in cache, get from database
             var floor = await _unitOfWork.GetRepository<Floor>().SingleOrDefaultAsync(
                 selector: x => _mapper.Map<FloorDto>(x),
                 predicate: p => p.FloorId == id,
@@ -125,6 +152,10 @@ namespace AptCare.Service.Services.Implements
             {
                 throw new AppValidationException("Tầng không tồn tại", StatusCodes.Status404NotFound);
             }
+
+            // Cache for 30 minutes
+            await _cacheService.SetAsync(cacheKey, floor, TimeSpan.FromMinutes(30));
+
             return floor;
         }
 
@@ -134,6 +165,17 @@ namespace AptCare.Service.Services.Implements
             int size = dto.size > 0 ? dto.size : 10;
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
+            string sortBy = dto.sortBy?.ToLower() ?? string.Empty;
+
+            // Create cache key based on query parameters
+            var cacheKey = $"floor:paginate:page:{page}:size:{size}:search:{search}:filter:{filter}:sort:{sortBy}";
+
+            // Try to get from cache
+            var cachedResult = await _cacheService.GetAsync<Paginate<GetAllFloorsDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
 
             ActiveStatus? filterStatus = null;
             if (!string.IsNullOrEmpty(filter))
@@ -160,11 +202,23 @@ namespace AptCare.Service.Services.Implements
                     page: page,
                     size: size
                 );
+
+            // Cache for 15 minutes (paginate results change more frequently)
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(15));
+
             return result;
         }
 
         public async Task<IEnumerable<FloorBasicDto>> GetFloorsAsync()
         {
+            var cacheKey = "floor:list:active";
+
+            // Try to get from cache
+            var cachedResult = await _cacheService.GetAsync<IEnumerable<FloorBasicDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
 
             var result = await _unitOfWork.GetRepository<Floor>().GetListAsync(
                 selector: x => _mapper.Map<FloorBasicDto>(x),
@@ -173,6 +227,10 @@ namespace AptCare.Service.Services.Implements
                 include: i => i.Include(x => x.Apartments)
                                 .ThenInclude(x => x.UserApartments)
                 );
+
+            // Cache for 1 hour (active list rarely changes)
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1));
+
             return result;
         }
 
