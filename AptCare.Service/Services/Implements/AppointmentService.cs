@@ -571,6 +571,10 @@ namespace AptCare.Service.Services.Implements
                 {
                     throw new AppValidationException("Hoàn thành luôn yêu cầu sửa chữa phải có thời gian nghiệm thu.");
                 }
+                if (acceptanceTime.Value <= DateOnly.FromDateTime(DateTime.Now))
+                {
+                    throw new AppValidationException("Thời gian nghiệm thu không hợp lệ.");
+                }
 
                 var repairRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
                     predicate: x => x.RepairRequestId == appointment.RepairRequestId
