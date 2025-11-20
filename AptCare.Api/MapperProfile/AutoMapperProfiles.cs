@@ -1,4 +1,5 @@
-﻿using AptCare.Repository.Entities;
+﻿using Amazon.S3.Model;
+using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.Apartment;
@@ -210,7 +211,8 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Technicians, o => o.MapFrom(s => s.AppointmentAssigns.Select(x => x.Technician)));
 
             CreateMap<AppointmentCreateDto, Appointment>()
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
+                .ForMember(d => d.AppointmentTrackings, o => o.MapFrom(s => new List<AppointmentTracking>()));
             CreateMap<AppointmentUpdateDto, Appointment>();
             CreateMap<AppointmentTracking, AppointmentTrackingDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
