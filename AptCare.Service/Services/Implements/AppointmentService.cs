@@ -490,7 +490,7 @@ namespace AptCare.Service.Services.Implements
             return true;
         }
 
-        public async Task<string> CompleteAppointmentAsync(int id, string note, bool hasNextAppointment)
+        public async Task<string> CompleteAppointmentAsync(int id, string note, bool hasNextAppointment, DateOnly? acceptanceTime)
         {
             var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
                 predicate: x => x.AppointmentId == id,
@@ -567,6 +567,17 @@ namespace AptCare.Service.Services.Implements
             }
             else
             {
+                if (!acceptanceTime.HasValue)
+                {
+                    throw new AppValidationException("Hoàn thành luôn yêu cầu sửa chữa phải có thời gian nghiệm thu.");
+                }
+
+                var repairRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                    predicate: x => x.RepairRequestId == appointment.RepairRequestId
+                );
+                repairRequest.AcceptanceTime = acceptanceTime;
+                _unitOfWork.GetRepository<RepairRequest>().UpdateAsync(repairRequest);
+
                 await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
                 {
                     RepairRequestId = appointment.RepairRequestId,

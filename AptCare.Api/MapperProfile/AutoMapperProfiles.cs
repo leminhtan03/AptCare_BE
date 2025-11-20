@@ -268,6 +268,7 @@ namespace AptCare.Api.MapperProfile
             CreateMap<InvoiceExternalCreateDto, Invoice>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => InvoiceStatus.Draft))
                 .ForMember(d => d.Type, o => o.MapFrom(s => InvoiceType.ExternalContractor))
+                .ForMember(d => d.IsChargeable, o => o.MapFrom(s => false))
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
                 .ForMember(d => d.InvoiceAccessories, o => o.MapFrom(s => new List<InvoiceAccessory>()))
                 .ForMember(d => d.InvoiceServices, o => o.MapFrom(s => new List<InvoiceService>()));

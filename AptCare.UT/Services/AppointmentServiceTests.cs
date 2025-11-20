@@ -570,7 +570,7 @@ namespace AptCare.UT.Services
             _userContext.SetupGet(u => u.CurrentUserId).Returns(1);
 
             // Act
-            var result = await _service.CompleteAppointmentAsync(id, "Completed", false);
+            var result = await _service.CompleteAppointmentAsync(id, "Completed", true, DateOnly.FromDateTime(DateTime.Now));
 
             // Assert
             Assert.Equal("Lịch hẹn đã được hoàn thành", result);
@@ -606,7 +606,7 @@ namespace AptCare.UT.Services
             _userContext.SetupGet(u => u.CurrentUserId).Returns(1);
 
             // Act
-            var result = await _service.CompleteAppointmentAsync(id, "Completed", true);
+            var result = await _service.CompleteAppointmentAsync(id, "Completed", true, null);
 
             // Assert
             Assert.Equal("Lịch hẹn đã được hoàn thành", result);
@@ -635,7 +635,7 @@ namespace AptCare.UT.Services
             )).ReturnsAsync(appointment);
 
             // Act & Assert
-            var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.CompleteAppointmentAsync(id, "Complete", false));
+            var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.CompleteAppointmentAsync(id, "Complete", false, null));
             Assert.Contains("Báo cáo hoàn thành chưa được chấp thuận", ex.Message);
         }
 

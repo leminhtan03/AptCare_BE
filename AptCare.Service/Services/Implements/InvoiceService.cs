@@ -6,6 +6,7 @@ using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
+using MailKit.Search;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -26,15 +27,45 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                var isExistingRepairRequest = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
-                                    predicate: p => p.RepairRequestId == dto.RepairRequestId
-                                    );
-                if (!isExistingRepairRequest)
+                var repairRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                    predicate: p => p.RepairRequestId == dto.RepairRequestId,
+                    include: i => i.Include(x => x.RequestTrackings)
+                    );
+                if (repairRequest == null)
                 {
                     throw new AppValidationException($"Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
+                var lastStatusRequest = repairRequest.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status;
+                if (lastStatusRequest != RequestStatus.AcceptancePendingVerify)
+                {
+                    throw new AppValidationException($"Trạng thái sửa chữa đang là {lastStatusRequest}. Không phải chờ nghệm thu.", StatusCodes.Status404NotFound);
+                }
+
+                var lastInspec = await _unitOfWork.GetRepository<InspectionReport>().SingleOrDefaultAsync(
+                    predicate: p => p.Appointment.RepairRequestId == dto.RepairRequestId,
+                    include: i => i.Include(x => x.Appointment),
+                    orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                    );
+                if (lastInspec == null)
+                {
+                    throw new AppValidationException($"Chưa có báo cáo kiểm tra.", StatusCodes.Status404NotFound);
+                }
+                if (lastInspec.Status != ReportStatus.Approved)
+                {
+                    throw new AppValidationException($"Báo cáo kiểm tra chưa được chấp thuận.");
+                }
+
                 var invoice = _mapper.Map<Invoice>(dto);
+
+                if (lastInspec.FaultOwner == FaultType.ResidentFault)
+                {
+                    invoice.IsChargeable = true;
+                }
+                else
+                {
+                    invoice.IsChargeable = false;
+                }
 
                 decimal totalAmount = 0;
 
@@ -103,12 +134,37 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.BeginTransactionAsync();
 
-                var isExistingRepairRequest = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
-                                    predicate: p => p.RepairRequestId == dto.RepairRequestId
-                                    );
-                if (!isExistingRepairRequest)
+                var repairRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                    predicate: p => p.RepairRequestId == dto.RepairRequestId,
+                    include: i => i.Include(x => x.RequestTrackings)
+                    );
+                if (repairRequest == null)
                 {
                     throw new AppValidationException($"Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
+                }
+
+                var lastStatusRequest = repairRequest.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status;
+                if (lastStatusRequest != RequestStatus.AcceptancePendingVerify)
+                {
+                    throw new AppValidationException($"Trạng thái sửa chữa đang là {lastStatusRequest}. Không phải chờ nghệm thu.", StatusCodes.Status404NotFound);
+                }
+
+                var lastInspec = await _unitOfWork.GetRepository<InspectionReport>().SingleOrDefaultAsync(
+                    predicate: p => p.Appointment.RepairRequestId == dto.RepairRequestId,
+                    include: i => i.Include(x => x.Appointment),
+                    orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                    );
+                if (lastInspec == null)
+                {
+                    throw new AppValidationException($"Chưa có báo cáo kiểm tra.", StatusCodes.Status404NotFound);
+                }
+                if (lastInspec.SolutionType != SolutionType.Outsource)
+                {
+                    throw new AppValidationException($"Phương pháp sửa chữa không phải là thuê ngoài.");
+                }
+                if (lastInspec.Status != ReportStatus.Approved)
+                {
+                    throw new AppValidationException($"Báo cáo kiểm tra chưa được chấp thuận.");
                 }
 
                 var invoice = _mapper.Map<Invoice>(dto);
