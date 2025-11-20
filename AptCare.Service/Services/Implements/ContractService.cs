@@ -20,16 +20,19 @@ namespace AptCare.Service.Services.Implements
     {
         private readonly IS3FileService _s3FileService;
         private readonly IUserContext _userContext;
+        private readonly IRedisCacheService _cacheService;
 
         public ContractService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
             ILogger<ContractService> logger,
             IMapper mapper,
             IS3FileService s3FileService,
-            IUserContext userContext) : base(unitOfWork, logger, mapper)
+            IUserContext userContext,
+            IRedisCacheService cacheService) : base(unitOfWork, logger, mapper)
         {
             _s3FileService = s3FileService;
             _userContext = userContext;
+            _cacheService = cacheService;
         }
 
         public async Task<ContractDto> CreateContractAsync(ContractCreateDto dto)
@@ -88,6 +91,9 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
+                // Clear cache after create
+                await _cacheService.RemoveByPrefixAsync("contract");
+
                 var result = _mapper.Map<ContractDto>(contract);
                 result.ContractFile = _mapper.Map<MediaDto>(media);
 
@@ -137,6 +143,14 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                var cacheKey = $"contract:{contractId}";
+
+                var cachedContract = await _cacheService.GetAsync<ContractDto>(cacheKey);
+                if (cachedContract != null)
+                {
+                    return cachedContract;
+                }
+
                 var contractRepo = _unitOfWork.GetRepository<Contract>();
                 var contract = await contractRepo.SingleOrDefaultAsync(
                     predicate: c => c.ContractId == contractId,
@@ -161,6 +175,10 @@ namespace AptCare.Service.Services.Implements
                 {
                     result.ContractFile = _mapper.Map<MediaDto>(media);
                 }
+
+                // Cache for 30 minutes
+                await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(30));
+
                 return result;
             }
             catch (Exception ex)
@@ -174,6 +192,14 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                var cacheKey = $"contract:list:by_request:{repairRequestId}";
+
+                var cachedResult = await _cacheService.GetAsync<IEnumerable<ContractDto>>(cacheKey);
+                if (cachedResult != null)
+                {
+                    return cachedResult;
+                }
+
                 var contractRepo = _unitOfWork.GetRepository<Contract>();
                 var contracts = await contractRepo.GetListAsync(
                     predicate: c => c.RepairRequestId == repairRequestId,
@@ -198,6 +224,9 @@ namespace AptCare.Service.Services.Implements
                     result.Add(dto);
                 }
 
+                // Cache for 30 minutes
+                await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(30));
+
                 return result;
             }
             catch (Exception ex)
@@ -215,6 +244,15 @@ namespace AptCare.Service.Services.Implements
                 int size = dto.size > 0 ? dto.size : 10;
                 string search = dto.search?.ToLower() ?? string.Empty;
                 string filter = dto.filter?.ToLower() ?? string.Empty;
+                string sortBy = dto.sortBy?.ToLower() ?? string.Empty;
+
+                var cacheKey = $"contract:paginate:page:{page}:size:{size}:search:{search}:filter:{filter}:sort:{sortBy}";
+
+                var cachedResult = await _cacheService.GetAsync<Paginate<ContractDto>>(cacheKey);
+                if (cachedResult != null)
+                {
+                    return cachedResult;
+                }
 
                 ActiveStatus? statusEnum = null;
                 if (!string.IsNullOrEmpty(filter))
@@ -253,6 +291,10 @@ namespace AptCare.Service.Services.Implements
                         item.ContractFile = _mapper.Map<MediaDto>(media);
                     }
                 }
+
+                // Cache for 15 minutes
+                await _cacheService.SetAsync(cacheKey, paginateResult, TimeSpan.FromMinutes(15));
+
                 return paginateResult;
             }
             catch (Exception ex)
@@ -342,6 +384,11 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
+                // Clear cache after update
+                await _cacheService.RemoveAsync($"contract:{contractId}");
+                await _cacheService.RemoveByPrefixAsync("contract:list");
+                await _cacheService.RemoveByPrefixAsync("contract:paginate");
+
                 _logger.LogInformation("Updated contract {ContractId}", contractId);
                 return "Cập nhật hợp đồng thành công.";
             }
@@ -372,6 +419,11 @@ namespace AptCare.Service.Services.Implements
                 contract.Status = ActiveStatus.Inactive;
                 contractRepo.UpdateAsync(contract);
                 await _unitOfWork.CommitAsync();
+
+                // Clear cache after inactivate
+                await _cacheService.RemoveAsync($"contract:{contractId}");
+                await _cacheService.RemoveByPrefixAsync("contract:list");
+                await _cacheService.RemoveByPrefixAsync("contract:paginate");
 
                 _logger.LogInformation("Inactivated contract {ContractId}", contractId);
 

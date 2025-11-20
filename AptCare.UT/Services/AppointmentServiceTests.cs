@@ -80,7 +80,13 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
             )).ReturnsAsync(true);
 
-            var appointment = new Appointment();
+            var appointment = new Appointment
+            {
+                RepairRequestId = 1,
+                StartTime = DateTime.UtcNow.AddHours(1),
+                EndTime = DateTime.UtcNow.AddHours(2),
+                AppointmentTrackings = new List<AppointmentTracking>()
+            };
             _mapper.Setup(m => m.Map<Appointment>(dto)).Returns(appointment);
 
             // Act
@@ -758,7 +764,7 @@ namespace AptCare.UT.Services
 
             var slots = new List<Slot>
             {
-                new Slot { SlotId = 1, FromTime = new TimeSpan(8, 0, 0), ToTime = new TimeSpan(16, 0, 0) }
+                new Slot { SlotId = 1, FromTime = new TimeSpan(0, 0, 0), ToTime = new TimeSpan(23, 0, 0) }
             };
 
             _apptRepo.Setup(r => r.GetListAsync(

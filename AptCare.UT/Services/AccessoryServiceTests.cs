@@ -31,6 +31,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<AccessoryService>> _logger = new();
         private readonly Mock<ICloudinaryService> _cloudinary = new();
+        private readonly Mock<IRedisCacheService> _cacheService = new();
 
         private readonly AccessoryService _service;
 
@@ -43,7 +44,19 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.CommitTransactionAsync()).Returns(Task.CompletedTask);
             _uow.Setup(u => u.RollbackTransactionAsync()).Returns(Task.CompletedTask);
 
-            _service = new AccessoryService(_uow.Object, _logger.Object, _cloudinary.Object, _mapper.Object);
+            _cacheService.Setup(c => c.RemoveByPrefixAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.RemoveAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.GetAsync<AccessoryDto>(It.IsAny<string>()))
+                .ReturnsAsync((AccessoryDto)null);
+
+            _cacheService.Setup(c => c.GetAsync<IEnumerable<AccessoryDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IEnumerable<AccessoryDto>)null);
+
+            _cacheService.Setup(c => c.GetAsync<IPaginate<AccessoryDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IPaginate<AccessoryDto>)null);
+
+            _service = new AccessoryService(_uow.Object, _logger.Object, _cloudinary.Object, _cacheService.Object, _mapper.Object);
         }
 
         #region CreateAccessoryAsync Tests

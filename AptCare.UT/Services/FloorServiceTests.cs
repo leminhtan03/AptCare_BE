@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using AptCare.Repository;
+﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
@@ -13,10 +8,16 @@ using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
+using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace AptCare.UT.Services
@@ -27,6 +28,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<Floor>> _floorRepo = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<FloorService>> _logger = new();
+        private readonly Mock<IRedisCacheService> _cacheService = new();
 
         private readonly FloorService _service;
 
@@ -35,7 +37,19 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.GetRepository<Floor>()).Returns(_floorRepo.Object);
             _uow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
 
-            _service = new FloorService(_uow.Object, _logger.Object, _mapper.Object);
+            _cacheService.Setup(c => c.RemoveByPrefixAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.RemoveAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.GetAsync<FloorDto>(It.IsAny<string>()))
+                .ReturnsAsync((FloorDto)null);
+
+            _cacheService.Setup(c => c.GetAsync<IEnumerable<FloorBasicDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IEnumerable<FloorBasicDto>)null);
+
+            _cacheService.Setup(c => c.GetAsync<IPaginate<FloorDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IPaginate<FloorDto>)null);
+
+            _service = new FloorService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);
         }
 
         #region CreateFloorAsync Tests

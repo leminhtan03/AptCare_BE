@@ -27,11 +27,21 @@ namespace AptCare.Service.Services.Implements
         private readonly IMailSenderService _mailSender;
         private readonly IPasswordHasher<Account> _pwdHasher;
         private readonly ICloudinaryService _cloudinaryService;
-        public UserService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IPasswordHasher<Account> pwdHasher, IMailSenderService mailSenderService, ILogger<UserService> logger, ICloudinaryService cloudinaryService, IMapper mapper) : base(unitOfWork, logger, mapper)
+        private readonly IRedisCacheService _cacheService;
+
+        public UserService(
+            IUnitOfWork<AptCareSystemDBContext> unitOfWork, 
+            IPasswordHasher<Account> pwdHasher, 
+            IMailSenderService mailSenderService, 
+            ILogger<UserService> logger, 
+            ICloudinaryService cloudinaryService,
+            IRedisCacheService cacheService,
+            IMapper mapper) : base(unitOfWork, logger, mapper)
         {
             _mailSender = mailSenderService;
             _pwdHasher = pwdHasher;
             _cloudinaryService = cloudinaryService;
+            _cacheService = cacheService;
         }
 
         public async Task<CreateUserResponseDto> CreateUserAsync(CreateUserDto createUserDto)
@@ -88,6 +98,13 @@ namespace AptCare.Service.Services.Implements
                 await UserbasicProfileImageAsync(user);
                 await _unitOfWork.CommitTransactionAsync();
 
+                // Clear cache after create
+                await _cacheService.RemoveByPrefixAsync("user");
+                if (createUserDto.Role == AccountRole.Resident && createUserDto.Apartments?.Any() == true)
+                {
+                    await _cacheService.RemoveByPrefixAsync("apartment");
+                }
+
                 var createdUser = await userRepo.SingleOrDefaultAsync(
                     predicate: u => u.UserId == user.UserId,
                     include: i => i.Include(u => u.Account)
@@ -115,30 +132,57 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception("Lỗi khi tạo người dùng: " + ex.Message);
             }
         }
+
         public async Task<UserDto?> GetUserByIdAsync(int userId)
         {
-            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.UserId == userId,
+            var cacheKey = $"user:{userId}";
+
+            var cachedUser = await _cacheService.GetAsync<UserDto>(cacheKey);
+            if (cachedUser != null)
+            {
+                return cachedUser;
+            }
+
+            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
+                predicate: u => u.UserId == userId,
                 include: i => i
                     .Include(u => u.Account)
                     .Include(u => u.UserApartments)
                     .ThenInclude(ua => ua.Apartment),
                 selector: u => _mapper.Map<UserDto>(u)
             );
+            
             if (user == null)
             {
                 throw new KeyNotFoundException("Người dùng không tồn tại.");
             }
+            
             var media = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
                 predicate: m => m.EntityId == userId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
             if (media != null)
                 user.ProfileImageUrl = media.FilePath;
+
+            // Cache for 20 minutes
+            await _cacheService.SetAsync(cacheKey, user, TimeSpan.FromMinutes(20));
+
             return user;
         }
+
         public async Task<IPaginate<UserGetAllDto>> GetProfileDataPageAsync(UserPaginateDto dto)
         {
-
             int page = dto.page > 0 ? dto.page : 1;
             int size = dto.size > 0 ? dto.size : 10;
+            string search = dto.search?.ToLower() ?? string.Empty;
+            string filter = dto.filter?.ToLower() ?? string.Empty;
+            string sortBy = dto.sortBy?.ToLower() ?? string.Empty;
+
+            var cacheKey = $"user:paginate:page:{page}:size:{size}:search:{search}:filter:{filter}:role:{dto.Role}:sort:{sortBy}";
+
+            var cachedResult = await _cacheService.GetAsync<Paginate<UserGetAllDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
 
             ActiveStatus? statusEnum = null;
             if (!string.IsNullOrEmpty(dto.filter))
@@ -152,6 +196,7 @@ namespace AptCare.Service.Services.Implements
                     return new Paginate<UserGetAllDto>();
                 }
             }
+            
             var users = await _unitOfWork.GetRepository<User>().GetPagingListAsync(
                 selector: u => _mapper.Map<UserGetAllDto>(u),
                 predicate: u =>
@@ -174,6 +219,7 @@ namespace AptCare.Service.Services.Implements
                 page: page,
                 size: size
             );
+            
             var userIds = users.Items.Select(u => u.UserId).ToList();
             var profileImages = await _unitOfWork.GetRepository<Media>()
                 .GetListAsync(
@@ -189,8 +235,13 @@ namespace AptCare.Service.Services.Implements
                     user.ProfileImageUrl = imagePath;
                 }
             }
+
+            // Cache for 10 minutes
+            await _cacheService.SetAsync(cacheKey, users, TimeSpan.FromMinutes(10));
+
             return users;
         }
+
         private Func<IQueryable<User>, IOrderedQueryable<User>> BuildOrderBy(string sortBy)
         {
             if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.UserId);
@@ -199,9 +250,10 @@ namespace AptCare.Service.Services.Implements
             {
                 "id" => q => q.OrderBy(p => p.UserId),
                 "id_desc" => q => q.OrderByDescending(p => p.UserId),
-                _ => q => q.OrderByDescending(p => p.UserId) // Default sort
+                _ => q => q.OrderByDescending(p => p.UserId)
             };
         }
+
         public async Task<string> UpdateUserAsync(int userId, UpdateUserDto updateUserDto)
         {
             var userRepo = _unitOfWork.GetRepository<User>();
@@ -235,6 +287,10 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
+                // Clear cache after update
+                await _cacheService.RemoveAsync($"user:{userId}");
+                await _cacheService.RemoveByPrefixAsync("user:paginate");
+
                 var resultUser = _mapper.Map<UserDto>(user);
                 var media = await mediaRepo.SingleOrDefaultAsync(
                     predicate: m => m.EntityId == userId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
@@ -247,13 +303,13 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
+
         public async Task<ImportResultDto> ImportResidentsFromExcelAsync(Stream fileStream)
         {
             var result = new ImportResultDto();
             await _unitOfWork.BeginTransactionAsync();
             try
             {
-
                 ExcelPackage.License.SetNonCommercialPersonal("Internal project");
                 using (var package = new ExcelPackage(fileStream))
                 {
@@ -270,6 +326,10 @@ namespace AptCare.Service.Services.Implements
                     if (result.IsSuccess)
                     {
                         await _unitOfWork.CommitTransactionAsync();
+                        
+                        // Clear cache after import
+                        await _cacheService.RemoveByPrefixAsync("user");
+                        await _cacheService.RemoveByPrefixAsync("apartment");
                     }
                     else
                     {
@@ -283,24 +343,26 @@ namespace AptCare.Service.Services.Implements
                 result.Errors.Add($"Lỗi hệ thống nghiêm trọng: {ex.Message}");
             }
             return result;
-
         }
+
         public async Task UpdateUserProfileImageAsync(UpdateUserImageProfileDto dto)
         {
             try
             {
-
                 var userRepo = _unitOfWork.GetRepository<User>();
                 var mediaRepo = _unitOfWork.GetRepository<Media>();
                 var imagePath = await _cloudinaryService.UploadImageAsync(dto.ImageProfileUrl);
-                var userOldMedia = await mediaRepo.SingleOrDefaultAsync(predicate: m => m.EntityId == dto.UserId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
+                var userOldMedia = await mediaRepo.SingleOrDefaultAsync(
+                    predicate: m => m.EntityId == dto.UserId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
                 await _unitOfWork.BeginTransactionAsync();
+                
                 if (userOldMedia != null)
                 {
                     userOldMedia.Status = ActiveStatus.Inactive;
                     mediaRepo.UpdateAsync(userOldMedia);
                     await _unitOfWork.CommitAsync();
                 }
+                
                 var newMedia = new Media
                 {
                     EntityId = dto.UserId,
@@ -314,6 +376,10 @@ namespace AptCare.Service.Services.Implements
                 await mediaRepo.InsertAsync(newMedia);
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
+                // Clear cache after update profile image
+                await _cacheService.RemoveAsync($"user:{dto.UserId}");
+                await _cacheService.RemoveByPrefixAsync("user:paginate");
             }
             catch (Exception ex)
             {
@@ -321,6 +387,7 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception("Lỗi khi cập nhật ảnh đại diện: " + ex.Message);
             }
         }
+
         private async Task ProcessUsersSheet(ExcelWorksheet worksheet, ImportResultDto result)
         {
             var rowCount = worksheet.Dimension.Rows;
@@ -360,7 +427,8 @@ namespace AptCare.Service.Services.Implements
                     result.Errors.Add($"[Users] Dòng {row}: CitizenshipIdentity là bắt buộc.");
                     continue;
                 }
-                var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: u => u.PhoneNumber == phoneNumber && u.Email == email);
+                var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
+                    predicate: u => u.PhoneNumber == phoneNumber && u.Email == email);
                 if (user == null)
                 {
                     user = new User
@@ -378,8 +446,8 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.CommitAsync();
             }
-
         }
+
         private async Task ProcessUserApartmentsSheet(ExcelWorksheet worksheet, ImportResultDto result)
         {
             var rowCount = worksheet.Dimension.Rows;
@@ -540,6 +608,7 @@ namespace AptCare.Service.Services.Implements
 
             await _unitOfWork.CommitAsync();
         }
+
         private string GenerateRandomPassword(int length = 12)
         {
             const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -569,6 +638,7 @@ namespace AptCare.Service.Services.Implements
 
             return new string(passwordArray);
         }
+
         private async Task ValidateUserDataByRole(AccountRole role, CreateUserDto dto, IGenericRepository<Apartment> aptRepo, IGenericRepository<Technique> techRepo)
         {
             switch (role)
@@ -719,6 +789,7 @@ namespace AptCare.Service.Services.Implements
                 }
             }
         }
+
         private bool ShouldCreateAccount(AccountRole role, bool createAccountFlag)
         {
             switch (role)
@@ -736,6 +807,7 @@ namespace AptCare.Service.Services.Implements
                     return false;
             }
         }
+
         private async Task CreateAccountForNewUserAsync(User user, AccountRole role, IGenericRepository<Account> accountRepo)
         {
             var existingAccount = await accountRepo.AnyAsync(a => a.AccountId == user.UserId);
@@ -759,6 +831,7 @@ namespace AptCare.Service.Services.Implements
             await accountRepo.InsertAsync(account);
             await SendAccountCredentialsEmailAsync(user, password);
         }
+
         private async Task SendAccountCredentialsEmailAsync(User user, string password)
         {
             var replacements = new Dictionary<string, string>
@@ -781,6 +854,7 @@ namespace AptCare.Service.Services.Implements
                 replacements: replacements
             );
         }
+
         private async Task UserbasicProfileImageAsync(User user)
         {
             var mediaRepo = _unitOfWork.GetRepository<Media>();
@@ -888,6 +962,12 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 await _unitOfWork.CommitTransactionAsync();
+
+                // Clear cache after inactivate
+                await _cacheService.RemoveAsync($"user:{userId}");
+                await _cacheService.RemoveByPrefixAsync("user:paginate");
+                await _cacheService.RemoveByPrefixAsync("apartment");
+
                 return $"Đã vô hiệu hóa người dùng '{fullName}' thành công.";
             }
             catch (Exception ex)
@@ -898,5 +978,4 @@ namespace AptCare.Service.Services.Implements
             }
         }
     }
-
 }

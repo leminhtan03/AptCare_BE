@@ -8,6 +8,7 @@ using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Dtos.TechniqueDto;
 using AptCare.Service.Services.Implements;
+using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
@@ -26,6 +27,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<Technique>> _techniqueRepo = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<TechniqueService>> _logger = new();
+        private readonly Mock<IRedisCacheService> _cacheService = new();
 
         private readonly TechniqueService _service;
 
@@ -34,7 +36,16 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.GetRepository<Technique>()).Returns(_techniqueRepo.Object);
             _uow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
 
-            _service = new TechniqueService(_uow.Object, _logger.Object, _mapper.Object);
+            _cacheService.Setup(c => c.RemoveByPrefixAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.RemoveAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.GetAsync<TechniqueListItemDto>(It.IsAny<string>()))
+                .ReturnsAsync((TechniqueListItemDto)null);
+
+            _cacheService.Setup(c => c.GetAsync<IPaginate<TechniqueListItemDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IPaginate<TechniqueListItemDto>)null);
+
+            _service = new TechniqueService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);
         }
 
         #region CreateAsync Tests

@@ -22,14 +22,17 @@ namespace AptCare.Service.Services.Implements
     public class AccessoryService : BaseService<AccessoryService>, IAccessoryService
     {
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly IRedisCacheService _cacheService;
 
         public AccessoryService(
         IUnitOfWork<AptCareSystemDBContext> unitOfWork, 
         ILogger<AccessoryService> logger, 
         ICloudinaryService cloudinaryService,
+        IRedisCacheService cacheService,
         IMapper mapper) : base(unitOfWork, logger, mapper)
         {
             _cloudinaryService = cloudinaryService;
+            _cacheService = cacheService;
         }
 
         public async Task<string> CreateAccessoryAsync(AccessoryCreateDto dto)
@@ -74,6 +77,10 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
+                // Clear cache after create
+                await _cacheService.RemoveByPrefixAsync("accessory");
+
                 return "Tạo phụ kiện thành công.";
             }
             catch (Exception e)
@@ -145,6 +152,12 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
+                // Clear cache after update
+                await _cacheService.RemoveAsync($"accessory:{id}");
+                await _cacheService.RemoveByPrefixAsync("accessory:list");
+                await _cacheService.RemoveByPrefixAsync("accessory:paginate");
+
                 return "Cập nhật phụ kiện thành công.";
             }
             catch (Exception e)
@@ -166,6 +179,10 @@ namespace AptCare.Service.Services.Implements
 
                 _unitOfWork.GetRepository<Accessory>().DeleteAsync(accessory);
                 await _unitOfWork.CommitAsync();
+
+                // Clear cache after delete
+                await _cacheService.RemoveByPrefixAsync("accessory");
+
                 return "Xóa phụ kiện thành công.";
             }
             catch (Exception e)
@@ -176,6 +193,14 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<AccessoryDto> GetAccessoryByIdAsync(int id)
         {
+            var cacheKey = $"accessory:{id}";
+
+            var cachedAccessory = await _cacheService.GetAsync<AccessoryDto>(cacheKey);
+            if (cachedAccessory != null)
+            {
+                return cachedAccessory;
+            }
+
             var accessory = await _unitOfWork.GetRepository<Accessory>().ProjectToSingleOrDefaultAsync<AccessoryDto>(
                 configuration: _mapper.ConfigurationProvider,
                 predicate: p => p.AccessoryId == id
@@ -189,6 +214,10 @@ namespace AptCare.Service.Services.Implements
             );
 
             accessory.Images = medias.ToList();
+
+            // Cache for 30 minutes
+            await _cacheService.SetAsync(cacheKey, accessory, TimeSpan.FromMinutes(30));
+
             return accessory;
         }
 
@@ -198,6 +227,15 @@ namespace AptCare.Service.Services.Implements
             int size = dto.size > 0 ? dto.size : 10;
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
+            string sortBy = dto.sortBy?.ToLower() ?? string.Empty;
+
+            var cacheKey = $"accessory:paginate:page:{page}:size:{size}:search:{search}:filter:{filter}:sort:{sortBy}";
+
+            var cachedResult = await _cacheService.GetAsync<Paginate<AccessoryDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
 
             Expression<Func<Accessory, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.Name.ToLower().Contains(search) || (p.Descrption != null && p.Descrption.ToLower().Contains(search))) &&
@@ -211,7 +249,7 @@ namespace AptCare.Service.Services.Implements
                 size: size
             );
 
-            foreach ( var item in result.Items )
+            foreach (var item in result.Items)
             {
                 var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                     selector: s => _mapper.Map<MediaDto>(s),
@@ -221,11 +259,22 @@ namespace AptCare.Service.Services.Implements
                 item.Images = medias.ToList();
             }
 
+            // Cache for 15 minutes
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(15));
+
             return result;
         }
 
         public async Task<IEnumerable<AccessoryDto>> GetAccessoriesAsync()
         {
+            var cacheKey = "accessory:list:active";
+
+            var cachedResult = await _cacheService.GetAsync<IEnumerable<AccessoryDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             var result = await _unitOfWork.GetRepository<Accessory>().ProjectToListAsync<AccessoryDto>(
                 configuration: _mapper.ConfigurationProvider,
                 predicate: p => p.Status == ActiveStatus.Active,
@@ -241,6 +290,9 @@ namespace AptCare.Service.Services.Implements
 
                 item.Images = medias.ToList();
             }
+
+            // Cache for 1 hour
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1));
 
             return result;
         }

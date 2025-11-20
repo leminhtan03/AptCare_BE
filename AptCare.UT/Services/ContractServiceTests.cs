@@ -35,6 +35,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IUserContext> _userContext = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<ContractService>> _logger = new();
+        private readonly Mock<IRedisCacheService> _cacheService = new();
 
         private readonly ContractService _service;
 
@@ -49,12 +50,25 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.CommitTransactionAsync()).Returns(Task.CompletedTask);
             _uow.Setup(u => u.RollbackTransactionAsync()).Returns(Task.CompletedTask);
 
+            _cacheService.Setup(c => c.RemoveByPrefixAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.RemoveAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.GetAsync<ContractDto>(It.IsAny<string>()))
+                .ReturnsAsync((ContractDto)null);
+
+            _cacheService.Setup(c => c.GetAsync<IEnumerable<ContractDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IEnumerable<ContractDto>)null);
+
+            _cacheService.Setup(c => c.GetAsync<IPaginate<ContractDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IPaginate<ContractDto>)null);
+
             _service = new ContractService(
                 _uow.Object,
                 _logger.Object,
                 _mapper.Object,
                 _s3FileService.Object,
-                _userContext.Object
+                _userContext.Object,
+                _cacheService.Object
             );
         }
 
@@ -122,13 +136,13 @@ namespace AptCare.UT.Services
                 .ReturnsAsync("s3://bucket/contract.pdf");
 
             Contract insertedContract = null;
-            _contractRepo.Setup(r => r.InsertAsync(It.IsAny<Contract>()))
-                .Callback<Contract>(c =>
-                {
-                    c.ContractId = 1;
-                    insertedContract = c;
-                })
-                .Returns(Task.CompletedTask);
+            //_contractRepo.Setup(r => r.InsertAsync(It.IsAny<Contract>()))
+            //    .Callback<Contract>(c =>
+            //    {
+            //        c.ContractId = 1;
+            //        insertedContract = c;
+            //    })
+            //    .Returns(Task.CompletedTask);
 
             var contractDto = new ContractDto
             {
