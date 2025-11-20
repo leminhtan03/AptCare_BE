@@ -344,6 +344,7 @@ namespace AptCare.Api.Controllers
         /// <param name="id">ID lịch hẹn cần hoàn thành.</param>
         /// <param name="note">Ghi chú.</param>
         /// <param name="hasNextAppointment">Có lịch hẹn tiếp theo không.</param>
+        /// <param name="acceptanceTime">Thời gian nghiêm thu.</param>
         /// <returns>True nếu hoàn thành thành công.</returns>
         /// <response code="200">Hoàn thành thành công.</response>
         /// <response code="400">Yêu cầu không hợp lệ hoặc chuyển trạng thái không hợp lệ.</response>
@@ -355,9 +356,9 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<IActionResult> CompleteAppointment(int id, string note, bool hasNextAppointment)
+        public async Task<IActionResult> CompleteAppointment(int id, string note, bool hasNextAppointment, DateOnly? acceptanceTime)
         {
-            var result = await _appointmentService.CompleteAppointmentAsync(id, note, hasNextAppointment);
+            var result = await _appointmentService.CompleteAppointmentAsync(id, note, hasNextAppointment, acceptanceTime);
             return Ok(result);
         }
     }

@@ -814,7 +814,7 @@ namespace AptCare.Service.Services.Implements
                     predicate: p => p.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status ==
                                         RequestStatus.AcceptancePendingVerify &&
                                     p.AcceptanceTime != null &&
-                                   p.AcceptanceTime.Value.Date == dateTime.Date, // Thay đổi so sánh
+                                   p.AcceptanceTime.Value == DateOnly.FromDateTime(dateTime), // Thay đổi so sánh
                     include: i => i.Include(x => x.RequestTrackings)
                     );
 
