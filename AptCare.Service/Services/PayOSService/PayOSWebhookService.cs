@@ -97,7 +97,7 @@ namespace AptCare.Service.Services.PayOSService
                     _logger.LogInformation("Processing PAID status for transaction {TxId}", tx.TransactionId);
                     tx.Status = TransactionStatus.Success;
                     tx.PayOSTransactionId = webhookData.Data.PaymentLinkId;
-                    tx.PaidAt = DateTime.UtcNow;
+                    tx.PaidAt = DateTime.Now;
                     txRepo.UpdateAsync(tx);
 
                     tx.Invoice.Status = InvoiceStatus.Paid;
