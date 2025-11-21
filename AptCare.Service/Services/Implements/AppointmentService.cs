@@ -54,7 +54,15 @@ namespace AptCare.Service.Services.Implements
             }
 
             var appointment = _mapper.Map<Appointment>(dto);
+            appointment.AppointmentTrackings.Add(new AppointmentTracking
+            {
+                Status = AppointmentStatus.Pending,
+                Note = dto.Note,
+                UpdatedAt = DateTime.Now,
+                UpdatedBy = _userContext.CurrentUserId
+            });
             await _unitOfWork.GetRepository<Appointment>().InsertAsync(appointment);
+
             await _unitOfWork.CommitAsync();
             return "Tạo lịch hẹn thành công";
         }
@@ -490,7 +498,7 @@ namespace AptCare.Service.Services.Implements
             return true;
         }
 
-        public async Task<string> CompleteAppointmentAsync(int id, string note, bool hasNextAppointment)
+        public async Task<string> CompleteAppointmentAsync(int id, string note, bool hasNextAppointment, DateOnly? acceptanceTime)
         {
             var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
                 predicate: x => x.AppointmentId == id,
@@ -567,6 +575,21 @@ namespace AptCare.Service.Services.Implements
             }
             else
             {
+                if (!acceptanceTime.HasValue)
+                {
+                    throw new AppValidationException("Hoàn thành luôn yêu cầu sửa chữa phải có thời gian nghiệm thu.");
+                }
+                if (acceptanceTime.Value <= DateOnly.FromDateTime(DateTime.Now))
+                {
+                    throw new AppValidationException("Thời gian nghiệm thu không hợp lệ.");
+                }
+
+                var repairRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                    predicate: x => x.RepairRequestId == appointment.RepairRequestId
+                );
+                repairRequest.AcceptanceTime = acceptanceTime;
+                _unitOfWork.GetRepository<RepairRequest>().UpdateAsync(repairRequest);
+
                 await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
                 {
                     RepairRequestId = appointment.RepairRequestId,

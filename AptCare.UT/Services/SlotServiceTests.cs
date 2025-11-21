@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using AptCare.Repository;
+﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
@@ -12,10 +8,15 @@ using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
+using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace AptCare.UT.Services
@@ -26,6 +27,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<Slot>> _slotRepo = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<SlotService>> _logger = new();
+        private readonly Mock<IRedisCacheService> _cacheService = new();
 
         private readonly SlotService _service;
 
@@ -34,7 +36,19 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.GetRepository<Slot>()).Returns(_slotRepo.Object);
             _uow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
 
-            _service = new SlotService(_uow.Object, _logger.Object, _mapper.Object);
+            _cacheService.Setup(c => c.RemoveByPrefixAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.RemoveAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.GetAsync<SlotDto>(It.IsAny<string>()))
+                .ReturnsAsync((SlotDto)null);
+
+            _cacheService.Setup(c => c.GetAsync<IEnumerable<SlotDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IEnumerable<SlotDto>)null);
+
+            _cacheService.Setup(c => c.GetAsync<List<SlotDto>>(It.IsAny<string>()))
+                .ReturnsAsync((List<SlotDto>)null);
+
+            _service = new SlotService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);
         }
 
         #region CreateSlotAsync Tests

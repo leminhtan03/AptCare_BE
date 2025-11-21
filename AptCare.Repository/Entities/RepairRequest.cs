@@ -41,8 +41,7 @@ namespace AptCare.Repository.Entities
         public bool IsEmergency { get; set; }
         [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
-        [Column(TypeName = "date")]
-        public DateTime? AcceptanceTime { get; set; }
+        public DateOnly? AcceptanceTime { get; set; }
 
         public ICollection<RepairRequest>? ChildRequests { get; set; }
         public ICollection<Appointment>? Appointments { get; set; }

@@ -17,11 +17,15 @@ namespace AptCare.Service.Services.Implements
 {
     public class CommonAreaObjectService : BaseService<CommonAreaObjectService>, ICommonAreaObjectService
     {
+        private readonly IRedisCacheService _cacheService;
+
         public CommonAreaObjectService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
             ILogger<CommonAreaObjectService> logger,
-            IMapper mapper) : base(unitOfWork, logger, mapper)
+            IMapper mapper,
+            IRedisCacheService cacheService) : base(unitOfWork, logger, mapper)
         {
+            _cacheService = cacheService;
         }
 
         public async Task<string> CreateCommonAreaObjectAsync(CommonAreaObjectCreateDto dto)
@@ -45,6 +49,10 @@ namespace AptCare.Service.Services.Implements
 
             await _unitOfWork.GetRepository<CommonAreaObject>().InsertAsync(commonAreaObject);
             await _unitOfWork.CommitAsync();
+
+            // Clear cache after create
+            await _cacheService.RemoveByPrefixAsync("common_area_object");
+
             return "Tạo đối tượng khu vực chung mới thành công";
         }
 
@@ -76,6 +84,12 @@ namespace AptCare.Service.Services.Implements
             _mapper.Map(dto, commonAreaObject);
             _unitOfWork.GetRepository<CommonAreaObject>().UpdateAsync(commonAreaObject);
             await _unitOfWork.CommitAsync();
+
+            // Clear cache after update
+            await _cacheService.RemoveAsync($"common_area_object:{id}");
+            await _cacheService.RemoveByPrefixAsync("common_area_object:list");
+            await _cacheService.RemoveByPrefixAsync("common_area_object:paginate");
+
             return "Cập nhật đối tượng khu vực chung thành công";
         }
 
@@ -89,6 +103,10 @@ namespace AptCare.Service.Services.Implements
 
             _unitOfWork.GetRepository<CommonAreaObject>().DeleteAsync(commonAreaObject);
             await _unitOfWork.CommitAsync();
+
+            // Clear cache after delete
+            await _cacheService.RemoveByPrefixAsync("common_area_object");
+
             return "Xóa đối tượng khu vực chung thành công";
         }
 
@@ -112,6 +130,11 @@ namespace AptCare.Service.Services.Implements
             _unitOfWork.GetRepository<CommonAreaObject>().UpdateAsync(commonAreaObject);
             await _unitOfWork.CommitAsync();
 
+            // Clear cache after activate
+            await _cacheService.RemoveAsync($"common_area_object:{id}");
+            await _cacheService.RemoveByPrefixAsync("common_area_object:list");
+            await _cacheService.RemoveByPrefixAsync("common_area_object:paginate");
+
             return "Kích hoạt đối tượng khu vực chung thành công";
         }
 
@@ -130,11 +153,24 @@ namespace AptCare.Service.Services.Implements
             _unitOfWork.GetRepository<CommonAreaObject>().UpdateAsync(commonAreaObject);
             await _unitOfWork.CommitAsync();
 
+            // Clear cache after deactivate
+            await _cacheService.RemoveAsync($"common_area_object:{id}");
+            await _cacheService.RemoveByPrefixAsync("common_area_object:list");
+            await _cacheService.RemoveByPrefixAsync("common_area_object:paginate");
+
             return "Vô hiệu hóa đối tượng khu vực chung thành công";
         }
 
         public async Task<CommonAreaObjectDto> GetCommonAreaObjectByIdAsync(int id)
         {
+            var cacheKey = $"common_area_object:{id}";
+
+            var cachedResult = await _cacheService.GetAsync<CommonAreaObjectDto>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             var commonAreaObject = await _unitOfWork.GetRepository<CommonAreaObject>().SingleOrDefaultAsync(
                 selector: x => _mapper.Map<CommonAreaObjectDto>(x),
                 predicate: p => p.CommonAreaObjectId == id,
@@ -143,6 +179,9 @@ namespace AptCare.Service.Services.Implements
 
             if (commonAreaObject == null)
                 throw new AppValidationException("Đối tượng khu vực chung không tồn tại.", StatusCodes.Status404NotFound);
+
+            // Cache for 30 minutes
+            await _cacheService.SetAsync(cacheKey, commonAreaObject, TimeSpan.FromMinutes(30));
 
             return commonAreaObject;
         }
@@ -153,6 +192,15 @@ namespace AptCare.Service.Services.Implements
             int size = dto.size > 0 ? dto.size : 10;
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
+            string sortBy = dto.sortBy?.ToLower() ?? string.Empty;
+
+            var cacheKey = $"common_area_object:paginate:page:{page}:size:{size}:search:{search}:filter:{filter}:sort:{sortBy}:area:{commonAreaId}";
+
+            var cachedResult = await _cacheService.GetAsync<Paginate<CommonAreaObjectDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
 
             ActiveStatus? filterStatus = null;
             if (!string.IsNullOrEmpty(filter))
@@ -173,7 +221,7 @@ namespace AptCare.Service.Services.Implements
             Expression<Func<CommonAreaObject, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.Name.ToLower().Contains(search) ||
                     (p.Description != null && p.Description.ToLower().Contains(search))) &&
-                (string.IsNullOrEmpty(filter) || filterStatus.Equals(p.Status.ToString().ToLower())) &&
+                (string.IsNullOrEmpty(filter) || filterStatus == p.Status) &&
                 (commonAreaId == null || p.CommonAreaId == commonAreaId);
 
             var result = await _unitOfWork.GetRepository<CommonAreaObject>().GetPagingListAsync(
@@ -186,15 +234,30 @@ namespace AptCare.Service.Services.Implements
                 size: size
             );
 
+            // Cache for 15 minutes
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(15));
+
             return result;
         }
 
         public async Task<IEnumerable<CommonAreaObjectBasicDto>> GetCommonAreaObjectsByCommonAreaAsync(int commonAreaId)
         {
+            var cacheKey = $"common_area_object:list:by_area:{commonAreaId}";
+
+            var cachedResult = await _cacheService.GetAsync<IEnumerable<CommonAreaObjectBasicDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             var result = await _unitOfWork.GetRepository<CommonAreaObject>().GetListAsync(
                 selector: s => _mapper.Map<CommonAreaObjectBasicDto>(s),
                 predicate: p => p.CommonAreaId == commonAreaId
             );
+
+            // Cache for 1 hour
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1));
+
             return result;
         }
 
@@ -209,7 +272,7 @@ namespace AptCare.Service.Services.Implements
                 "name_desc" => q => q.OrderByDescending(p => p.Name),
                 "common_area" => q => q.OrderBy(p => p.CommonAreaId),
                 "common_area_desc" => q => q.OrderByDescending(p => p.CommonAreaId),
-                _ => q => q.OrderByDescending(p => p.CommonAreaObjectId) // Default sort
+                _ => q => q.OrderByDescending(p => p.CommonAreaObjectId)
             };
         }
     }

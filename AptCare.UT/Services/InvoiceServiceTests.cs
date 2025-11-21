@@ -75,7 +75,6 @@ namespace AptCare.UT.Services
             var dto = new InvoiceInternalCreateDto
             {
                 RepairRequestId = 1,
-                IsChargeable = true,
                 Accessories = new List<InvoiceAccessoryInternalCreateDto>
                 {
                     new InvoiceAccessoryInternalCreateDto { AccessoryId = 1, Quantity = 2 }
@@ -233,7 +232,6 @@ namespace AptCare.UT.Services
             var dto = new InvoiceExternalCreateDto
             {
                 RepairRequestId = 1,
-                IsChargeable = true,
                 Accessories = new List<InvoiceAccessoryExternalCreateDto>
                 {
                     new InvoiceAccessoryExternalCreateDto

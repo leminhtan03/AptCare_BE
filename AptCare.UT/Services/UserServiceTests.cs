@@ -3,6 +3,7 @@ using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.Apartment;
+using AptCare.Repository.Paginate;
 using AptCare.Repository.Repositories;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.Account;
@@ -36,6 +37,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<Technique>> _mockTechniqueRepo;
         private readonly Mock<IGenericRepository<TechnicianTechnique>> _mockTechnicianTechniqueRepo;
         private readonly Mock<IGenericRepository<Media>> _mockMediaRepo;
+        private readonly Mock<IRedisCacheService> _cacheService = new();
 
         public UserServiceTests()
         {
@@ -62,12 +64,22 @@ namespace AptCare.UT.Services
             _mockUnitOfWork.Setup(u => u.GetRepository<TechnicianTechnique>()).Returns(_mockTechnicianTechniqueRepo.Object);
             _mockUnitOfWork.Setup(u => u.GetRepository<Media>()).Returns(_mockMediaRepo.Object);
 
+            _cacheService.Setup(c => c.RemoveByPrefixAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.RemoveAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.GetAsync<UserDto>(It.IsAny<string>()))
+                .ReturnsAsync((UserDto)null);
+
+            _cacheService.Setup(c => c.GetAsync<IPaginate<UserGetAllDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IPaginate<UserGetAllDto>)null);
+
             _userService = new UserService(
                 _mockUnitOfWork.Object,
                 _mockPasswordHasher.Object,
                 _mockMailSenderService.Object,
                 _mockLogger.Object,
                 _mockCloudinaryService.Object,
+                _cacheService.Object,
                 _mockMapper.Object
             );
         }

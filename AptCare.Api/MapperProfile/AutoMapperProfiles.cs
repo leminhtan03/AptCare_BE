@@ -1,4 +1,5 @@
-﻿using AptCare.Repository.Entities;
+﻿using Amazon.S3.Model;
+using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.Apartment;
@@ -18,6 +19,7 @@ using AptCare.Service.Dtos.IssueDto;
 using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairReportDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
+using AptCare.Service.Dtos.ReportDtos;
 using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Dtos.TechniqueDto;
 using AptCare.Service.Dtos.TransactionDtos;
@@ -209,7 +211,8 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Technicians, o => o.MapFrom(s => s.AppointmentAssigns.Select(x => x.Technician)));
 
             CreateMap<AppointmentCreateDto, Appointment>()
-                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
+                .ForMember(d => d.AppointmentTrackings, o => o.MapFrom(s => new List<AppointmentTracking>()));
             CreateMap<AppointmentUpdateDto, Appointment>();
             CreateMap<AppointmentTracking, AppointmentTrackingDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
@@ -267,6 +270,7 @@ namespace AptCare.Api.MapperProfile
             CreateMap<InvoiceExternalCreateDto, Invoice>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => InvoiceStatus.Draft))
                 .ForMember(d => d.Type, o => o.MapFrom(s => InvoiceType.ExternalContractor))
+                .ForMember(d => d.IsChargeable, o => o.MapFrom(s => false))
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
                 .ForMember(d => d.InvoiceAccessories, o => o.MapFrom(s => new List<InvoiceAccessory>()))
                 .ForMember(d => d.InvoiceServices, o => o.MapFrom(s => new List<InvoiceService>()));
@@ -373,6 +377,17 @@ namespace AptCare.Api.MapperProfile
             CreateMap<CommonAreaObjectCreateDto, CommonAreaObject>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
             CreateMap<CommonAreaObjectUpdateDto, CommonAreaObject>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            // REPORT
+            CreateMap<Report, ReportDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<Report, ReportBasicDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<ReportCreateDto, Report>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
+            CreateMap<ReportUpdateDto, Report>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }

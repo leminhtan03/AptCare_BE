@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using AptCare.Repository;
+﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
@@ -11,10 +7,15 @@ using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.IssueDto;
 using AptCare.Service.Services.Implements;
+using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace AptCare.UT.Services
@@ -26,6 +27,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<Technique>> _techniqueRepo = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<IssueService>> _logger = new();
+        private readonly Mock<IRedisCacheService> _cacheService = new();
 
         private readonly IssueService _service;
 
@@ -35,7 +37,18 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.GetRepository<Technique>()).Returns(_techniqueRepo.Object);
             _uow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
 
-            _service = new IssueService(_uow.Object, _logger.Object, _mapper.Object);
+
+            _cacheService.Setup(c => c.RemoveByPrefixAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.RemoveAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.GetAsync<IssueListItemDto>(It.IsAny<string>()))
+                .ReturnsAsync((IssueListItemDto)null);
+
+            _cacheService.Setup(c => c.GetAsync<IPaginate<IssueListItemDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IPaginate<IssueListItemDto>)null);
+
+
+            _service = new IssueService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);
         }
 
         #region CreateAsync Tests

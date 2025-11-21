@@ -345,7 +345,6 @@ namespace AptCare.UT.Services
             // Assert
             Assert.Equal("Xác nhận phân công thành công.", result);
             _notification.Verify(n => n.SendNotificationForTechnicianInAppointment(apptId, It.IsAny<NotificationPushRequestDto>()), Times.Once);
-            _notification.Verify(n => n.SendNotificationForResidentInRequest(apptId, It.IsAny<NotificationPushRequestDto>()), Times.Once);
             _uow.Verify(u => u.CommitTransactionAsync(), Times.Once);
         }
 

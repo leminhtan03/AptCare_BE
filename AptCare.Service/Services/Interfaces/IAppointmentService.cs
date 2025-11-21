@@ -23,6 +23,6 @@ namespace AptCare.Service.Services.Interfaces
         Task<bool> CheckInAsync(int id);
         Task<bool> StartRepairAsync(int id);
         Task<bool> ToogleAppoimnentStatus(int Id, string note, AppointmentStatus appointmentStatus);
-        Task<string> CompleteAppointmentAsync(int id, string note, bool hasNextAppointment);
+        Task<string> CompleteAppointmentAsync(int id, string note, bool hasNextAppointment, DateOnly? acceptanceTime);
     }
 }

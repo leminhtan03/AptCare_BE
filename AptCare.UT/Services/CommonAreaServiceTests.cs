@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using AptCare.Repository;
+﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
@@ -13,10 +8,16 @@ using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
+using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace AptCare.UT.Services
@@ -28,6 +29,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<Floor>> _floorRepo = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<CommonAreaService>> _logger = new();
+        private readonly Mock<IRedisCacheService> _cacheService = new();
 
         private readonly CommonAreaService _service;
 
@@ -37,7 +39,19 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.GetRepository<Floor>()).Returns(_floorRepo.Object);
             _uow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
 
-            _service = new CommonAreaService(_uow.Object, _logger.Object, _mapper.Object);
+            _cacheService.Setup(c => c.RemoveByPrefixAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.RemoveAsync(It.IsAny<string>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>())).Returns(Task.CompletedTask);
+            _cacheService.Setup(c => c.GetAsync<CommonAreaDto>(It.IsAny<string>()))
+                .ReturnsAsync((CommonAreaDto)null);
+
+            _cacheService.Setup(c => c.GetAsync<IEnumerable<CommonAreaDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IEnumerable<CommonAreaDto>)null);
+
+            _cacheService.Setup(c => c.GetAsync<IPaginate<CommonAreaDto>>(It.IsAny<string>()))
+                .ReturnsAsync((IPaginate<CommonAreaDto>)null);
+
+            _service = new CommonAreaService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);
         }
 
         #region CreateCommonAreaAsync Tests
@@ -204,7 +218,7 @@ namespace AptCare.UT.Services
             var result = await _service.UpdateCommonAreaAsync(id, dto);
 
             // Assert
-            Assert.Equal("Cập nhật Khu vực chung thành công", result);
+            Assert.Equal("Cập nhật khu vực chung thành công", result);
             _commonAreaRepo.Verify(r => r.UpdateAsync(commonArea), Times.Once);
         }
 
@@ -246,7 +260,7 @@ namespace AptCare.UT.Services
             var result = await _service.DeleteCommonAreaAsync(id);
 
             // Assert
-            Assert.Equal("Xóa Khu vực chung thành công", result);
+            Assert.Equal("Xóa khu vực chung thành công", result);
             _commonAreaRepo.Verify(r => r.DeleteAsync(commonArea), Times.Once);
             _uow.Verify(u => u.CommitAsync(), Times.Once);
         }
@@ -310,7 +324,7 @@ namespace AptCare.UT.Services
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.GetCommonAreaByIdAsync(999));
-            Assert.Equal("Khu vực chung không tồn tại", ex.Message);
+            Assert.Equal("Khu vực chung không tồn tại.", ex.Message);
         }
 
         #endregion
