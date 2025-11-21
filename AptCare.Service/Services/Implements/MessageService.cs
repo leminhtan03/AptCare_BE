@@ -349,7 +349,7 @@ namespace AptCare.Service.Services.Implements
             catch (Exception e)
             {
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
-            }            
+            }
         }
 
         public async Task<(IEnumerable<int>, string)> MarkAsReadAsync(int conversationId)
@@ -370,11 +370,11 @@ namespace AptCare.Service.Services.Implements
                 var messages = await _unitOfWork.GetRepository<Message>().GetListAsync(
                     predicate: m => m.ConversationId == conversationId
                                  && m.SenderId != userId
-                                 && m.Status != MessageStatus.Read,
-                    include: i => i.Include(x => x.Sender)
-                                   .Include(x => x.ReplyMessage)
-                                       .ThenInclude(x => x.Sender)
-                                   .Include(x => x.Conversation)
+                                 && m.Status != MessageStatus.Read
+                    //include: i => i.Include(x => x.Sender)
+                    //               .Include(x => x.ReplyMessage)
+                    //                   .ThenInclude(x => x.Sender)
+                    //               .Include(x => x.Conversation)
                 );
 
                 if (!messages.Any())
