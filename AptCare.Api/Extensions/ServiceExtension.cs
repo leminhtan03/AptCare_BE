@@ -4,9 +4,11 @@ using AptCare.Repository.Repositories;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Services.Background;
 using AptCare.Service.Services.Implements;
+using AptCare.Service.Services.Implements.RabbitMQ;
 using AptCare.Service.Services.Implements.S3File;
 using AptCare.Service.Services.Interfaces;
 using AptCare.Service.Services.Interfaces.IS3File;
+using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AptCare.Service.Services.PayOSService;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -60,10 +62,12 @@ namespace AptCare.Api.Extensions
             service.AddScoped<ICommonAreaObjectService, CommonAreaObjectService>();
             service.AddScoped<IReportService, ReportService>();
             service.AddScoped<IRedisCacheService, RedisCacheService>();
+            service.AddScoped<IRabbitMQService, RabbitMQService>();
 
 
 
             service.AddHostedService<NotificationBackgroundService>();
+            service.AddHostedService<NotificationConsumerService>();
 
 
             return service;

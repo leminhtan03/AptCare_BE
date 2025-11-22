@@ -9,6 +9,7 @@ using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,7 @@ namespace AptCare.Service.Services.Implements
         private readonly ICloudinaryService _cloudinaryService;
         private readonly IAppointmentAssignService _appointmentAssignService;
         private readonly INotificationService _notificationService;
+        private readonly IRabbitMQService _rabbitMQService;
 
         public RepairRequestService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
@@ -32,12 +34,14 @@ namespace AptCare.Service.Services.Implements
             IUserContext userContext,
             ICloudinaryService cloudinaryService,
             IAppointmentAssignService appointmentAssignService,
-            INotificationService notificationService) : base(unitOfWork, logger, mapper)
+            INotificationService notificationService,
+            IRabbitMQService rabbitMQService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _cloudinaryService = cloudinaryService;
             _appointmentAssignService = appointmentAssignService;
             _notificationService = notificationService;
+            _rabbitMQService = rabbitMQService;
         }
 
         public async Task<string> CreateNormalRepairRequestAsync(RepairRequestNormalCreateDto dto)
@@ -204,7 +208,8 @@ namespace AptCare.Service.Services.Implements
                 List<int> userIds = new List<int>();
                 userIds.Add(techLeadId);
 
-                await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+
+                await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
                 {
                     Title = "Có yêu cầu sửa chửa mới",
                     Type = NotificationType.Individual,
@@ -383,7 +388,7 @@ namespace AptCare.Service.Services.Implements
                         Status = WorkOrderStatus.Working
                     });
 
-                    await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+                    await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
                     {
                         Title = "Có yêu cầu sửa chửa mới được giao",
                         Type = NotificationType.Individual,
@@ -403,7 +408,7 @@ namespace AptCare.Service.Services.Implements
 
             if (technicianidsAcceptable.Count < issue.RequiredTechnician)
             {
-                await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+                await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
                 {
                     Title = "Có yêu cầu sửa chửa khẩn cấp mới",
                     Type = NotificationType.Individual,
@@ -424,7 +429,7 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(newAppoTracking);
                 await _unitOfWork.CommitAsync();
 
-                await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+                await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
                 {
                     Title = "Có yêu cầu sửa chửa khẩn cấp mới",
                     Type = NotificationType.Individual,
@@ -796,7 +801,7 @@ namespace AptCare.Service.Services.Implements
                     break;
             }
 
-            await _notificationService.SendAndPushNotificationAsync(new NotificationPushRequestDto
+            await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
             {
                 Title = "Yêu cầu sửa chữa",
                 Type = NotificationType.Individual,

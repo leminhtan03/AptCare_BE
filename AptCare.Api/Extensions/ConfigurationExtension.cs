@@ -3,8 +3,10 @@ using AptCare.Repository.Cloudinary;
 using AptCare.Repository.FCM;
 using AptCare.Repository.Repositories;
 using AptCare.Service.Dtos.S3AWSDtos;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.EntityFrameworkCore;
 using PayOS;
+using RabbitMQ.Client;
 using StackExchange.Redis;
 
 namespace AptCare.Api.Extensions
@@ -49,6 +51,31 @@ namespace AptCare.Api.Extensions
                 };
 
                 return ConnectionMultiplexer.Connect(options);
+            });
+
+            // Add RabbitMQ Service
+            service.AddSingleton(sp =>
+            {
+                var rabbitMQHost = Environment.GetEnvironmentVariable("RabbitMQ__Host")
+                ?? throw new Exception("RabbitMQ__Host missing");
+                var rabbitMQPort = Environment.GetEnvironmentVariable("RabbitMQ__Port")
+                ?? throw new Exception("RabbitMQ__Port missing");
+                var rabbitMQUserName = Environment.GetEnvironmentVariable("RabbitMQ__UserName")
+                ?? throw new Exception("RabbitMQ__UserName missing");
+                var rabbitMQPassword = Environment.GetEnvironmentVariable("RabbitMQ__Password")
+                ?? throw new Exception("RabbitMQ__Password missing");
+                var rabbitMQVirtualHost = Environment.GetEnvironmentVariable("RabbitMQ__VirtualHost")
+                ?? throw new Exception("RabbitMQ__VirtualHost missing");
+
+                return new ConnectionFactory
+                {
+                    HostName = rabbitMQHost,
+                    Port = int.Parse(rabbitMQPort),
+                    UserName = rabbitMQUserName,
+                    Password = rabbitMQPassword,
+                    VirtualHost = rabbitMQVirtualHost,
+                    Uri = new Uri(rabbitMQHost)
+                };
             });
 
             service.Configure<S3Options>(configuration.GetSection("AWS"));

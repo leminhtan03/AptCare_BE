@@ -12,6 +12,7 @@ using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
@@ -31,6 +32,7 @@ namespace AptCare.Service.Services.Implements
     {
         private readonly IFCMService _fcmService;
         private readonly IUserContext _userContext;
+        private readonly IRabbitMQService _rabbitMQService;
 
         private const int APPOINTMENT_REMINDER = 3;
 
@@ -39,10 +41,12 @@ namespace AptCare.Service.Services.Implements
             ILogger<NotificationService> logger,
             IMapper mapper,
             IFCMService fcmService,
-            IUserContext userContext) : base(unitOfWork, logger, mapper)
+            IUserContext userContext,
+            IRabbitMQService rabbitMQService) : base(unitOfWork, logger, mapper)
         {
             _fcmService = fcmService;
             _userContext = userContext;
+            _rabbitMQService = rabbitMQService;
         }
 
         public async Task<string> BroadcastNotificationAsync(NotificationCreateDto dto)
@@ -68,7 +72,8 @@ namespace AptCare.Service.Services.Implements
                         include: i => i.Include(x => x.Account)
                         );
                 }
-                await SendAndPushNotificationAsync(pushNotiDto);
+                
+                await _rabbitMQService.PublishNotificationAsync(pushNotiDto);
 
                 return "Gửi thông báo thành công.";
             }
@@ -217,13 +222,15 @@ namespace AptCare.Service.Services.Implements
                                         .ThenInclude(x => x.UserApartments)
                     );
 
-                    await SendAndPushNotificationAsync(new NotificationPushRequestDto
+                    var notificationDto = new NotificationPushRequestDto
                     {
                         Title = "Nhắc nhở lịch hẹn",
                         Type = NotificationType.Individual,
                         Description = $"Bạn có lịch hẹn sửa chữa vào {APPOINTMENT_REMINDER} ngày ({appointment.StartTime.TimeOfDay} ngày {DateOnly.FromDateTime(appointment.StartTime)})",
                         UserIds = userIds
-                    });
+                    };
+
+                    await _rabbitMQService.PublishNotificationAsync(notificationDto);
                 }
             }
             catch (Exception e)
@@ -240,7 +247,7 @@ namespace AptCare.Service.Services.Implements
                     );
 
             dto.UserIds = userIds;
-            await SendAndPushNotificationAsync(dto);
+            await _rabbitMQService.PublishNotificationAsync(dto);
         }
 
         public async Task SendNotificationForResidentInRequest(int repairRequestId, NotificationPushRequestDto dto)
@@ -252,7 +259,8 @@ namespace AptCare.Service.Services.Implements
                     );
 
             dto.UserIds = userIds;
-            await SendAndPushNotificationAsync(dto);
+            // Publish vào RabbitMQ thay vì gọi trực tiếp
+            await _rabbitMQService.PublishNotificationAsync(dto);
         }
 
         private Func<IQueryable<Notification>, IOrderedQueryable<Notification>> BuildOrderBy(string sortBy)
