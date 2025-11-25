@@ -43,7 +43,7 @@ namespace AptCare.Repository
         public DbSet<InvoiceAccessory> InvoiceAccessories { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Contract> Contracts { get; set; }
-        public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
+        public DbSet<MaintenanceSchedule> MaintenanceSchedules { get; set; }
         public DbSet<MaintenanceTrackingHistory> MaintenanceTrackingHistories { get; set; }
         public DbSet<Media> Medias { get; set; }
         public DbSet<Slot> Slots { get; set; }
@@ -122,7 +122,6 @@ namespace AptCare.Repository
                       .WithMany(a => a.UserApartments)
                       .HasForeignKey(ua => ua.ApartmentId);
             });
-
             // ========================= Report =========================
             // User - Report (1 - n)
             // CommonAreaObject - Report (1 - n)
@@ -151,7 +150,14 @@ namespace AptCare.Repository
                       .WithMany(t => t.TechnicianTechniques)
                       .HasForeignKey(tt => tt.TechniqueId);
             });
-
+            // Technique - MaintenanceSchedule (1 - n)
+            modelBuilder.Entity<Technique>(entity =>
+            {
+                entity.HasMany(t => t.MaintenanceSchedules)
+                      .WithOne(ms => ms.RequiredTechnique)
+                      .HasForeignKey(ms => ms.RequiredTechniqueId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
             // Technique - Issue (1 - n)
             modelBuilder.Entity<Issue>(entity =>
             {
@@ -217,9 +223,9 @@ namespace AptCare.Repository
                       .WithMany(a => a.RepairRequests)
                       .HasForeignKey(rr => rr.ApartmentId)
                       .OnDelete(DeleteBehavior.Restrict);
-                entity.HasOne(rr => rr.MaintenanceRequest)
-                      .WithMany(mr => mr.RepairRequests)
-                      .HasForeignKey(rr => rr.MaintenanceRequestId)
+                entity.HasOne(rr => rr.MaintenanceSchedule)
+                      .WithMany(mr => mr.GeneratedRepairRequests)
+                      .HasForeignKey(rr => rr.MaintenanceScheduleId)
                       .OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne(rr => rr.Issue)
                       .WithMany(i => i.RepairRequests)
@@ -365,17 +371,17 @@ namespace AptCare.Repository
             // MaintenanceRequest - CommonAreaObject (1 - n)
             modelBuilder.Entity<CommonAreaObject>(entity =>
             {
-                entity.HasOne(mr => mr.MaintenanceRequest)
+                entity.HasOne(mr => mr.MaintenanceSchedule)
                       .WithOne(cao => cao.CommonAreaObject)
-                      .HasForeignKey<MaintenanceRequest>(mr => mr.CommonAreaObjectId);
+                      .HasForeignKey<MaintenanceSchedule>(mr => mr.CommonAreaObjectId);
             });
 
             // MaintenanceRequest - MaintenanceTrackingHistory (1 - n)
             modelBuilder.Entity<MaintenanceTrackingHistory>(entity =>
             {
-                entity.HasOne(mth => mth.MaintenanceRequest)
+                entity.HasOne(mth => mth.MaintenanceSchedule)
                       .WithMany(mr => mr.MaintenanceTrackingHistories)
-                      .HasForeignKey(mth => mth.MaintenanceRequestId);
+                      .HasForeignKey(mth => mth.MaintenanceScheduleId);
             });
 
             // Media generic (EntityType + EntityId)

@@ -21,5 +21,6 @@ namespace AptCare.Repository.Entities
 
         public ICollection<Issue>? Issues { get; set; }
         public ICollection<TechnicianTechnique>? TechnicianTechniques { get; set; }
+        public ICollection<MaintenanceSchedule>? MaintenanceSchedules { get; set; }
     }
 }

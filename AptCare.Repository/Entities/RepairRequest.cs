@@ -27,9 +27,9 @@ namespace AptCare.Repository.Entities
         public int? IssueId { get; set; }
         public Issue? Issue { get; set; }
 
-        [ForeignKey("MaintenanceRequest")]
-        public int? MaintenanceRequestId { get; set; }
-        public MaintenanceRequest? MaintenanceRequest { get; set; }
+        [ForeignKey("MaintenanceSchedule")]
+        public int? MaintenanceScheduleId { get; set; }
+        public MaintenanceSchedule? MaintenanceSchedule { get; set; }
 
         [Required]
         [MaxLength(100)]

@@ -333,11 +333,19 @@ namespace AptCare.Api.Controllers
         /// - Hủy lịch hẹn Pending
         /// </remarks>
         [HttpPut("{userId}/inactivate")]
-        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> InactivateUser(int userId, [FromBody] InactivateUserDto dto)
         {
             var message = await _userService.InactivateUserAsync(userId, dto);
             return Ok(message);
         }
+
+        [HttpPut("{userId}/update-technique-technican")]
+        public async Task<IActionResult> UpdateTechniqueTechnican(int userId, [FromBody] ICollection<int> newTechnique)
+        {
+            var message = await _userService.UpdateTechniqueTechnican(userId, newTechnique);
+            return Ok(message);
+        }
+
+
     }
 }

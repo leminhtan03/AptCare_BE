@@ -20,5 +20,6 @@ namespace AptCare.Service.Services.Interfaces
         Task<ImportResultDto> ImportResidentsFromExcelAsync(Stream fileStream);
         Task UpdateUserProfileImageAsync(UpdateUserImageProfileDto dto);
         Task<string> InactivateUserAsync(int userId, InactivateUserDto dto);
+        Task<string> UpdateTechniqueTechnican(int userId, ICollection<int> newTechnique);
     }
 }

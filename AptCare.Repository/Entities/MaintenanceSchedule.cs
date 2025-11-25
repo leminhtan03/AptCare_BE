@@ -6,26 +6,34 @@ using AptCare.Repository.Enum;
 
 namespace AptCare.Repository.Entities
 {
-    public class MaintenanceRequest
+    public class MaintenanceSchedule
     {
         [Key]
-        public int MaintenanceRequestId { get; set; }
+        public int MaintenanceScheduleId { get; set; }
 
         [ForeignKey("CommonAreaObject")]
         public int CommonAreaObjectId { get; set; }
-        public CommonAreaObject CommonAreaObject { get; set; } = null!;
 
         [Required]
         [MaxLength(1000)]
         public string? Description { get; set; }
-        public int Frequency { get; set; }
+        public int FrequencyInDays { get; set; }
         [Column(TypeName = "timestamp without time zone")]
-        public DateTime NextDay { get; set; }
+        public DateTime NextScheduledDate { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
+        public DateTime? LastMaintenanceDate { get; set; }
+        public string TimePreference { get; set; }
+        [ForeignKey("RequiredTechnique")]
+        public int? RequiredTechniqueId { get; set; }
+        public int RequiredTechnicians { get; set; } = 1;
+
         [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
         public ActiveStatus Status { get; set; }
-  
+
+        public CommonAreaObject CommonAreaObject { get; set; } = null!;
+        public Technique? RequiredTechnique { get; set; }
         public ICollection<MaintenanceTrackingHistory>? MaintenanceTrackingHistories { get; set; }
-        public ICollection<RepairRequest>? RepairRequests { get; set; }
+        public ICollection<RepairRequest>? GeneratedRepairRequests { get; set; }
     }
 }
