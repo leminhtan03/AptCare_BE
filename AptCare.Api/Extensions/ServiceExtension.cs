@@ -63,6 +63,8 @@ namespace AptCare.Api.Extensions
             service.AddScoped<IReportService, ReportService>();
             service.AddScoped<IRedisCacheService, RedisCacheService>();
             service.AddScoped<IRabbitMQService, RabbitMQService>();
+            service.AddScoped<IFeedbackService, FeedbackService>();
+
 
 
 

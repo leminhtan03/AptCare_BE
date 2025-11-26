@@ -40,7 +40,7 @@ namespace AptCare.Service.Services.Implements
 
                 var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
                     predicate: x => x.AppointmentId == appointmentId,
-                    include: i => i.Include(x => x.AppointmentTrackings) 
+                    include: i => i.Include(x => x.AppointmentTrackings)
                     );
                 if (appointment == null)
                 {
@@ -75,7 +75,7 @@ namespace AptCare.Service.Services.Implements
                     {
                         throw new AppValidationException($"Kĩ thuật viên có ID {userId} đã được phân công cho lịch hẹn này.");
                     }
-                        
+
                     var isConflictAppoAssign = await _unitOfWork.GetRepository<AppointmentAssign>().AnyAsync(
                         predicate: x => x.TechnicianId == userId && DateOnly.FromDateTime(x.EstimatedStartTime) ==
                                                                          DateOnly.FromDateTime(appointment.StartTime) &&
