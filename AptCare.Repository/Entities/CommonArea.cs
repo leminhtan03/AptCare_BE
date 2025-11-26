@@ -17,24 +17,20 @@ namespace AptCare.Repository.Entities
         [ForeignKey("Floor")]
         public int? FloorId { get; set; }
         public Floor? Floor { get; set; }
-
         [Required]
         [MaxLength(50)]
         public string AreaCode { get; set; } = null!;
-
         [Required]
         [MaxLength(256)]
         public string Name { get; set; } = null!;
 
         [MaxLength(500)]
         public string? Description { get; set; }
-
         [MaxLength(500)]
         public string? Location { get; set; }
 
         public ActiveStatus Status { get; set; }
         public ICollection<Report>? Reports { get; set; }
-        public ICollection<MaintenanceRequest>? MaintenanceRequests { get; set; }
         public ICollection<CommonAreaObject>? CommonAreaObjects { get; set; }
     }
 }

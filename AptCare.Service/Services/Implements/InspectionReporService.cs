@@ -152,7 +152,7 @@ namespace AptCare.Service.Services.Implements
                                             .ThenInclude(rr => rr.Apartment)
                                     .Include(ws => ws.Appointment)
                                         .ThenInclude(a => a.RepairRequest)
-                                            .ThenInclude(rr => rr.MaintenanceRequest)
+                                            .ThenInclude(rr => rr.MaintenanceSchedule)
                                                 .ThenInclude(mr => mr.CommonAreaObject)
                                     .Include(ra => ra.ReportApprovals)
                                         .ThenInclude(ra => ra.User)
@@ -197,7 +197,7 @@ namespace AptCare.Service.Services.Implements
                                             .ThenInclude(rr => rr.Apartment)
                                     .Include(ws => ws.Appointment)
                                         .ThenInclude(a => a.RepairRequest)
-                                            .ThenInclude(rr => rr.MaintenanceRequest)
+                                            .ThenInclude(rr => rr.MaintenanceSchedule)
                                                 .ThenInclude(mr => mr.CommonAreaObject)
                                     .Include(ra => ra.ReportApprovals)
                                         .ThenInclude(ra => ra.User)
@@ -248,9 +248,9 @@ namespace AptCare.Service.Services.Implements
                     (p.Appointment != null &&
                      ((p.Appointment.RepairRequest.Apartment != null &&
                      p.Appointment.RepairRequest.Apartment.Room.ToLower().Contains(search)) ||
-                     (p.Appointment.RepairRequest.MaintenanceRequest != null &&
-                     p.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject != null &&
-                     p.Appointment.RepairRequest.MaintenanceRequest.CommonAreaObject.Name.ToLower().Contains(search))
+                     (p.Appointment.RepairRequest.MaintenanceSchedule != null &&
+                     p.Appointment.RepairRequest.MaintenanceSchedule.CommonAreaObject != null &&
+                     p.Appointment.RepairRequest.MaintenanceSchedule.CommonAreaObject.Name.ToLower().Contains(search))
                      )) ||
                     (!string.IsNullOrEmpty(p.Solution) && p.Solution.ToLower().Contains(search))) &&
                     (p.ReportApprovals != null && p.ReportApprovals.Any(ra => ra.UserId == userId) ||
@@ -282,7 +282,7 @@ namespace AptCare.Service.Services.Implements
                                             .ThenInclude(rr => rr.Apartment)
                                     .Include(ws => ws.Appointment)
                                         .ThenInclude(a => a.RepairRequest)
-                                            .ThenInclude(rr => rr.MaintenanceRequest)
+                                            .ThenInclude(rr => rr.MaintenanceSchedule)
                                                 .ThenInclude(mr => mr.CommonAreaObject)
                                     .Include(ra => ra.ReportApprovals)
                                         .ThenInclude(ra => ra.User)

@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     /// <inheritdoc />
-    public partial class RebuildMigration : Migration
+    public partial class EditMaintenanceSchedule : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -35,7 +35,8 @@ namespace AptCare.Repository.Migrations
                 {
                     ConversationId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Title = table.Column<string>(type: "text", nullable: false)
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    Slug = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -48,7 +49,6 @@ namespace AptCare.Repository.Migrations
                 {
                     FloorId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    BuildingCode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     FloorNumber = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
@@ -69,7 +69,7 @@ namespace AptCare.Repository.Migrations
                     FilePath = table.Column<string>(type: "text", nullable: false),
                     FileName = table.Column<string>(type: "text", nullable: false),
                     ContentType = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -83,9 +83,11 @@ namespace AptCare.Repository.Migrations
                 {
                     SlotId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    SlotName = table.Column<string>(type: "text", nullable: false),
                     FromTime = table.Column<TimeSpan>(type: "interval", nullable: false),
                     ToTime = table.Column<TimeSpan>(type: "interval", nullable: false),
-                    LastUpdated = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    LastUpdated = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    DisplayOrder = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -118,7 +120,7 @@ namespace AptCare.Repository.Migrations
                     PhoneNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     CitizenshipIdentity = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    Birthday = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Birthday = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -133,7 +135,9 @@ namespace AptCare.Repository.Migrations
                     ApartmentId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     FloorId = table.Column<int>(type: "integer", nullable: false),
-                    RoomNumber = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Room = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Area = table.Column<double>(type: "double precision", nullable: false),
+                    Limit = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true)
                 },
@@ -183,7 +187,7 @@ namespace AptCare.Repository.Migrations
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     IsEmergency = table.Column<bool>(type: "boolean", nullable: false),
                     RequiredTechnician = table.Column<int>(type: "integer", nullable: false),
-                    EstimatedDuration = table.Column<int>(type: "integer", nullable: false),
+                    EstimatedDuration = table.Column<double>(type: "double precision", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -207,7 +211,7 @@ namespace AptCare.Repository.Migrations
                     LockoutEnabled = table.Column<bool>(type: "boolean", nullable: false),
                     EmailConfirmed = table.Column<bool>(type: "boolean", nullable: false),
                     MustChangePassword = table.Column<bool>(type: "boolean", nullable: false),
-                    LockoutEnd = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    LockoutEnd = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     Role = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -227,7 +231,7 @@ namespace AptCare.Repository.Migrations
                 {
                     ConversationId = table.Column<int>(type: "integer", nullable: false),
                     ParticipantId = table.Column<int>(type: "integer", nullable: false),
-                    JoinedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    JoinedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     IsMuted = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
@@ -245,42 +249,6 @@ namespace AptCare.Repository.Migrations
                         principalTable: "Users",
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Messages",
-                columns: table => new
-                {
-                    MessageId = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    ConversationId = table.Column<int>(type: "integer", nullable: false),
-                    SenderId = table.Column<int>(type: "integer", nullable: false),
-                    ReplyMessageId = table.Column<int>(type: "integer", nullable: true),
-                    Content = table.Column<string>(type: "text", nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Messages", x => x.MessageId);
-                    table.ForeignKey(
-                        name: "FK_Messages_Conversations_ConversationId",
-                        column: x => x.ConversationId,
-                        principalTable: "Conversations",
-                        principalColumn: "ConversationId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Messages_Messages_ReplyMessageId",
-                        column: x => x.ReplyMessageId,
-                        principalTable: "Messages",
-                        principalColumn: "MessageId");
-                    table.ForeignKey(
-                        name: "FK_Messages_Users_SenderId",
-                        column: x => x.SenderId,
-                        principalTable: "Users",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -343,7 +311,9 @@ namespace AptCare.Repository.Migrations
                     ApartmentId = table.Column<int>(type: "integer", nullable: false),
                     RoleInApartment = table.Column<int>(type: "integer", nullable: false),
                     RelationshipToOwner = table.Column<string>(type: "text", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false)
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    DisableAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -393,9 +363,9 @@ namespace AptCare.Repository.Migrations
                     AccountId = table.Column<int>(type: "integer", nullable: false),
                     OTPCode = table.Column<string>(type: "text", nullable: false),
                     OTPType = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    VerifiedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    VerifiedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -417,8 +387,8 @@ namespace AptCare.Repository.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     AccountId = table.Column<int>(type: "integer", nullable: false),
                     Token = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     TokenType = table.Column<int>(type: "integer", nullable: false),
                     DeviceInfo = table.Column<string>(type: "text", nullable: false)
@@ -440,10 +410,10 @@ namespace AptCare.Repository.Migrations
                 {
                     NotificationId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    MessageId = table.Column<int>(type: "integer", nullable: true),
                     ReceiverId = table.Column<int>(type: "integer", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     IsRead = table.Column<bool>(type: "boolean", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     UserId = table.Column<int>(type: "integer", nullable: true)
@@ -456,12 +426,6 @@ namespace AptCare.Repository.Migrations
                         column: x => x.ReceiverId,
                         principalTable: "Accounts",
                         principalColumn: "AccountId",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Notifications_Messages_MessageId",
-                        column: x => x.MessageId,
-                        principalTable: "Messages",
-                        principalColumn: "MessageId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Notifications_Users_UserId",
@@ -477,7 +441,7 @@ namespace AptCare.Repository.Migrations
                     WorkSlotStatusTrackingId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     WorkSlotId = table.Column<int>(type: "integer", nullable: false),
-                    StatusChangeTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    StatusChangeTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     PreviousStatus = table.Column<int>(type: "integer", nullable: false),
                     NewStatus = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -493,33 +457,37 @@ namespace AptCare.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MaintenanceRequests",
+                name: "MaintenanceSchedules",
                 columns: table => new
                 {
-                    MaintenanceRequestId = table.Column<int>(type: "integer", nullable: false)
+                    MaintenanceScheduleId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     CommonAreaObjectId = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
-                    Frequency = table.Column<int>(type: "integer", nullable: false),
-                    NextDay = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    CommonAreaId = table.Column<int>(type: "integer", nullable: true)
+                    FrequencyInDays = table.Column<int>(type: "integer", nullable: false),
+                    NextScheduledDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    LastMaintenanceDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    TimePreference = table.Column<string>(type: "text", nullable: false),
+                    RequiredTechniqueId = table.Column<int>(type: "integer", nullable: true),
+                    RequiredTechnicians = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MaintenanceRequests", x => x.MaintenanceRequestId);
+                    table.PrimaryKey("PK_MaintenanceSchedules", x => x.MaintenanceScheduleId);
                     table.ForeignKey(
-                        name: "FK_MaintenanceRequests_CommonAreaObjects_CommonAreaObjectId",
+                        name: "FK_MaintenanceSchedules_CommonAreaObjects_CommonAreaObjectId",
                         column: x => x.CommonAreaObjectId,
                         principalTable: "CommonAreaObjects",
                         principalColumn: "CommonAreaObjectId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MaintenanceRequests_CommonAreas_CommonAreaId",
-                        column: x => x.CommonAreaId,
-                        principalTable: "CommonAreas",
-                        principalColumn: "CommonAreaId");
+                        name: "FK_MaintenanceSchedules_Techniques_RequiredTechniqueId",
+                        column: x => x.RequiredTechniqueId,
+                        principalTable: "Techniques",
+                        principalColumn: "TechniqueId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -532,6 +500,7 @@ namespace AptCare.Repository.Migrations
                     CommonAreaObjectId = table.Column<int>(type: "integer", nullable: false),
                     Title = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     CommonAreaId = table.Column<int>(type: "integer", nullable: true)
                 },
@@ -558,26 +527,68 @@ namespace AptCare.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Messages",
+                columns: table => new
+                {
+                    MessageId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ConversationId = table.Column<int>(type: "integer", nullable: false),
+                    SenderId = table.Column<int>(type: "integer", nullable: false),
+                    ReplyMessageId = table.Column<int>(type: "integer", nullable: true),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    NotificationId = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Messages", x => x.MessageId);
+                    table.ForeignKey(
+                        name: "FK_Messages_Conversations_ConversationId",
+                        column: x => x.ConversationId,
+                        principalTable: "Conversations",
+                        principalColumn: "ConversationId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Messages_Messages_ReplyMessageId",
+                        column: x => x.ReplyMessageId,
+                        principalTable: "Messages",
+                        principalColumn: "MessageId");
+                    table.ForeignKey(
+                        name: "FK_Messages_Notifications_NotificationId",
+                        column: x => x.NotificationId,
+                        principalTable: "Notifications",
+                        principalColumn: "NotificationId");
+                    table.ForeignKey(
+                        name: "FK_Messages_Users_SenderId",
+                        column: x => x.SenderId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "MaintenanceTrackingHistories",
                 columns: table => new
                 {
                     MaintenanceTrackingHistoryId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    MaintenanceRequestId = table.Column<int>(type: "integer", nullable: false),
+                    MaintenanceScheduleId = table.Column<int>(type: "integer", nullable: false),
                     UserId = table.Column<int>(type: "integer", nullable: false),
                     Field = table.Column<string>(type: "text", nullable: false),
                     OldValue = table.Column<string>(type: "text", nullable: false),
                     NewValue = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MaintenanceTrackingHistories", x => x.MaintenanceTrackingHistoryId);
                     table.ForeignKey(
-                        name: "FK_MaintenanceTrackingHistories_MaintenanceRequests_Maintenanc~",
-                        column: x => x.MaintenanceRequestId,
-                        principalTable: "MaintenanceRequests",
-                        principalColumn: "MaintenanceRequestId",
+                        name: "FK_MaintenanceTrackingHistories_MaintenanceSchedules_Maintenan~",
+                        column: x => x.MaintenanceScheduleId,
+                        principalTable: "MaintenanceSchedules",
+                        principalColumn: "MaintenanceScheduleId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_MaintenanceTrackingHistories_Users_UserId",
@@ -597,12 +608,12 @@ namespace AptCare.Repository.Migrations
                     ApartmentId = table.Column<int>(type: "integer", nullable: true),
                     ParentRequestId = table.Column<int>(type: "integer", nullable: true),
                     IssueId = table.Column<int>(type: "integer", nullable: true),
-                    MaintenanceRequestId = table.Column<int>(type: "integer", nullable: true),
+                    MaintenanceScheduleId = table.Column<int>(type: "integer", nullable: true),
                     Object = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
                     IsEmergency = table.Column<bool>(type: "boolean", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    AcceptanceTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    AcceptanceTime = table.Column<DateOnly>(type: "date", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -620,10 +631,10 @@ namespace AptCare.Repository.Migrations
                         principalColumn: "IssueId",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_RepairRequests_MaintenanceRequests_MaintenanceRequestId",
-                        column: x => x.MaintenanceRequestId,
-                        principalTable: "MaintenanceRequests",
-                        principalColumn: "MaintenanceRequestId",
+                        name: "FK_RepairRequests_MaintenanceSchedules_MaintenanceScheduleId",
+                        column: x => x.MaintenanceScheduleId,
+                        principalTable: "MaintenanceSchedules",
+                        principalColumn: "MaintenanceScheduleId",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_RepairRequests_RepairRequests_ParentRequestId",
@@ -646,11 +657,10 @@ namespace AptCare.Repository.Migrations
                     AppointmentId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     RepairRequestId = table.Column<int>(type: "integer", nullable: false),
-                    StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    StartTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    EndTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     Note = table.Column<string>(type: "text", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -672,12 +682,12 @@ namespace AptCare.Repository.Migrations
                     RepairRequestId = table.Column<int>(type: "integer", nullable: true),
                     ContractorName = table.Column<string>(type: "text", nullable: false),
                     ContractCode = table.Column<string>(type: "text", nullable: false),
-                    StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    StartDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     Amount = table.Column<decimal>(type: "numeric", nullable: true),
                     Description = table.Column<string>(type: "text", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -700,7 +710,7 @@ namespace AptCare.Repository.Migrations
                     ParentFeedbackId = table.Column<int>(type: "integer", nullable: true),
                     Rating = table.Column<int>(type: "integer", nullable: false),
                     Comment = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -734,7 +744,7 @@ namespace AptCare.Repository.Migrations
                     IsChargeable = table.Column<bool>(type: "boolean", nullable: false),
                     TotalAmount = table.Column<decimal>(type: "numeric", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -758,7 +768,8 @@ namespace AptCare.Repository.Migrations
                     Status = table.Column<int>(type: "integer", nullable: false),
                     Note = table.Column<string>(type: "text", nullable: true),
                     UpdatedBy = table.Column<int>(type: "integer", nullable: true),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    UserId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -774,6 +785,11 @@ namespace AptCare.Repository.Migrations
                         column: x => x.UpdatedBy,
                         principalTable: "Users",
                         principalColumn: "UserId");
+                    table.ForeignKey(
+                        name: "FK_RequestTrackings_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId");
                 });
 
             migrationBuilder.CreateTable(
@@ -784,11 +800,11 @@ namespace AptCare.Repository.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     TechnicianId = table.Column<int>(type: "integer", nullable: false),
                     AppointmentId = table.Column<int>(type: "integer", nullable: false),
-                    AssignedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    EstimatedStartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    EstimatedEndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ActualStartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ActualEndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    AssignedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    EstimatedStartTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    EstimatedEndTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    ActualStartTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    ActualEndTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -809,6 +825,35 @@ namespace AptCare.Repository.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AppointmentTrackings",
+                columns: table => new
+                {
+                    TrackingId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    AppointmentId = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Note = table.Column<string>(type: "text", nullable: true),
+                    UpdatedBy = table.Column<int>(type: "integer", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AppointmentTrackings", x => x.TrackingId);
+                    table.ForeignKey(
+                        name: "FK_AppointmentTrackings_Appointments_AppointmentId",
+                        column: x => x.AppointmentId,
+                        principalTable: "Appointments",
+                        principalColumn: "AppointmentId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AppointmentTrackings_Users_UpdatedBy",
+                        column: x => x.UpdatedBy,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "InspectionReports",
                 columns: table => new
                 {
@@ -821,7 +866,7 @@ namespace AptCare.Repository.Migrations
                     Description = table.Column<string>(type: "text", nullable: false),
                     Solution = table.Column<string>(type: "text", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -850,7 +895,7 @@ namespace AptCare.Repository.Migrations
                     UserId = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -876,7 +921,7 @@ namespace AptCare.Repository.Migrations
                     InvoiceAccessoryId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     InvoiceId = table.Column<int>(type: "integer", nullable: false),
-                    AccessoryId = table.Column<int>(type: "integer", nullable: false),
+                    AccessoryId = table.Column<int>(type: "integer", nullable: true),
                     Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
                     Price = table.Column<decimal>(type: "numeric", nullable: false)
@@ -888,8 +933,7 @@ namespace AptCare.Repository.Migrations
                         name: "FK_InvoiceAccessories_Accessories_AccessoryId",
                         column: x => x.AccessoryId,
                         principalTable: "Accessories",
-                        principalColumn: "AccessoryId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "AccessoryId");
                     table.ForeignKey(
                         name: "FK_InvoiceAccessories_Invoices_InvoiceId",
                         column: x => x.InvoiceId,
@@ -928,9 +972,15 @@ namespace AptCare.Repository.Migrations
                     UserId = table.Column<int>(type: "integer", nullable: false),
                     InvoiceId = table.Column<int>(type: "integer", nullable: false),
                     TransactionType = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Provider = table.Column<int>(type: "integer", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    OrderCode = table.Column<long>(type: "bigint", nullable: true),
+                    CheckoutUrl = table.Column<string>(type: "text", nullable: true),
+                    PayOSTransactionId = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    PaidAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -955,13 +1005,13 @@ namespace AptCare.Repository.Migrations
                 {
                     ReportApprovalId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    InspectionReportId = table.Column<int>(type: "integer", nullable: false),
-                    RepairReportId = table.Column<int>(type: "integer", nullable: false),
+                    InspectionReportId = table.Column<int>(type: "integer", nullable: true),
+                    RepairReportId = table.Column<int>(type: "integer", nullable: true),
                     UserId = table.Column<int>(type: "integer", nullable: false),
                     Role = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     Comment = table.Column<string>(type: "text", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -970,14 +1020,12 @@ namespace AptCare.Repository.Migrations
                         name: "FK_ReportApprovals_InspectionReports_InspectionReportId",
                         column: x => x.InspectionReportId,
                         principalTable: "InspectionReports",
-                        principalColumn: "InspectionReportId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "InspectionReportId");
                     table.ForeignKey(
                         name: "FK_ReportApprovals_RepairReports_RepairReportId",
                         column: x => x.RepairReportId,
                         principalTable: "RepairReports",
-                        principalColumn: "RepairReportId",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "RepairReportId");
                     table.ForeignKey(
                         name: "FK_ReportApprovals_Users_UserId",
                         column: x => x.UserId,
@@ -1015,6 +1063,16 @@ namespace AptCare.Repository.Migrations
                 name: "IX_Appointments_RepairRequestId",
                 table: "Appointments",
                 column: "RepairRequestId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AppointmentTrackings_AppointmentId",
+                table: "AppointmentTrackings",
+                column: "AppointmentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AppointmentTrackings_UpdatedBy",
+                table: "AppointmentTrackings",
+                column: "UpdatedBy");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CommonAreaObjects_CommonAreaId",
@@ -1087,20 +1145,20 @@ namespace AptCare.Repository.Migrations
                 column: "TechniqueId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceRequests_CommonAreaId",
-                table: "MaintenanceRequests",
-                column: "CommonAreaId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceRequests_CommonAreaObjectId",
-                table: "MaintenanceRequests",
+                name: "IX_MaintenanceSchedules_CommonAreaObjectId",
+                table: "MaintenanceSchedules",
                 column: "CommonAreaObjectId",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_MaintenanceTrackingHistories_MaintenanceRequestId",
+                name: "IX_MaintenanceSchedules_RequiredTechniqueId",
+                table: "MaintenanceSchedules",
+                column: "RequiredTechniqueId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaintenanceTrackingHistories_MaintenanceScheduleId",
                 table: "MaintenanceTrackingHistories",
-                column: "MaintenanceRequestId");
+                column: "MaintenanceScheduleId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MaintenanceTrackingHistories_UserId",
@@ -1118,6 +1176,11 @@ namespace AptCare.Repository.Migrations
                 column: "ConversationId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Messages_NotificationId",
+                table: "Messages",
+                column: "NotificationId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Messages_ReplyMessageId",
                 table: "Messages",
                 column: "ReplyMessageId");
@@ -1126,12 +1189,6 @@ namespace AptCare.Repository.Migrations
                 name: "IX_Messages_SenderId",
                 table: "Messages",
                 column: "SenderId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Notifications_MessageId",
-                table: "Notifications",
-                column: "MessageId",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Notifications_ReceiverId",
@@ -1165,9 +1222,9 @@ namespace AptCare.Repository.Migrations
                 column: "IssueId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RepairRequests_MaintenanceRequestId",
+                name: "IX_RepairRequests_MaintenanceScheduleId",
                 table: "RepairRequests",
-                column: "MaintenanceRequestId");
+                column: "MaintenanceScheduleId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RepairRequests_ParentRequestId",
@@ -1218,6 +1275,11 @@ namespace AptCare.Repository.Migrations
                 name: "IX_RequestTrackings_UpdatedBy",
                 table: "RequestTrackings",
                 column: "UpdatedBy");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RequestTrackings_UserId",
+                table: "RequestTrackings",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TechnicianTechniques_TechniqueId",
@@ -1286,6 +1348,9 @@ namespace AptCare.Repository.Migrations
                 name: "AppointmentAssigns");
 
             migrationBuilder.DropTable(
+                name: "AppointmentTrackings");
+
+            migrationBuilder.DropTable(
                 name: "Contracts");
 
             migrationBuilder.DropTable(
@@ -1307,7 +1372,7 @@ namespace AptCare.Repository.Migrations
                 name: "Medias");
 
             migrationBuilder.DropTable(
-                name: "Notifications");
+                name: "Messages");
 
             migrationBuilder.DropTable(
                 name: "ReportApprovals");
@@ -1334,10 +1399,10 @@ namespace AptCare.Repository.Migrations
                 name: "Accessories");
 
             migrationBuilder.DropTable(
-                name: "Accounts");
+                name: "Conversations");
 
             migrationBuilder.DropTable(
-                name: "Messages");
+                name: "Notifications");
 
             migrationBuilder.DropTable(
                 name: "InspectionReports");
@@ -1352,7 +1417,7 @@ namespace AptCare.Repository.Migrations
                 name: "WorkSlots");
 
             migrationBuilder.DropTable(
-                name: "Conversations");
+                name: "Accounts");
 
             migrationBuilder.DropTable(
                 name: "Appointments");
@@ -1370,16 +1435,16 @@ namespace AptCare.Repository.Migrations
                 name: "Issues");
 
             migrationBuilder.DropTable(
-                name: "MaintenanceRequests");
+                name: "MaintenanceSchedules");
 
             migrationBuilder.DropTable(
                 name: "Users");
 
             migrationBuilder.DropTable(
-                name: "Techniques");
+                name: "CommonAreaObjects");
 
             migrationBuilder.DropTable(
-                name: "CommonAreaObjects");
+                name: "Techniques");
 
             migrationBuilder.DropTable(
                 name: "CommonAreas");

@@ -30,10 +30,10 @@ namespace AptCare.Service.Services.Implements
         private readonly IRedisCacheService _cacheService;
 
         public UserService(
-            IUnitOfWork<AptCareSystemDBContext> unitOfWork, 
-            IPasswordHasher<Account> pwdHasher, 
-            IMailSenderService mailSenderService, 
-            ILogger<UserService> logger, 
+            IUnitOfWork<AptCareSystemDBContext> unitOfWork,
+            IPasswordHasher<Account> pwdHasher,
+            IMailSenderService mailSenderService,
+            ILogger<UserService> logger,
             ICloudinaryService cloudinaryService,
             IRedisCacheService cacheService,
             IMapper mapper) : base(unitOfWork, logger, mapper)
@@ -151,12 +151,12 @@ namespace AptCare.Service.Services.Implements
                     .ThenInclude(ua => ua.Apartment),
                 selector: u => _mapper.Map<UserDto>(u)
             );
-            
+
             if (user == null)
             {
                 throw new KeyNotFoundException("Người dùng không tồn tại.");
             }
-            
+
             var media = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
                 predicate: m => m.EntityId == userId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
             if (media != null)
@@ -196,7 +196,7 @@ namespace AptCare.Service.Services.Implements
                     return new Paginate<UserGetAllDto>();
                 }
             }
-            
+
             var users = await _unitOfWork.GetRepository<User>().GetPagingListAsync(
                 selector: u => _mapper.Map<UserGetAllDto>(u),
                 predicate: u =>
@@ -219,7 +219,7 @@ namespace AptCare.Service.Services.Implements
                 page: page,
                 size: size
             );
-            
+
             var userIds = users.Items.Select(u => u.UserId).ToList();
             var profileImages = await _unitOfWork.GetRepository<Media>()
                 .GetListAsync(
@@ -326,7 +326,7 @@ namespace AptCare.Service.Services.Implements
                     if (result.IsSuccess)
                     {
                         await _unitOfWork.CommitTransactionAsync();
-                        
+
                         // Clear cache after import
                         await _cacheService.RemoveByPrefixAsync("user");
                         await _cacheService.RemoveByPrefixAsync("apartment");
@@ -355,14 +355,14 @@ namespace AptCare.Service.Services.Implements
                 var userOldMedia = await mediaRepo.SingleOrDefaultAsync(
                     predicate: m => m.EntityId == dto.UserId && m.Entity == nameof(User) && m.Status == ActiveStatus.Active);
                 await _unitOfWork.BeginTransactionAsync();
-                
+
                 if (userOldMedia != null)
                 {
                     userOldMedia.Status = ActiveStatus.Inactive;
                     mediaRepo.UpdateAsync(userOldMedia);
                     await _unitOfWork.CommitAsync();
                 }
-                
+
                 var newMedia = new Media
                 {
                     EntityId = dto.UserId,
@@ -945,8 +945,6 @@ namespace AptCare.Service.Services.Implements
                     }
                     await _unitOfWork.CommitAsync();
                 }
-
-                // 7. Hủy lịch hẹn Pending
                 var pendingAppointments = user.AppointmentAssigns?
                     .Where(aa => aa.Status == WorkOrderStatus.Pending)
                     .ToList();
@@ -962,8 +960,6 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 await _unitOfWork.CommitTransactionAsync();
-
-                // Clear cache after inactivate
                 await _cacheService.RemoveAsync($"user:{userId}");
                 await _cacheService.RemoveByPrefixAsync("user:paginate");
                 await _cacheService.RemoveByPrefixAsync("apartment");
@@ -975,6 +971,63 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, $"❌ Error inactivating User {userId}");
                 throw new Exception($"Lỗi khi vô hiệu hóa người dùng: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> UpdateTechniqueTechnican(int userId, ICollection<int> newTechnique)
+        {
+            try
+            {
+                var ttrepo = _unitOfWork.GetRepository<TechnicianTechnique>();
+                var userrepo = _unitOfWork.GetRepository<User>();
+                var techrepo = _unitOfWork.GetRepository<Technique>();
+                var user = await userrepo.SingleOrDefaultAsync(
+                    predicate: u => u.UserId == userId,
+                    include: i => i.Include(u => u.TechnicianTechniques)
+                                  .Include(u => u.Account)
+                    );
+                if (user == null)
+                {
+                    throw new KeyNotFoundException($"Người dùng với ID {userId} không tồn tại.");
+                }
+                if (user.Account.Role != AccountRole.Technician && user.Account.Role != AccountRole.TechnicianLead)
+                {
+                    throw new AppValidationException("Chỉ có thể cập nhật kỹ thuật cho kỹ thuật viên.");
+                }
+                var existingTechIds = user.TechnicianTechniques.Select(tt => tt.TechniqueId).ToHashSet();
+                var techniques = await techrepo.GetListAsync(
+                    predicate: t => newTechnique.Contains(t.TechniqueId)
+                );
+                var newTechIdsSet = techniques.Select(t => t.TechniqueId).ToHashSet();
+                var toAdd = newTechIdsSet.Except(existingTechIds).ToList();
+                var toRemove = existingTechIds.Except(newTechIdsSet).ToList();
+                await _unitOfWork.BeginTransactionAsync();
+                foreach (var techId in toAdd)
+                {
+                    var technicianTechnique = new TechnicianTechnique
+                    {
+                        TechnicianId = userId,
+                        TechniqueId = techId
+                    };
+                    await ttrepo.InsertAsync(technicianTechnique);
+                }
+                foreach (var techId in toRemove)
+                {
+                    var tt = await ttrepo.SingleOrDefaultAsync(
+                        predicate: t => t.TechnicianId == userId && t.TechniqueId == techId
+                    );
+                    if (tt != null)
+                    {
+                        ttrepo.DeleteAsync(tt);
+                    }
+                }
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+                return "Cập nhật kỹ thuật cho kỹ thuật viên thành công.";
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi khi cập nhật kỹ thuật cho kỹ thuật viên: {ex.Message}", ex);
             }
         }
     }

@@ -16,7 +16,7 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public int? ParentRequestId { get; set; }
         public ApartmentDto Apartment { get; set; } = null!;
         public IssueListItemDto? Issue { get; set; }
-        public int? MaintenanceRequestId { get; set; }
+        public int? MaintenanceScheduleId { get; set; }
         public List<int>? ChildRequestIds { get; set; }
         public List<MediaDto>? Medias { get; set; }
         public string Status { get; set; } = null!;
@@ -34,7 +34,7 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public UserBasicDto User { get; set; } = null!;
         public ApartmentDto Apartment { get; set; } = null!;
         public IssueListItemDto? Issue { get; set; }
-        public int? MaintenanceRequestId { get; set; }
+        public int? MaintenanceScheduleId { get; set; }
         public List<int>? ChildRequestIds { get; set; }
         public List<MediaDto>? Medias { get; set; }
         public List<RequestTrackingDto>? RequestTrackings { get; set; }

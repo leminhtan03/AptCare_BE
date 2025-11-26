@@ -10,6 +10,7 @@ using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
@@ -33,6 +34,8 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<RepairRequest>> _mockRepairRequestRepo;
         private readonly Mock<IGenericRepository<AppointmentAssign>> _mockAppointmentAssignRepo;
         private readonly Mock<IGenericRepository<Media>> _mockMediaRepo;
+        private readonly Mock<IRabbitMQService> _rabbitMQService = new();
+
 
         public NotificationServiceTests()
         {
@@ -63,7 +66,8 @@ namespace AptCare.UT.Services
                 _mockLogger.Object,
                 _mockMapper.Object,
                 _mockFCMService.Object,
-                _mockUserContext.Object
+                _mockUserContext.Object,
+                _rabbitMQService.Object
             );
         }
 

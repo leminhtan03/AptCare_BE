@@ -27,8 +27,7 @@ namespace AptCare.Repository.Entities
         public string? Description { get; set; }
 
         public ActiveStatus Status { get; set; }
-        
         public ICollection<Report>? Reports { get; set; }
-        public MaintenanceRequest? MaintenanceRequest { get; set; }
+        public MaintenanceSchedule? MaintenanceSchedule { get; set; }
     }
 }
