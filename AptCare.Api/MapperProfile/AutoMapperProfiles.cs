@@ -13,6 +13,7 @@ using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
 using AptCare.Service.Dtos.CommonAreaObjectDtos;
 using AptCare.Service.Dtos.ContractDtos;
+using AptCare.Service.Dtos.FeedbackDtos;
 using AptCare.Service.Dtos.InspectionReporDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Dtos.IssueDto;
@@ -399,6 +400,16 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
             CreateMap<ReportUpdateDto, Report>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            CreateMap<CreateFeedbackRequest, Feedback>()
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now))
+                .ForMember(d => d.ParentFeedbackId, o => o.MapFrom(s => s.ParentFeedbackId != null ? s.ParentFeedbackId : null));
+            CreateMap<Feedback, FeedbackResponse>()
+                .ForMember(d => d.UserName, o => o.MapFrom(s =>
+                    $"{s.User.FirstName} {s.User.LastName}"))
+                .ForMember(d => d.UserRole, o => o.MapFrom(s =>
+                    s.User.Account != null ? s.User.Account.Role.ToString() : "Unknown"))
+                .ForMember(d => d.Replies, o => o.Ignore());
         }
     }
 }
