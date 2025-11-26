@@ -4,6 +4,7 @@ using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.ApproveReportDtos;
+using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
@@ -170,6 +171,14 @@ namespace AptCare.Service.Services.Implements
                 reportApprovalRepo.UpdateAsync(currentApproval);
                 inspectionReport.Status = dto.Status;
 
+                var invoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                    predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
+                                    DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt) &&
+                                    x.CreatedAt < inspectionReport.CreatedAt,
+                    orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                    );
+                invoice.Status = InvoiceStatus.Approved;
+                _unitOfWork.GetRepository<Invoice>().UpdateAsync(invoice);
             }
 
             inspectionRepo.UpdateAsync(inspectionReport);

@@ -432,6 +432,20 @@ namespace AptCare.Service.Services.Implements
                         throw new AppValidationException("Báo cáo khảo sát trước đó chưa được chấp thuận.");
                     }
                 }
+
+                var invoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                    predicate: x => x.RepairRequestId == appointment.RepairRequestId,
+                    orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                    );
+                if (invoice == null)
+                {
+                    throw new AppValidationException("Chưa có hóa đơn.");
+                }
+                if (invoice.Status == InvoiceStatus.Approved)
+                {
+                    throw new AppValidationException("Hóa đơn chưa được chấp thuận.");
+                }
+
                 await _unitOfWork.BeginTransactionAsync();
 
                 var appointmentTracking = new AppointmentTracking

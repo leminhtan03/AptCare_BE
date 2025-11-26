@@ -137,7 +137,7 @@ namespace AptCare.Api.Controllers
         /// <response code="401">Không có quyền truy cập.</response>
         /// <response code="500">Lỗi hệ thống.</response>
         [HttpGet("inspection-report/paginate")]
-        [ProducesResponseType(typeof(IPaginate<InspectionBasicReportDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IPaginate<InspectionReportDetailDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -216,14 +216,14 @@ namespace AptCare.Service.Services.Implements
                 result.Medias = medias.ToList();
 
                 var invoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
-                selector: s => _mapper.Map<InvoiceDto>(s),
-                predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId && 
-                                DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt) &&
-                                x.CreatedAt < inspectionReport.CreatedAt,
-                include: i => i.Include(x => x.InvoiceAccessories)
-                               .Include(x => x.InvoiceServices),
-                orderBy: o => o.OrderByDescending(x => x.CreatedAt)
-                );
+                    selector: s => _mapper.Map<InvoiceDto>(s),
+                    predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId && 
+                                    DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt) &&
+                                    x.CreatedAt < inspectionReport.CreatedAt,
+                    include: i => i.Include(x => x.InvoiceAccessories)
+                                   .Include(x => x.InvoiceServices),
+                    orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                    );
                 result.Invoice = invoice;
                 return result;
             }
@@ -233,7 +233,7 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-        public async Task<IPaginate<InspectionReportDto>> GetPaginateInspectionReportsAsync(InspectionReportFilterDto filterDto)
+        public async Task<IPaginate<InspectionReportDetailDto>> GetPaginateInspectionReportsAsync(InspectionReportFilterDto filterDto)
         {
             try
             {
@@ -300,7 +300,7 @@ namespace AptCare.Service.Services.Implements
                                         .ThenInclude(ra => ra.User)
                                             .ThenInclude(u => u.Account),
                     orderBy: BuildOrderBy(filterDto.sortBy ?? string.Empty),
-                    selector: s => _mapper.Map<InspectionReportDto>(s)
+                    selector: s => _mapper.Map<InspectionReportDetailDto>(s)
                 );
 
                 foreach (var item in paginateEntityResult.Items)
@@ -310,6 +310,17 @@ namespace AptCare.Service.Services.Implements
                         predicate: p => p.Entity == nameof(InspectionReport) && p.EntityId == item.InspectionReportId
                     );
                     item.Medias = medias.ToList();
+
+                    var invoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                    selector: s => _mapper.Map<InvoiceDto>(s),
+                    predicate: x => x.RepairRequestId == item.Appointment.RepairRequest.RepairRequestId &&
+                                    DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(item.CreatedAt) &&
+                                    x.CreatedAt < item.CreatedAt,
+                    include: i => i.Include(x => x.InvoiceAccessories)
+                                   .Include(x => x.InvoiceServices),
+                    orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                    );
+                    item.Invoice = invoice;
                 }
                 return paginateEntityResult;
             }

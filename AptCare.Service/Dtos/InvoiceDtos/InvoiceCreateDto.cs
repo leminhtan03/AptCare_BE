@@ -11,6 +11,7 @@ namespace AptCare.Service.Dtos.InvoiceDtos
     public class InvoiceInternalCreateDto
     {
         public int RepairRequestId { get; set; }
+        public bool IsChargeable { get; set; }
         public List<InvoiceAccessoryInternalCreateDto>? Accessories { get; set; } 
         public List<ServiceCreateDto>? Services { get; set; }
     }
@@ -18,6 +19,7 @@ namespace AptCare.Service.Dtos.InvoiceDtos
     public class InvoiceExternalCreateDto
     {
         public int RepairRequestId { get; set; }
+        public bool IsChargeable { get; set; }
         public List<InvoiceAccessoryExternalCreateDto>? Accessories { get; set; }
         public List<ServiceCreateDto>? Services { get; set; }
     }
