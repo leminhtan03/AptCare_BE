@@ -288,6 +288,16 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals))
                 .ForMember(d => d.Solution, o => o.MapFrom(s => s.Solution))
                 .ForMember(d => d.Description, o => o.MapFrom(s => s.Description));
+            CreateMap<InspectionReport, InspectionReportDetailDto>()
+               .ForMember(d => d.Technican, o => o.MapFrom(s => s.User))
+               .ForMember(d => d.AreaName, o => o.MapFrom(s => s.Appointment.RepairRequest.MaintenanceSchedule != null
+                   ? s.Appointment.RepairRequest.MaintenanceSchedule.CommonAreaObject.Name
+                   : s.Appointment.RepairRequest.Apartment != null
+                       ? s.Appointment.RepairRequest.Apartment.Room
+                       : string.Empty))
+               .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals))
+               .ForMember(d => d.Solution, o => o.MapFrom(s => s.Solution))
+               .ForMember(d => d.Description, o => o.MapFrom(s => s.Description));
 
             CreateMap<ReportApproval, ApprovelReportDto>()
                 .ForMember(dest => dest.ReportId, opt => opt.MapFrom(src =>
