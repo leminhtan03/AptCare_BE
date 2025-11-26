@@ -9,8 +9,9 @@ namespace AptCare.Repository.Enum
     public enum InvoiceStatus
     {
         Draft = 1,
-        AwaitingPayment = 2,
-        Paid = 3,
-        Cancelled = 4
+        Approved = 2,
+        AwaitingPayment = 3,
+        Paid = 4,
+        Cancelled = 5
     }
 }

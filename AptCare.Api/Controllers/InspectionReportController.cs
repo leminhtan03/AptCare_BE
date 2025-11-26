@@ -73,7 +73,7 @@ namespace AptCare.Api.Controllers
         /// <param name="id">ID của báo cáo kiểm tra cần lấy thông tin</param>
         /// <returns>Thông tin chi tiết của báo cáo kiểm tra</returns>
         [HttpGet("inspection-report/{id}")]
-        [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(InspectionReportDetailDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
