@@ -6,6 +6,7 @@ using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.ApproveReportDtos;
 using AptCare.Service.Dtos.InspectionReporDtos;
+using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
@@ -180,7 +181,7 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-        public async Task<InspectionReportDto> GetInspectionReportByIdAsync(int id)
+        public async Task<InspectionReportDetailDto> GetInspectionReportByIdAsync(int id)
         {
             try
             {
@@ -205,14 +206,25 @@ namespace AptCare.Service.Services.Implements
                 );
 
                 if (inspectionReport == null)
-                    return new InspectionReportDto();
+                    return new InspectionReportDetailDto();
 
-                var result = _mapper.Map<InspectionReportDto>(inspectionReport);
+                var result = _mapper.Map<InspectionReportDetailDto>(inspectionReport);
                 var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                     selector: s => _mapper.Map<MediaDto>(s),
                     predicate: p => p.Entity == nameof(InspectionReport) && p.EntityId == result.InspectionReportId
                     );
                 result.Medias = medias.ToList();
+
+                var invoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                selector: s => _mapper.Map<InvoiceDto>(s),
+                predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId && 
+                                DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt) &&
+                                x.CreatedAt < inspectionReport.CreatedAt,
+                include: i => i.Include(x => x.InvoiceAccessories)
+                               .Include(x => x.InvoiceServices),
+                orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                );
+                result.Invoice = invoice;
                 return result;
             }
             catch (Exception ex)
