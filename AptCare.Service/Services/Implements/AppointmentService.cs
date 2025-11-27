@@ -441,7 +441,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     throw new AppValidationException("Chưa có hóa đơn.");
                 }
-                if (invoice.Status == InvoiceStatus.Approved)
+                if (invoice.Status != InvoiceStatus.Approved)
                 {
                     throw new AppValidationException("Hóa đơn chưa được chấp thuận.");
                 }
