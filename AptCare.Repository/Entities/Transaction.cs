@@ -27,6 +27,7 @@ namespace AptCare.Repository.Entities
 
         [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime? PaidAt { get; set; }
 
         [ForeignKey(nameof(UserId))]
