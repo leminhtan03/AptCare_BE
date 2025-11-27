@@ -23,16 +23,12 @@ namespace AptCare.Repository.Entities
         [Column(TypeName = "timestamp without time zone")]
         public DateTime? LastMaintenanceDate { get; set; }
         public string TimePreference { get; set; }
-        [ForeignKey("RequiredTechnique")]
-        public int? RequiredTechniqueId { get; set; }
         public int RequiredTechnicians { get; set; } = 1;
 
         [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
         public ActiveStatus Status { get; set; }
-
         public CommonAreaObject CommonAreaObject { get; set; } = null!;
-        public Technique? RequiredTechnique { get; set; }
         public ICollection<MaintenanceTrackingHistory>? MaintenanceTrackingHistories { get; set; }
         public ICollection<RepairRequest>? GeneratedRepairRequests { get; set; }
     }

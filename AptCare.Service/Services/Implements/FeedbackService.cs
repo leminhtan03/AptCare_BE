@@ -59,15 +59,11 @@ namespace AptCare.Service.Services.Implements
 
                     if (parentFeedback == null)
                     {
-                        throw new AppValidationException(
-                            "Feedback gốc không tồn tại.",
-                            StatusCodes.Status404NotFound);
+                        throw new AppValidationException("Feedback gốc không tồn tại.", StatusCodes.Status404NotFound);
                     }
                     if (parentFeedback.RepairRequestId != request.RepairRequestId)
                     {
-                        throw new AppValidationException(
-                            "Feedback gốc không thuộc cùng yêu cầu sửa chữa.",
-                            StatusCodes.Status400BadRequest);
+                        throw new AppValidationException("Feedback gốc không thuộc cùng yêu cầu sửa chữa.", StatusCodes.Status400BadRequest);
                     }
                     request.Rating = 0;
                 }

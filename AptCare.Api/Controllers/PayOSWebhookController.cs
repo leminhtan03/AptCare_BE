@@ -1,4 +1,4 @@
-﻿using AptCare.Service.Services.PayOSService;
+﻿using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PayOS.Models.Webhooks;
