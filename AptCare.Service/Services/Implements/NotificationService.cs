@@ -259,7 +259,17 @@ namespace AptCare.Service.Services.Implements
                     );
 
             dto.UserIds = userIds;
-            // Publish vào RabbitMQ thay vì gọi trực tiếp
+            await _rabbitMQService.PublishNotificationAsync(dto);
+        }
+
+        public async Task SendNotificationForTechleadManager(NotificationPushRequestDto dto)
+        {
+            var userIds = await _unitOfWork.GetRepository<Account>().GetListAsync(
+                    selector: s => s.AccountId,
+                    predicate: p => p.Role == AccountRole.Manager || p.Role == AccountRole.TechnicianLead
+                    );
+
+            dto.UserIds = userIds;
             await _rabbitMQService.PublishNotificationAsync(dto);
         }
 

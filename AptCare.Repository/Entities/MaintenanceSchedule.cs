@@ -18,14 +18,13 @@ namespace AptCare.Repository.Entities
         [MaxLength(1000)]
         public string? Description { get; set; }
         public int FrequencyInDays { get; set; }
-        [Column(TypeName = "timestamp without time zone")]
-        public DateTime NextScheduledDate { get; set; }
-        [Column(TypeName = "timestamp without time zone")]
-        public DateTime? LastMaintenanceDate { get; set; }
-        public string TimePreference { get; set; }
+        public DateOnly NextScheduledDate { get; set; }
+        public DateOnly? LastMaintenanceDate { get; set; }
+        public TimeSpan TimePreference { get; set; }
         [ForeignKey("RequiredTechnique")]
         public int? RequiredTechniqueId { get; set; }
         public int RequiredTechnicians { get; set; } = 1;
+        public double EstimatedDuration { get; set; }
 
         [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
