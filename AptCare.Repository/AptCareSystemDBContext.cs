@@ -111,6 +111,13 @@ namespace AptCare.Repository
                 .HasConstraintName("FK_CommonAreaObjects_CommonAreas_CommonAreaId")
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // CommonAreaObject - Technique (n - 1)
+            modelBuilder.Entity<CommonAreaObject>()
+                .HasOne(cao => cao.Technique)
+                .WithMany(t => t.CommonAreaObjects)
+                .HasForeignKey(cao => cao.TechniqueId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // User - Apartment (n - n)
             modelBuilder.Entity<UserApartment>(entity =>
             {
@@ -150,14 +157,7 @@ namespace AptCare.Repository
                       .WithMany(t => t.TechnicianTechniques)
                       .HasForeignKey(tt => tt.TechniqueId);
             });
-            // Technique - MaintenanceSchedule (1 - n)
-            modelBuilder.Entity<Technique>(entity =>
-            {
-                entity.HasMany(t => t.MaintenanceSchedules)
-                      .WithOne(ms => ms.RequiredTechnique)
-                      .HasForeignKey(ms => ms.RequiredTechniqueId)
-                      .OnDelete(DeleteBehavior.Restrict);
-            });
+
             // Technique - Issue (1 - n)
             modelBuilder.Entity<Issue>(entity =>
             {
@@ -166,6 +166,8 @@ namespace AptCare.Repository
                       .HasForeignKey(i => i.TechniqueId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
+
+
 
             // ========================= WorkSlot =========================
             // Technician - WorkSlot (1 - n)
@@ -368,7 +370,7 @@ namespace AptCare.Repository
                       .HasForeignKey(c => c.RepairRequestId);
             });
 
-            // MaintenanceRequest - CommonAreaObject (1 - n)
+            // MaintenanceSchedule - CommonAreaObject (1 - n)
             modelBuilder.Entity<CommonAreaObject>(entity =>
             {
                 entity.HasOne(mr => mr.MaintenanceSchedule)
@@ -376,7 +378,7 @@ namespace AptCare.Repository
                       .HasForeignKey<MaintenanceSchedule>(mr => mr.CommonAreaObjectId);
             });
 
-            // MaintenanceRequest - MaintenanceTrackingHistory (1 - n)
+            // MaintenanceSchedule - MaintenanceTrackingHistory (1 - n)
             modelBuilder.Entity<MaintenanceTrackingHistory>(entity =>
             {
                 entity.HasOne(mth => mth.MaintenanceSchedule)

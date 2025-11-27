@@ -3,6 +3,7 @@ using System;
 using AptCare.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     [DbContext(typeof(AptCareSystemDBContext))]
-    partial class AptCareSystemDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251126233738_Technique_CommonAO")]
+    partial class Technique_CommonAO
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -717,17 +720,14 @@ namespace AptCare.Repository.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<double>("EstimatedDuration")
-                        .HasColumnType("double precision");
-
                     b.Property<int>("FrequencyInDays")
                         .HasColumnType("integer");
 
-                    b.Property<DateOnly?>("LastMaintenanceDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime?>("LastMaintenanceDate")
+                        .HasColumnType("timestamp without time zone");
 
-                    b.Property<DateOnly>("NextScheduledDate")
-                        .HasColumnType("date");
+                    b.Property<DateTime>("NextScheduledDate")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int>("RequiredTechnicians")
                         .HasColumnType("integer");
@@ -735,8 +735,9 @@ namespace AptCare.Repository.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<TimeSpan>("TimePreference")
-                        .HasColumnType("interval");
+                    b.Property<string>("TimePreference")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("MaintenanceScheduleId");
 

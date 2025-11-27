@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
+﻿using System.Linq.Expressions;
 using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
@@ -11,15 +7,12 @@ using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.InvoiceDtos;
 using PayOS;
 using AptCare.Service.Exceptions;
-using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
-using AptCare.Service.Services.PayOSService;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Xunit;
 
 // ALIAS để tránh conflict giữa entity và service implementation
 using InvoiceServiceEntity = AptCare.Repository.Entities.InvoiceService;
