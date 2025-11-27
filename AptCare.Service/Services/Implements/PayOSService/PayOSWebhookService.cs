@@ -3,13 +3,14 @@ using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.TransactionEnum;
 using AptCare.Repository.UnitOfWork;
+using AptCare.Service.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PayOS;
 using PayOS.Models.Webhooks;
 
-namespace AptCare.Service.Services.PayOSService
+namespace AptCare.Service.Services.Implements.PayOSService
 {
     public class PayOSWebhookService : IPayOSWebhookService
     {

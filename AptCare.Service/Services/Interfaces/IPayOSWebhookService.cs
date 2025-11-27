@@ -1,7 +1,6 @@
-﻿
-using PayOS.Models.Webhooks;
+﻿using PayOS.Models.Webhooks;
 
-namespace AptCare.Service.Services.PayOSService
+namespace AptCare.Service.Services.Interfaces
 {
     public interface IPayOSWebhookService
     {

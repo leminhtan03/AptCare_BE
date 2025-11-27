@@ -4,10 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AptCare.Service.Dtos.MaintenanceRequestDtos
+namespace AptCare.Service.Dtos.MaintenanceScheduleDtos
 {
-    public class MaintenanceRequestDto
+    internal class Class1
     {
-
     }
 }
