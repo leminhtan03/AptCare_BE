@@ -38,6 +38,7 @@ namespace AptCare.Service.Services.Background
 
                         await notificationService.SendAndPushNotificationForAppointmentAsync(now);
                         await repairRequestService.CheckAcceptanceTimeAsync(now);
+                        await repairRequestService.CheckMaintenanceScheduleAsync(now);
 
                         await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
                     }

@@ -14,5 +14,6 @@ namespace AptCare.Service.Services.Interfaces
         Task<bool> ToggleRepairRequestStatusAsync(ToggleRRStatus dto);
         Task<string> ApprovalRepairRequestAsync(ToggleRRStatus dto);
         Task CheckAcceptanceTimeAsync(DateTime dateTime);
+        Task CheckMaintenanceScheduleAsync(DateTime now);
     }
 }

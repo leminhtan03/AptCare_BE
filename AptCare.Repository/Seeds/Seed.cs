@@ -433,7 +433,7 @@ namespace AptCare.Repository.Seeds
                         AreaCode = $"L{floor.FloorNumber:D2}-LIFT",
                         Name = $"Khu vực thang máy tầng {floor.FloorNumber}",
                         Description = $"Sảnh chờ thang máy tầng {floor.FloorNumber}",
-                        Location = $"Giữa tầng {floor}",
+                        Location = $"Giữa tầng {floor.FloorNumber}",
                         Status = ActiveStatus.Active
                     });
 
@@ -441,7 +441,7 @@ namespace AptCare.Repository.Seeds
                     {
                         FloorId = floor.FloorId,
                         AreaCode = $"L{floor.FloorNumber:D2}-ELECTRIC",
-                        Name = $"Phòng điện tầng {floor}",
+                        Name = $"Phòng điện tầng {floor.FloorNumber}",
                         Description = $"Phòng kỹ thuật điện tầng {floor.FloorNumber}",
                         Location = $"Cuối hành lang tầng {floor.FloorNumber}",
                         Status = ActiveStatus.Active

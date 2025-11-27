@@ -157,6 +157,8 @@ namespace AptCare.Service.Services.Implements
                predicate: x => x.AppointmentId == appointmentId,
                include: i => i.Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Issue)
+                              .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.MaintenanceSchedule)
                );
             if (appointment == null)
             {
@@ -178,9 +180,24 @@ namespace AptCare.Service.Services.Implements
                 }
             }
 
-            if (appointment.RepairRequest.Issue != null)
+
+            if (appointment.RepairRequest.MaintenanceScheduleId == null)
             {
-                techniqueId = appointment.RepairRequest.Issue.TechniqueId;
+                if (appointment.RepairRequest.Issue == null && techniqueId == null)
+                {
+                    throw new AppValidationException("Vui lòng chọn kĩ thuật để gợi ý.");
+                }
+                if (appointment.RepairRequest.Issue != null && techniqueId == null)
+                {
+                    techniqueId = appointment.RepairRequest.Issue.TechniqueId;
+                }
+            }
+            else
+            {
+                if (techniqueId == null)
+                {
+                    techniqueId = appointment.RepairRequest.MaintenanceSchedule?.RequiredTechniqueId;
+                }
             }
 
             Expression<Func<User, bool>> predicate;

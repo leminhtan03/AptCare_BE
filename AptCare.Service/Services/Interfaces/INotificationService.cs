@@ -20,5 +20,6 @@ namespace AptCare.Service.Services.Interfaces
         Task<int> GetMyUnreadCountAsync();
         Task SendNotificationForResidentInRequest(int repairRequestId, NotificationPushRequestDto dto);
         Task SendNotificationForTechnicianInAppointment(int appointmentId, NotificationPushRequestDto dto);
+        Task SendNotificationForTechleadManager(NotificationPushRequestDto dto);
     }
 }

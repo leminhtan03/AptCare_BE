@@ -8,12 +8,15 @@ using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Exceptions;
+using AptCare.Service.Services.Implements.RabbitMQ;
 using AptCare.Service.Services.Interfaces;
 using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Org.BouncyCastle.Asn1.Ocsp;
+using System;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 
@@ -853,5 +856,173 @@ namespace AptCare.Service.Services.Implements
             };
         }
 
+        public async Task CheckMaintenanceScheduleAsync(DateTime now)
+        {
+            var maintenanceSchedules = await _unitOfWork.GetRepository<MaintenanceSchedule>().GetListAsync(
+                    predicate: p => p.Status == ActiveStatus.Active && p.NextScheduledDate == DateOnly.FromDateTime(now).AddDays(3),
+                    include: i => i.Include(x => x.CommonAreaObject)
+                                        .ThenInclude(x => x.CommonArea)
+                    );
+            if (maintenanceSchedules.Count == 0) return;
+
+            foreach (var item in maintenanceSchedules)
+            {
+                await GenerateRepairRequestFromMaintenanceScheduleAsync(item);
+            }
+        }
+
+        private async Task GenerateRepairRequestFromMaintenanceScheduleAsync(MaintenanceSchedule schedule)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var existingRequest = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
+                    predicate: rr => rr.MaintenanceScheduleId == schedule.MaintenanceScheduleId &&
+                                     DateOnly.FromDateTime(rr.CreatedAt) == DateOnly.FromDateTime(DateTime.Now)
+                );
+
+                if (existingRequest)
+                {
+                    _logger.LogWarning("RepairRequest cho MaintenanceSchedule ID {ScheduleId} đã được tạo hôm nay",
+                        schedule.MaintenanceScheduleId);
+                    return;
+                }
+
+                var managerId = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
+                    selector: s => s.UserId,
+                    predicate: u => u.Account.Role == AccountRole.Manager,
+                    include: i => i.Include(u => u.Account)
+                );
+
+                if (managerId == 0)
+                {
+                    _logger.LogError("Không tìm thấy Manager để tạo RepairRequest tự động.");
+                    return;
+                }
+
+                var repairRequest = new RepairRequest
+                {
+                    UserId = managerId, 
+                    MaintenanceScheduleId = schedule.MaintenanceScheduleId,
+                    Object = schedule.CommonAreaObject.Name,
+                    Description = $"Bảo trì định kỳ: {schedule.Description}. " +
+                                  $"Khu vực: {schedule.CommonAreaObject.CommonArea.Name}. " +
+                                  $"Chu kỳ: {schedule.FrequencyInDays} ngày.",
+                    IsEmergency = false,
+                    CreatedAt = DateTime.Now,
+                };
+
+                await _unitOfWork.GetRepository<RepairRequest>().InsertAsync(repairRequest);
+                await _unitOfWork.CommitAsync();
+
+                var requestTracking = new RequestTracking
+                {
+                    RepairRequestId = repairRequest.RepairRequestId,
+                    Status = RequestStatus.Pending,
+                    Note = "Yêu cầu bảo trì định kỳ được tạo tự động từ hệ thống.",
+                    UpdatedBy = managerId,
+                    UpdatedAt = DateTime.Now
+                };
+
+                await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(requestTracking);
+
+                var startTime = schedule.NextScheduledDate.ToDateTime(TimeOnly.FromTimeSpan(schedule.TimePreference));
+                var endTime = startTime.AddHours(schedule.EstimatedDuration);
+
+                var appointment = new Appointment
+                {
+                    RepairRequestId = repairRequest.RepairRequestId,
+                    StartTime = startTime,
+                    EndTime = endTime,
+                    CreatedAt = DateTime.Now
+                };
+
+                await _unitOfWork.GetRepository<Appointment>().InsertAsync(appointment);
+                await _unitOfWork.CommitAsync();
+
+                var newAppoTracking = new AppointmentTracking
+                {
+                    AppointmentId = appointment.AppointmentId,
+                    UpdatedBy = managerId,
+                    UpdatedAt = DateTime.Now,
+                    Status = AppointmentStatus.Pending,
+                    Note = "Lịch hẹn được tạo tự động từ hệ thống"
+                };
+                await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(newAppoTracking);
+                await _unitOfWork.CommitAsync();
+
+                var isAssigned = await AssignTechnicianForMantainenanceAppointmentAsync(appointment, schedule);
+                if (isAssigned)
+                {
+                    await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(new AppointmentTracking
+                    {
+                        AppointmentId = appointment.AppointmentId,
+                        UpdatedBy = managerId,
+                        Status = AppointmentStatus.Assigned,
+                        UpdatedAt = DateTime.Now,
+                        Note = "Tự động phân công cho lịch hẹn với Id: " + appointment.AppointmentId.ToString()
+
+                    });
+                    await _unitOfWork.CommitAsync();
+                }
+
+                await _notificationService.SendNotificationForTechleadManager(new NotificationPushRequestDto
+                {
+                    Title = "Yêu cầu bảo trì",
+                    Type = NotificationType.Individual,
+                    Description = isAssigned ? "Có yêu cầu bảo trì định kỳ được tạo tự động từ hệ thống cần xác nhận." : "Có yêu cầu bảo trì định kỳ được tạo tự động từ hệ thống cần phân công."
+                });
+
+                schedule.LastMaintenanceDate = DateOnly.FromDateTime(DateTime.Now);
+                schedule.NextScheduledDate = DateOnly.FromDateTime(DateTime.Now).AddDays(schedule.FrequencyInDays);
+
+                _unitOfWork.GetRepository<MaintenanceSchedule>().UpdateAsync(schedule);
+                await _unitOfWork.CommitAsync();
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                _logger.LogInformation(
+                    "Đã tạo RepairRequest ID {RequestId} từ MaintenanceSchedule ID {ScheduleId}",
+                    repairRequest.RepairRequestId,
+                    schedule.MaintenanceScheduleId
+                );
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex,
+                    "Lỗi khi tạo RepairRequest từ MaintenanceSchedule ID {ScheduleId}",
+                    schedule.MaintenanceScheduleId
+                );
+            }
+        }
+
+        private async Task<bool> AssignTechnicianForMantainenanceAppointmentAsync(Appointment appointment, MaintenanceSchedule schedule)
+        {
+            var techniciansAcceptable = await _appointmentAssignService.SuggestTechniciansForAppointment(appointment.AppointmentId, null);
+            var technicianidsAcceptable = techniciansAcceptable.Select(x => x.UserId).ToList();
+
+            if (technicianidsAcceptable.Count < schedule.RequiredTechnicians)
+            {
+                return false;
+            }
+
+            var technicianIds = technicianidsAcceptable.Take(schedule.RequiredTechnicians);
+
+            foreach (var technicianId in technicianIds)
+            {
+                await _unitOfWork.GetRepository<AppointmentAssign>().InsertAsync(new AppointmentAssign
+                {
+                    Appointment = appointment,
+                    TechnicianId = technicianId,
+                    AssignedAt = DateTime.Now,
+                    EstimatedStartTime = appointment.StartTime,
+                    EstimatedEndTime = (DateTime)appointment.EndTime,
+                    Status = WorkOrderStatus.Pending
+                });
+            }
+            return true;
+        }
     }
 }

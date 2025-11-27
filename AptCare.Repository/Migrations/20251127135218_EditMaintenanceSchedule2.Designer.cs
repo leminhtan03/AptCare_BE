@@ -3,6 +3,7 @@ using System;
 using AptCare.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     [DbContext(typeof(AptCareSystemDBContext))]
-    partial class AptCareSystemDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251127135218_EditMaintenanceSchedule2")]
+    partial class EditMaintenanceSchedule2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -363,14 +366,9 @@ namespace AptCare.Repository.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("TechniqueId")
-                        .HasColumnType("integer");
-
                     b.HasKey("CommonAreaObjectId");
 
                     b.HasIndex("CommonAreaId");
-
-                    b.HasIndex("TechniqueId");
 
                     b.ToTable("CommonAreaObjects");
                 });
@@ -732,6 +730,9 @@ namespace AptCare.Repository.Migrations
                     b.Property<int>("RequiredTechnicians")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("RequiredTechniqueId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -742,6 +743,8 @@ namespace AptCare.Repository.Migrations
 
                     b.HasIndex("CommonAreaObjectId")
                         .IsUnique();
+
+                    b.HasIndex("RequiredTechniqueId");
 
                     b.ToTable("MaintenanceSchedules");
                 });
@@ -1494,14 +1497,7 @@ namespace AptCare.Repository.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_CommonAreaObjects_CommonAreas_CommonAreaId");
 
-                    b.HasOne("AptCare.Repository.Entities.Technique", "Technique")
-                        .WithMany("CommonAreaObjects")
-                        .HasForeignKey("TechniqueId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("CommonArea");
-
-                    b.Navigation("Technique");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.Contract", b =>
@@ -1634,7 +1630,14 @@ namespace AptCare.Repository.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("AptCare.Repository.Entities.Technique", "RequiredTechnique")
+                        .WithMany("MaintenanceSchedules")
+                        .HasForeignKey("RequiredTechniqueId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("CommonAreaObject");
+
+                    b.Navigation("RequiredTechnique");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.MaintenanceTrackingHistory", b =>
@@ -2033,9 +2036,9 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.Technique", b =>
                 {
-                    b.Navigation("CommonAreaObjects");
-
                     b.Navigation("Issues");
+
+                    b.Navigation("MaintenanceSchedules");
 
                     b.Navigation("TechnicianTechniques");
                 });
