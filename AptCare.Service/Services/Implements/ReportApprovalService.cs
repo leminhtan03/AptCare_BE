@@ -66,10 +66,6 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
-        /// <summary>
-        /// Xử lý approve/reject hoặc escalate lên cấp cao hơn
-        /// </summary>
         public async Task<bool> ApproveReportAsync(ApproveReportCreateDto dto)
         {
             try
@@ -126,10 +122,7 @@ namespace AptCare.Service.Services.Implements
 
         }
 
-        private async Task ProcessInspectionReportApprovalAsync(
-            ApproveReportCreateDto dto,
-            int userId,
-            AccountRole role)
+        private async Task ProcessInspectionReportApprovalAsync(ApproveReportCreateDto dto, int userId, AccountRole role)
         {
             var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
             var inspectionRepo = _unitOfWork.GetRepository<InspectionReport>();
@@ -142,9 +135,7 @@ namespace AptCare.Service.Services.Implements
 
             if (inspectionReport == null)
             {
-                throw new AppValidationException(
-                    $"Không tìm thấy báo cáo kiểm tra. ReportId: {dto.ReportId}",
-                    StatusCodes.Status404NotFound);
+                throw new AppValidationException($"Không tìm thấy báo cáo kiểm tra. ReportId: {dto.ReportId}", StatusCodes.Status404NotFound);
             }
 
             var currentApproval = inspectionReport.ReportApprovals?
@@ -177,8 +168,21 @@ namespace AptCare.Service.Services.Implements
                                     x.CreatedAt < inspectionReport.CreatedAt,
                     orderBy: o => o.OrderByDescending(x => x.CreatedAt)
                     );
-                invoice.Status = InvoiceStatus.Approved;
-                _unitOfWork.GetRepository<Invoice>().UpdateAsync(invoice);
+                if (inspectionReport.SolutionType != SolutionType.Outsource)
+                {
+                    invoice.Status = InvoiceStatus.Approved;
+                    _unitOfWork.GetRepository<Invoice>().UpdateAsync(invoice);
+                }
+                else
+                {
+                    if (invoice != null)
+                    {
+                        invoice.Status = InvoiceStatus.Cancelled;
+                        _unitOfWork.GetRepository<Invoice>().UpdateAsync(invoice);
+                    }
+                }
+
+
             }
 
             inspectionRepo.UpdateAsync(inspectionReport);
@@ -210,10 +214,7 @@ namespace AptCare.Service.Services.Implements
             await reportApprovalRepo.InsertAsync(reportApproval);
         }
 
-        private async Task ProcessRepairReportApprovalAsync(
-            ApproveReportCreateDto dto,
-            int userId,
-            AccountRole role)
+        private async Task ProcessRepairReportApprovalAsync(ApproveReportCreateDto dto, int userId, AccountRole role)
         {
             var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
             var repairRepo = _unitOfWork.GetRepository<RepairReport>();
@@ -300,10 +301,7 @@ namespace AptCare.Service.Services.Implements
                         StatusCodes.Status403Forbidden);
             }
         }
-        private async Task EscalateApprovalAsync(
-            ReportApproval currentApproval,
-            ApproveReportCreateDto dto,
-            AccountRole currentRole)
+        private async Task EscalateApprovalAsync(ReportApproval currentApproval, ApproveReportCreateDto dto, AccountRole currentRole)
         {
             var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
 
