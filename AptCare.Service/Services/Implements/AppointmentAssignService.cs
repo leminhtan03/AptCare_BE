@@ -143,14 +143,10 @@ namespace AptCare.Service.Services.Implements
             }
 
             _mapper.Map(dto, appoAssign);
-
             _unitOfWork.GetRepository<AppointmentAssign>().UpdateAsync(appoAssign);
             await _unitOfWork.CommitAsync();
             return "Cập nhật lịch phân công thành công.";
         }
-
-
-
         public async Task<IEnumerable<SuggestedTechnicianDto>> SuggestTechniciansForAppointment(int appointmentId, int? techniqueId)
         {
             var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
