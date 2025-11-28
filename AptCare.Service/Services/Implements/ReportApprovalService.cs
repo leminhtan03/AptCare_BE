@@ -168,22 +168,20 @@ namespace AptCare.Service.Services.Implements
                                     x.CreatedAt < inspectionReport.CreatedAt,
                     orderBy: o => o.OrderByDescending(x => x.CreatedAt)
                     );
-                if (inspectionReport.SolutionType != SolutionType.Outsource)
+
+                if (invoice != null)
                 {
-                    invoice.Status = InvoiceStatus.Approved;
-                    _unitOfWork.GetRepository<Invoice>().UpdateAsync(invoice);
-                }
-                else
-                {
-                    if (invoice != null)
+                    if (dto.Status == ReportStatus.Approved)
+                    {
+                        invoice.Status = InvoiceStatus.Approved;
+                    }
+                    else
                     {
                         invoice.Status = InvoiceStatus.Cancelled;
-                        _unitOfWork.GetRepository<Invoice>().UpdateAsync(invoice);
                     }
+                    _unitOfWork.GetRepository<Invoice>().UpdateAsync(invoice);
                 }
-
-
-            }
+            }                           
 
             inspectionRepo.UpdateAsync(inspectionReport);
         }
