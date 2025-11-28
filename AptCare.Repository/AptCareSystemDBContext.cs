@@ -166,6 +166,14 @@ namespace AptCare.Repository
                       .HasForeignKey(i => i.TechniqueId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
+            modelBuilder.Entity<MaintenanceSchedule>(entity =>
+            {
+                entity.HasOne(i => i.RequiredTechnique)
+                      .WithMany(t => t.MaintenanceSchedules)
+                      .HasForeignKey(i => i.RequiredTechniqueId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
 
 
 
@@ -378,6 +386,7 @@ namespace AptCare.Repository
                       .HasForeignKey<MaintenanceSchedule>(mr => mr.CommonAreaObjectId);
             });
 
+
             // MaintenanceSchedule - MaintenanceTrackingHistory (1 - n)
             modelBuilder.Entity<MaintenanceTrackingHistory>(entity =>
             {
@@ -385,7 +394,6 @@ namespace AptCare.Repository
                       .WithMany(mr => mr.MaintenanceTrackingHistories)
                       .HasForeignKey(mth => mth.MaintenanceScheduleId);
             });
-
             // Media generic (EntityType + EntityId)
             modelBuilder.Entity<Media>()
                 .HasIndex(m => new { m.Entity, m.EntityId });

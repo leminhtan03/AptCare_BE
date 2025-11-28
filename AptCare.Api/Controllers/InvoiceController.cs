@@ -100,7 +100,7 @@ namespace AptCare.Api.Controllers
         /// <response code="404">Không tìm thấy yêu cầu sửa chữa.</response>
         /// <response code="500">Lỗi hệ thống.</response>
         [HttpGet("{repairRequestId:int}")]
-        [Authorize(Roles = $"{nameof(AccountRole.Technician)}, {nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
+        [Authorize(Roles = $"{nameof(AccountRole.Technician)}, {nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)},{nameof(AccountRole.Resident)}")]
         [ProducesResponseType(typeof(IEnumerable<InvoiceDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]

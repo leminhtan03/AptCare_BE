@@ -29,6 +29,7 @@ namespace AptCare.Repository.Entities
         [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
         public ActiveStatus Status { get; set; }
+        public Technique? RequiredTechnique { get; set; }
         public CommonAreaObject CommonAreaObject { get; set; } = null!;
         public ICollection<MaintenanceTrackingHistory>? MaintenanceTrackingHistories { get; set; }
         public ICollection<RepairRequest>? GeneratedRepairRequests { get; set; }

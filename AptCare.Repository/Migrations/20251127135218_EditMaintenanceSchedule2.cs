@@ -11,13 +11,11 @@ namespace AptCare.Repository.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<TimeSpan>(
-                name: "TimePreference",
-                table: "MaintenanceSchedules",
-                type: "interval",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "text");
+            // Sử dụng raw SQL để convert TimePreference từ text sang interval
+            migrationBuilder.Sql(
+                @"ALTER TABLE ""MaintenanceSchedules"" 
+                  ALTER COLUMN ""TimePreference"" TYPE interval 
+                  USING ""TimePreference""::interval;");
 
             migrationBuilder.AlterColumn<DateOnly>(
                 name: "NextScheduledDate",

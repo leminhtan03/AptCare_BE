@@ -184,8 +184,7 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "PayOS OrderCode conflict for invoice {InvoiceId}", invoiceId);
                 throw new AppValidationException(
-                    "OrderCode đã tồn tại. Vui lòng thử lại." + ex.Message,
-                    StatusCodes.Status409Conflict);
+                    "OrderCode đã tồn tại. Vui lòng thử lại." + ex.Message, StatusCodes.Status409Conflict);
             }
             catch (Exception ex) when (ex.Message.Contains("amount") || ex.Message.Contains("invalid"))
             {
@@ -386,7 +385,7 @@ namespace AptCare.Service.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting transaction {TransactionId}", transactionId);
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 
