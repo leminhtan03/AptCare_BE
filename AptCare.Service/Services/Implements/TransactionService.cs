@@ -268,6 +268,7 @@ namespace AptCare.Service.Services.Implements
                 var transaction = _mapper.Map<Transaction>(dto);
                 transaction.UserId = _userContext.CurrentUserId;
                 transaction.Description = $"Thu tiền mặt từ cư dân cho hóa đơn #{dto.InvoiceId}" + (string.IsNullOrEmpty(dto.Note) ? "" : $" - {dto.Note}");
+                transaction.Amount = invoice.TotalAmount;
 
                 await txRepo.InsertAsync(transaction);
                 await _unitOfWork.CommitAsync();

@@ -68,7 +68,7 @@ namespace AptCare.Api.Controllers
         /// <response code="404">Yêu cầu sửa chữa không tồn tại.</response>
         /// <response code="500">Lỗi hệ thống.</response>
         [HttpPost("external")]
-        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [Authorize(Roles = nameof(AccountRole.Manager) + "," + nameof(AccountRole.Technician))]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
