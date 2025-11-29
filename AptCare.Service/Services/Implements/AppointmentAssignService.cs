@@ -202,7 +202,7 @@ namespace AptCare.Service.Services.Implements
             {
                 predicate = p => p.Account.Role == AccountRole.Technician &&
                                 p.TechnicianTechniques.Any(tt => tt.TechniqueId == techniqueId) &&
-                                p.WorkSlots.Any(ws => ws.Status == WorkSlotStatus.Working) &&
+                                p.WorkSlots.Any(ws => ws.Status == WorkSlotStatus.Working && ws.Date == DateOnly.FromDateTime(DateTime.Now)) &&
                                 p.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) ==
                                                                  DateOnly.FromDateTime(appointment.StartTime))
                                                                  .All(aa => aa.Status != WorkOrderStatus.Working);
