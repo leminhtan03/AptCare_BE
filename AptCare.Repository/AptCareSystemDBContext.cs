@@ -111,13 +111,6 @@ namespace AptCare.Repository
                 .HasConstraintName("FK_CommonAreaObjects_CommonAreas_CommonAreaId")
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // CommonAreaObject - Technique (n - 1)
-            modelBuilder.Entity<CommonAreaObject>()
-                .HasOne(cao => cao.Technique)
-                .WithMany(t => t.CommonAreaObjects)
-                .HasForeignKey(cao => cao.TechniqueId)
-                .OnDelete(DeleteBehavior.Restrict);
-
             // User - Apartment (n - n)
             modelBuilder.Entity<UserApartment>(entity =>
             {

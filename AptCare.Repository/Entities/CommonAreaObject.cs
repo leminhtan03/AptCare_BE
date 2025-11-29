@@ -22,10 +22,6 @@ namespace AptCare.Repository.Entities
         public string Name { get; set; } = null!;
         [MaxLength(1000)]
         public string? Description { get; set; }
-        [ForeignKey("Technique")]
-        public int? TechniqueId { get; set; }
-        public Technique Technique { get; set; } = null!;
-
         public ActiveStatus Status { get; set; }
         public ICollection<Report>? Reports { get; set; }
         public MaintenanceSchedule? MaintenanceSchedule { get; set; }
