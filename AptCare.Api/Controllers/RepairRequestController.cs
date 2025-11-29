@@ -230,5 +230,33 @@ namespace AptCare.Api.Controllers
             var result = await _repairRequestService.ApprovalRepairRequestAsync(dto);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Lấy danh sách yêu cầu sửa chữa theo lịch trình bảo trì.
+        /// </summary>
+        /// <remarks>
+        /// <b>Phân quyền &amp; hành vi tự động:</b>
+        /// <list type="bullet">
+        ///   <item>🏠 <b>Resident (Cư dân):</b> chỉ xem các yêu cầu thuộc căn hộ của mình.</item>
+        ///   <item>🔧 <b>Technician (Kỹ thuật viên):</b> chỉ xem được yêu cầu được phân công.</item>
+        ///   <item>🧑‍💼 <b>Manager / TechnicianLead / Receptionist:</b> xem được toàn bộ.</item>
+        /// </list>
+        /// </remarks>
+        /// <param name="maintenanceScheduleId">ID của lịch trình bảo trì.</param>
+        /// <returns>Danh sách yêu cầu sửa chữa tương ứng với lịch trình bảo trì.</returns>
+        /// <response code="200">Trả về danh sách yêu cầu sửa chữa.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền.</response>
+        /// <response code="404">Lịch trình bảo trì không tồn tại.</response>
+        /// <response code="500">Lỗi hệ thống.</response>
+        [HttpGet("by-maintenance-schedule/{maintenanceScheduleId}")]
+        [Authorize]
+        [ProducesResponseType(typeof(IEnumerable<RepairRequestDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult> GetRepairRequestsByMaintenanceScheduleId(int maintenanceScheduleId)
+        {
+            var result = await _repairRequestService.GetRepairRequestsByMaintenanceScheduleIdAsync(maintenanceScheduleId);
+            return Ok(result);
+        }
     }
 }
