@@ -17,6 +17,7 @@ using AptCare.Service.Dtos.FeedbackDtos;
 using AptCare.Service.Dtos.InspectionReporDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Dtos.IssueDto;
+using AptCare.Service.Dtos.MaintenanceScheduleDtos;
 using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairReportDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
@@ -413,6 +414,16 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.UserRole, o => o.MapFrom(s =>
                     s.User.Account != null ? s.User.Account.Role.ToString() : "Unknown"))
                 .ForMember(d => d.Replies, o => o.Ignore());
+
+            // MaintenanceSchedule mappings
+            CreateMap<MaintenanceSchedule, MaintenanceScheduleDto>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()));
+
+            CreateMap<MaintenanceScheduleCreateDto, MaintenanceSchedule>();
+
+            CreateMap<MaintenanceTrackingHistory, MaintenanceTrackingHistoryDto>()
+                .ForMember(dest => dest.UpdatedByUserName,
+                    opt => opt.MapFrom(src => $"{src.User.FirstName} {src.User.LastName}"));
         }
     }
 }

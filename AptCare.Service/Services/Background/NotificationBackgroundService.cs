@@ -1,14 +1,6 @@
-﻿using AptCare.Repository.Enum;
-using AptCare.Service.Dtos.NotificationDtos;
-using AptCare.Service.Services.Interfaces;
+﻿using AptCare.Service.Services.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AptCare.Service.Services.Background
 {
@@ -49,7 +41,7 @@ namespace AptCare.Service.Services.Background
             catch (Exception e)
             {
                 Console.WriteLine($"Lỗi: {e.Message}");
-            }            
+            }
         }
     }
 
