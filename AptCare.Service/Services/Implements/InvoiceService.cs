@@ -77,9 +77,6 @@ namespace AptCare.Service.Services.Implements
                         }
 
                         totalAmount += accessoryDb.Price * accessory.Quantity;
-                        accessoryDb.Quantity -= accessory.Quantity;
-
-                        _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessoryDb);
 
                         invoice.InvoiceAccessories.Add(new InvoiceAccessory
                         {

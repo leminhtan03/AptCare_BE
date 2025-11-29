@@ -14,7 +14,8 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public DateTime CreatedAt { get; set; }
         public DateOnly? AcceptanceTime { get; set; }
         public int? ParentRequestId { get; set; }
-        public ApartmentDto Apartment { get; set; } = null!;
+        public ApartmentDto? Apartment { get; set; }
+        public CommonAreaDto? CommonArea { get; set; }
         public IssueListItemDto? Issue { get; set; }
         public int? MaintenanceScheduleId { get; set; }
         public List<int>? ChildRequestIds { get; set; }
@@ -32,7 +33,8 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public DateOnly? AcceptanceTime { get; set; }
         public int? ParentRequestId { get; set; }
         public UserBasicDto User { get; set; } = null!;
-        public ApartmentDto Apartment { get; set; } = null!;
+        public ApartmentDto? Apartment { get; set; }
+        public CommonAreaDto? CommonArea { get; set; }
         public IssueListItemDto? Issue { get; set; }
         public int? MaintenanceScheduleId { get; set; }
         public List<int>? ChildRequestIds { get; set; }
@@ -57,7 +59,8 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public string Description { get; set; } = null!;
         public bool IsEmergency { get; set; }
         public IssueListItemDto? Issue { get; set; }
-        public ApartmentDto Apartment { get; set; } = null!;
+        public ApartmentDto? Apartment { get; set; }
+        public CommonAreaDto? CommonArea { get; set; }
         public List<MediaDto>? Medias { get; set; }
         public DateTime CreatedAt { get; set; }
         public UserBasicDto? CreateUser { get; set; } = null!;
