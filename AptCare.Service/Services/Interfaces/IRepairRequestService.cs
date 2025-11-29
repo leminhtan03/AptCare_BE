@@ -9,7 +9,7 @@ namespace AptCare.Service.Services.Interfaces
     {
         Task<string> CreateNormalRepairRequestAsync(RepairRequestNormalCreateDto dto);
         Task<string> CreateEmergencyRepairRequestAsync(RepairRequestEmergencyCreateDto dto);
-        Task<IPaginate<RepairRequestDto>> GetPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? apartmentId, int? issueId, int? MaintenanceScheduleId);
+        Task<IPaginate<RepairRequestDto>> GetPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? apartmentId, int? issueId, bool? isMaintain);
         Task<RepairRequestDetailDto> GetRepairRequestByIdAsync(int id);
         Task<bool> ToggleRepairRequestStatusAsync(ToggleRRStatus dto);
         Task<string> ApprovalRepairRequestAsync(ToggleRRStatus dto);
