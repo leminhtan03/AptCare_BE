@@ -166,6 +166,7 @@ namespace AptCare.Service.Services.Implements
                     predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
                                     DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt) &&
                                     x.CreatedAt < inspectionReport.CreatedAt,
+                    include: i => i.Include(x => x.InvoiceAccessories),
                     orderBy: o => o.OrderByDescending(x => x.CreatedAt)
                     );
 
@@ -179,6 +180,65 @@ namespace AptCare.Service.Services.Implements
                     {
                         invoice.Status = InvoiceStatus.Cancelled;
                     }
+
+                    if (invoice.Type == InvoiceType.InternalRepair)
+                    {
+                        var oldInvoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                            predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
+                                            x.CreatedAt < inspectionReport.CreatedAt &&
+                                            x.InvoiceId != invoice.InvoiceId &&
+                                            x.Type == InvoiceType.InternalRepair &&
+                                            x.Status == InvoiceStatus.Approved,
+                            include: i => i.Include(x => x.InvoiceAccessories),
+                            orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                            );
+
+                        if (oldInvoice != null)
+                        {
+                            if (oldInvoice.InvoiceAccessories != null && oldInvoice.InvoiceAccessories.Count != 0)
+                            {
+                                foreach (var accessory in invoice.InvoiceAccessories)
+                                {
+                                    var accessoryDb = await _unitOfWork.GetRepository<Accessory>().SingleOrDefaultAsync(
+                                                predicate: p => p.AccessoryId == accessory.AccessoryId && p.Status == ActiveStatus.Active
+                                    );
+                                    if (accessoryDb == null)
+                                    {
+                                        throw new AppValidationException($"Phụ kiện không tồn tại.", StatusCodes.Status404NotFound);
+                                    }
+                                    if (accessoryDb.Quantity < accessory.Quantity)
+                                    {
+                                        throw new AppValidationException($"Phụ kiện trong kho không đủ số lượng.");
+                                    }
+
+                                    accessoryDb.Quantity += accessory.Quantity;
+                                    _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessoryDb);
+                                }
+                            }
+                        }
+
+                        if (invoice.InvoiceAccessories != null && invoice.InvoiceAccessories.Count != 0)
+                        {
+                            foreach (var accessory in invoice.InvoiceAccessories)
+                            {
+                                var accessoryDb = await _unitOfWork.GetRepository<Accessory>().SingleOrDefaultAsync(
+                                            predicate: p => p.AccessoryId == accessory.AccessoryId && p.Status == ActiveStatus.Active
+                                );
+                                if (accessoryDb == null)
+                                {
+                                    throw new AppValidationException($"Phụ kiện không tồn tại.", StatusCodes.Status404NotFound);
+                                }
+                                if (accessoryDb.Quantity < accessory.Quantity)
+                                {
+                                    throw new AppValidationException($"Phụ kiện trong kho không đủ số lượng.");
+                                }
+
+                                accessoryDb.Quantity -= accessory.Quantity;
+                                _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessoryDb);
+                            }
+                        }
+                    }
+
                     _unitOfWork.GetRepository<Invoice>().UpdateAsync(invoice);
                 }
             }                           
