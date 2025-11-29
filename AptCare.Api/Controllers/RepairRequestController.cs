@@ -121,7 +121,7 @@ namespace AptCare.Api.Controllers
         /// <param name="isEmergency">Lọc theo loại yêu cầu: true = khẩn cấp, false = thường, null = tất cả.</param>
         /// <param name="apartmentId">ID căn hộ cần lọc (tùy chọn).</param>
         /// <param name="issueId">ID vấn đề cần lọc (tùy chọn).</param>
-        /// <param name="maintenanceRequestId">ID yêu cầu bảo trì liên quan (tùy chọn).</param>
+        /// <param name="isMaintain">Lọc theo loại yêu cầu có thuộc bảo trì hay không: true = bảo trì, false = sửa chữa bình thường, null = tất cả..</param>
         /// <returns>Danh sách yêu cầu sửa chữa có phân trang.</returns>
         /// <response code="200">Trả về danh sách yêu cầu sửa chữa.</response>
         /// <response code="401">Không có quyền truy cập.</response>
@@ -138,9 +138,9 @@ namespace AptCare.Api.Controllers
             [FromQuery] bool? isEmergency,
             [FromQuery] int? apartmentId,
             [FromQuery] int? issueId,
-            [FromQuery] int? maintenanceRequestId)
+            [FromQuery] bool? isMaintain)
         {
-            var result = await _repairRequestService.GetPaginateRepairRequestAsync(dto, isEmergency, apartmentId, issueId, maintenanceRequestId);
+            var result = await _repairRequestService.GetPaginateRepairRequestAsync(dto, isEmergency, apartmentId, issueId, isMaintain);
             return Ok(result);
         }
 

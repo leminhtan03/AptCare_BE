@@ -442,7 +442,7 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-        public async Task<IPaginate<RepairRequestDto>> GetPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? apartmentId, int? issueId, int? maintenanceRequestId)
+        public async Task<IPaginate<RepairRequestDto>> GetPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? apartmentId, int? issueId, bool? isMaintain)
         {
             if (_userContext.IsResident)
             {
@@ -450,15 +450,15 @@ namespace AptCare.Service.Services.Implements
             }
             else if (_userContext.IsTechnician)
             {
-                return await GetGenericPaginateRepairRequestAsync(dto, isEmergency, null, _userContext.CurrentUserId, apartmentId, issueId, maintenanceRequestId);
+                return await GetGenericPaginateRepairRequestAsync(dto, isEmergency, null, _userContext.CurrentUserId, apartmentId, issueId, isMaintain);
             }
             else
             {
-                return await GetGenericPaginateRepairRequestAsync(dto, isEmergency, null, null, apartmentId, issueId, maintenanceRequestId);
+                return await GetGenericPaginateRepairRequestAsync(dto, isEmergency, null, null, apartmentId, issueId, isMaintain);
             }
         }
 
-        private async Task<IPaginate<RepairRequestDto>> GetGenericPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? residentId, int? technicianId, int? apartmentId, int? issueId, int? MaintenanceScheduleId)
+        private async Task<IPaginate<RepairRequestDto>> GetGenericPaginateRepairRequestAsync(PaginateDto dto, bool? isEmergency, int? residentId, int? technicianId, int? apartmentId, int? issueId, bool? isMaintain)
         {
             int page = dto.page > 0 ? dto.page : 1;
             int size = dto.size > 0 ? dto.size : 10;
@@ -499,7 +499,9 @@ namespace AptCare.Service.Services.Implements
                                                                        a.AppointmentAssigns.Any(aa => aa.TechnicianId == technicianId))))) &&
                 (apartmentId == null || p.ApartmentId == apartmentId) &&
                 (issueId == null || p.IssueId == issueId) &&
-                (MaintenanceScheduleId == null || p.MaintenanceScheduleId == MaintenanceScheduleId);
+                (isMaintain == null || 
+                    isMaintain == true && p.MaintenanceScheduleId != null || 
+                    isMaintain == false && p.MaintenanceScheduleId == null);
 
             var result = await _unitOfWork.GetRepository<RepairRequest>().GetPagingListAsync(
                 selector: x => _mapper.Map<RepairRequestDto>(x),
@@ -515,6 +517,9 @@ namespace AptCare.Service.Services.Implements
                                 .Include(x => x.Apartment)
                                     .ThenInclude(x => x.UserApartments)
                                .Include(x => x.MaintenanceSchedule)
+                                    .ThenInclude(x => x.CommonAreaObject)
+                                        .ThenInclude(x => x.CommonArea)
+                                            .ThenInclude(x => x.Floor)
                                .Include(x => x.Issue)
                                     .ThenInclude(x => x.Technique),
                 orderBy: BuildOrderBy(dto.sortBy),
@@ -579,6 +584,9 @@ namespace AptCare.Service.Services.Implements
                        .Include(x => x.Apartment)
                             .ThenInclude(x => x.Floor)
                        .Include(x => x.MaintenanceSchedule)
+                            .ThenInclude(x => x.CommonAreaObject)
+                                .ThenInclude(x => x.CommonArea)
+                                    .ThenInclude(x => x.Floor)
                        .Include(x => x.Issue)
                             .ThenInclude(x => x.Technique)
                 );

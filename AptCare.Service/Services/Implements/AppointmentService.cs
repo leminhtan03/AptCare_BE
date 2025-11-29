@@ -123,6 +123,11 @@ namespace AptCare.Service.Services.Implements
                                     .ThenInclude(x => x.Apartment)
                                         .ThenInclude(x => x.Floor)
                                 .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.MaintenanceSchedule)
+                                         .ThenInclude(x => x.CommonAreaObject)
+                                             .ThenInclude(x => x.CommonArea)
+                                                 .ThenInclude(x => x.Floor)
+                                .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Issue)
                                 .Include(x => x.AppointmentTrackings)
                                     .ThenInclude(x => x.UpdatedByUser)
@@ -186,6 +191,11 @@ namespace AptCare.Service.Services.Implements
                                 .Include(x => x.RepairRequest)
                                     .ThenInclude(x => x.Apartment)
                                         .ThenInclude(x => x.Floor)
+                                .Include(x => x.RepairRequest)
+                                    .ThenInclude(x => x.MaintenanceSchedule)
+                                         .ThenInclude(x => x.CommonAreaObject)
+                                             .ThenInclude(x => x.CommonArea)
+                                                 .ThenInclude(x => x.Floor)
                                 .Include(x => x.AppointmentTrackings)
                                     .ThenInclude(x => x.UpdatedByUser),
 
