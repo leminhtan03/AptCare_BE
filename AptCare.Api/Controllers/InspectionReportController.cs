@@ -220,7 +220,7 @@ namespace AptCare.Api.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin) + "," + nameof(AccountRole.Resident))]
+        [Authorize(Roles = nameof(AccountRole.Technician) + "," + nameof(AccountRole.Manager) + "," + nameof(AccountRole.Admin) + "," + nameof(AccountRole.TechnicianLead) + "," + nameof(AccountRole.Resident))]
         public async Task<IActionResult> GetInspectionReportByAppointmentIdAsync([FromRoute] int id)
         {
             var result = await _inspectionReporService.GetInspectionReportByAppointmentIdAsync(id);
