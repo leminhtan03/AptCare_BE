@@ -374,7 +374,7 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException($"Trạng thái lịch làm việc là {workSlot.Status}.");
             }
 
-            workSlot.Status = WorkSlotStatus.Working;
+            workSlot.Status = WorkSlotStatus.Completed;
 
             _unitOfWork.GetRepository<WorkSlot>().UpdateAsync(workSlot);
             await _unitOfWork.CommitAsync();
