@@ -241,10 +241,13 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.IssueCount, o => o.MapFrom(s => s.Issues.Count));
             CreateMap<TechniqueCreateDto, Technique>();
             CreateMap<TechniqueUpdateDto, Technique>();
-            CreateMap<TechnicianTechnique, TechniqueResponseDto>()
+            CreateMap<TechnicianTechnique, TechniqueTechnicanResponseDto>()
                 .ForMember(e => e.TechniqueName, o => o.MapFrom(s => s.Technique.Name))
                 .ForMember(e => e.Description, o => o.MapFrom(s => s.Technique.Description));
-
+            CreateMap<Technique, TechniqueResponseDto>()
+                .ForMember(dest => dest.TechniqueId, opt => opt.MapFrom(src => src.TechniqueId))
+                .ForMember(dest => dest.TechniqueName, opt => opt.MapFrom(src => src.Name))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description));
             //MEDIA
             CreateMap<Media, MediaDto>();
 

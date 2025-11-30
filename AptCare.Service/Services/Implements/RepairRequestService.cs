@@ -30,15 +30,7 @@ namespace AptCare.Service.Services.Implements
         private readonly INotificationService _notificationService;
         private readonly IRabbitMQService _rabbitMQService;
 
-        public RepairRequestService(
-            IUnitOfWork<AptCareSystemDBContext> unitOfWork,
-            ILogger<RepairRequestService> logger,
-            IMapper mapper,
-            IUserContext userContext,
-            ICloudinaryService cloudinaryService,
-            IAppointmentAssignService appointmentAssignService,
-            INotificationService notificationService,
-            IRabbitMQService rabbitMQService) : base(unitOfWork, logger, mapper)
+        public RepairRequestService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<RepairRequestService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService, IAppointmentAssignService appointmentAssignService, INotificationService notificationService, IRabbitMQService rabbitMQService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _cloudinaryService = cloudinaryService;

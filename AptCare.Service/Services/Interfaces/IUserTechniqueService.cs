@@ -11,7 +11,7 @@ namespace AptCare.Service.Services.Interfaces
     {
         Task<string> CreateAsyns(AssignTechniqueFroTechnicanDto dto);
         Task<string> UpdateAsyns(UpdateTechniqueFroTechnicanDto dto);
-        Task<ICollection<TechniqueResponseDto>> GetTechnicansTechniqueAsyns(int UserId);
+        Task<ICollection<TechniqueTechnicanResponseDto>> GetTechnicansTechniqueAsyns(int UserId);
 
     }
 }
