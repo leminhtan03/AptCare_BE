@@ -42,14 +42,14 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-        public async Task<ICollection<TechniqueResponseDto>> GetTechnicansTechniqueAsyns(int UserId)
+        public async Task<ICollection<TechniqueTechnicanResponseDto>> GetTechnicansTechniqueAsyns(int UserId)
         {
             try
             {
                 var resutlt = await _unitOfWork.GetRepository<TechnicianTechnique>()
                     .GetListAsync(predicate: e => e.TechnicianId == UserId,
                     include: src => src.Include(e => e.Technique),
-                    selector: src => _mapper.Map<TechniqueResponseDto>(src)
+                    selector: src => _mapper.Map<TechniqueTechnicanResponseDto>(src)
                 );
                 return resutlt;
             }

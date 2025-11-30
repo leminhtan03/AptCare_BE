@@ -19,7 +19,7 @@ namespace AptCare.Service.Dtos.Account
         public string CitizenshipIdentity { get; set; } = string.Empty;
         public DateTime? Birthday { get; set; }
         public List<ApartmentForUserProfileDto>? Apartments { get; set; }
-        public List<TechniqueResponseDto>? Techniques { get; set; }
+        public List<TechniqueTechnicanResponseDto>? Techniques { get; set; }
         public string Role { get; set; } = string.Empty;
         public string Status { get; set; }
         public string? profileUrl { get; set; }
