@@ -231,7 +231,7 @@ namespace AptCare.Service.Services.Implements
 
             var cacheKey = $"accessory:paginate:page:{page}:size:{size}:search:{search}:filter:{filter}:sort:{sortBy}";
 
-            var cachedResult = await _cacheService.GetAsync<Paginate<AccessoryDto>>(cacheKey);
+            var cachedResult = await _cacheService.GetAsync<IPaginate<AccessoryDto>>(cacheKey);
             if (cachedResult != null)
             {
                 return cachedResult;

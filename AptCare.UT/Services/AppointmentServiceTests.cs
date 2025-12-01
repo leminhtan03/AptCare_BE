@@ -35,6 +35,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<InspectionReport>> _inspectionRepo = new();
         private readonly Mock<IGenericRepository<RepairReport>> _repairReportRepo = new();
         private readonly Mock<IGenericRepository<ReportApproval>> _approvalRepo = new();
+        private readonly Mock<IGenericRepository<Invoice>> _invoiceRepo = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<IUserContext> _userContext = new();
         private readonly Mock<INotificationService> _notification = new();
@@ -54,6 +55,7 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.GetRepository<InspectionReport>()).Returns(_inspectionRepo.Object);
             _uow.Setup(u => u.GetRepository<RepairReport>()).Returns(_repairReportRepo.Object);
             _uow.Setup(u => u.GetRepository<ReportApproval>()).Returns(_approvalRepo.Object);
+            _uow.Setup(u => u.GetRepository<Invoice>()).Returns(_invoiceRepo.Object);
             _uow.Setup(u => u.BeginTransactionAsync()).Returns(Task.CompletedTask);
             _uow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
             _uow.Setup(u => u.CommitTransactionAsync()).Returns(Task.CompletedTask);
@@ -496,6 +498,13 @@ namespace AptCare.UT.Services
                 }
             };
 
+            var invoice = new Invoice
+            {
+                InvoiceId = 1,
+                RepairRequestId = 1,
+                Status = InvoiceStatus.Approved
+            };
+
             _apptRepo.Setup(r => r.SingleOrDefaultAsync(
                 It.IsAny<Expression<Func<Appointment, bool>>>(),
                 It.IsAny<Func<IQueryable<Appointment>, IOrderedQueryable<Appointment>>>(),
@@ -506,6 +515,12 @@ namespace AptCare.UT.Services
                 It.IsAny<Expression<Func<RepairRequest, bool>>>(),
                 It.IsAny<Func<IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
             )).ReturnsAsync(true);
+
+            _invoiceRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Invoice, bool>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IOrderedQueryable<Invoice>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IIncludableQueryable<Invoice, object>>>()
+            )).ReturnsAsync(invoice);
 
             _userContext.SetupGet(u => u.CurrentUserId).Returns(1);
 

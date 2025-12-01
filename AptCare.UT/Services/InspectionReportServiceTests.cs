@@ -6,8 +6,12 @@ using AptCare.Repository.Paginate;
 using AptCare.Repository.Repositories;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos.ApproveReportDtos;
 using AptCare.Service.Dtos.InspectionReporDtos;
+using AptCare.Service.Dtos.InvoiceDtos;
+using AptCare.Service.Dtos.RepairRequestDtos;
+using AptCare.Service.Dtos.ReportDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
@@ -33,6 +37,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<RepairRequest>> _repairRequestRepo = new();
         private readonly Mock<IGenericRepository<Media>> _mediaRepo = new();
         private readonly Mock<IGenericRepository<ReportApproval>> _reportApprovalRepo = new();
+        private readonly Mock<IGenericRepository<Invoice>> _invoiceRepo = new();
         private readonly Mock<IUserContext> _userContext = new();
         private readonly Mock<ICloudinaryService> _cloudinaryService = new();
         private readonly Mock<IRepairRequestService> _repairRequestService = new();
@@ -50,6 +55,7 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.GetRepository<RepairRequest>()).Returns(_repairRequestRepo.Object);
             _uow.Setup(u => u.GetRepository<Media>()).Returns(_mediaRepo.Object);
             _uow.Setup(u => u.GetRepository<ReportApproval>()).Returns(_reportApprovalRepo.Object);
+            _uow.Setup(u => u.GetRepository<Invoice>()).Returns(_invoiceRepo.Object);
             _uow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
             _uow.Setup(u => u.BeginTransactionAsync()).Returns(Task.CompletedTask);
             _uow.Setup(u => u.CommitTransactionAsync()).Returns(Task.CompletedTask);
@@ -371,7 +377,9 @@ namespace AptCare.UT.Services
             var report = new InspectionReport
             {
                 InspectionReportId = reportId,
-                Description = "Test report"
+                Description = "Test report",
+                Appointment = new Appointment { RepairRequestId = 1},
+                CreatedAt = DateTime.Now
             };
 
             var reportDto = new InspectionReportDto
@@ -388,6 +396,7 @@ namespace AptCare.UT.Services
 
             _mapper.Setup(m => m.Map<InspectionReportDto>(report)).Returns(reportDto);
             _mapper.Setup(m => m.Map<MediaDto>(It.IsAny<Media>())).Returns(new MediaDto());
+            _mapper.Setup(m => m.Map<InspectionReportDetailDto>(It.IsAny<InspectionReport>())).Returns(new InspectionReportDetailDto { InspectionReportId = report.InspectionReportId});
 
             _mediaRepo.Setup(r => r.GetListAsync(
                 It.IsAny<Expression<Func<Media, MediaDto>>>(),
@@ -395,6 +404,12 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<IQueryable<Media>, IOrderedQueryable<Media>>>(),
                 It.IsAny<Func<IQueryable<Media>, IIncludableQueryable<Media, object>>>()
             )).ReturnsAsync(new List<MediaDto>());
+
+            _invoiceRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Invoice, bool>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IOrderedQueryable<Invoice>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IIncludableQueryable<Invoice, object>>>()
+            )).ReturnsAsync(new Invoice());
 
             // Act
             var result = await _service.GetInspectionReportByIdAsync(reportId);
@@ -441,12 +456,21 @@ namespace AptCare.UT.Services
                 filter = "Pending"
             };
 
-            var reports = new List<InspectionReportDto>
+            var reportDetail = new InspectionReportDetailDto
             {
-                new InspectionReportDto { InspectionReportId = 1 }
+                InspectionReportId = 1,
+                Appointment = new AppointmentDto
+                {
+                    RepairRequest = new RepairRequestBasicDto
+                    {
+                        RepairRequestId = 1
+                    }
+                }
             };
 
-            var paginate = new Paginate<InspectionReportDto>
+            var reports = new List<InspectionReportDetailDto> { reportDetail };
+
+            var paginate = new Paginate<InspectionReportDetailDto>
             {
                 Items = reports,
                 Page = 1,
@@ -456,8 +480,9 @@ namespace AptCare.UT.Services
 
             _userContext.SetupGet(u => u.CurrentUserId).Returns(userId);
 
+            // Fix: Match the actual method signature with selector first
             _inspectionReportRepo.Setup(r => r.GetPagingListAsync(
-                It.IsAny<Expression<Func<InspectionReport, InspectionReportDto>>>(),
+                It.IsAny<Expression<Func<InspectionReport, InspectionReportDetailDto>>>(),
                 It.IsAny<Expression<Func<InspectionReport, bool>>>(),
                 It.IsAny<Func<IQueryable<InspectionReport>, IOrderedQueryable<InspectionReport>>>(),
                 It.IsAny<Func<IQueryable<InspectionReport>, IIncludableQueryable<InspectionReport, object>>>(),
@@ -471,6 +496,13 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<IQueryable<Media>, IOrderedQueryable<Media>>>(),
                 It.IsAny<Func<IQueryable<Media>, IIncludableQueryable<Media, object>>>()
             )).ReturnsAsync(new List<MediaDto>());
+
+            _invoiceRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Invoice, InvoiceDto>>>(),
+                It.IsAny<Expression<Func<Invoice, bool>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IOrderedQueryable<Invoice>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IIncludableQueryable<Invoice, object>>>()
+            )).ReturnsAsync((InvoiceDto)null);
 
             // Act
             var result = await _service.GetPaginateInspectionReportsAsync(filterDto);

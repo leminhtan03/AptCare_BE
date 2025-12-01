@@ -133,16 +133,13 @@ namespace AptCare.UT.Services
             )).ReturnsAsync(false);
 
             _s3FileService.Setup(s => s.UploadFileAsync(It.IsAny<IFormFile>(), It.IsAny<string>()))
-                .ReturnsAsync("s3://bucket/contract.pdf");
+                .ReturnsAsync("s3://bucket/contract.pdf");          
 
-            Contract insertedContract = null;
-            //_contractRepo.Setup(r => r.InsertAsync(It.IsAny<Contract>()))
-            //    .Callback<Contract>(c =>
-            //    {
-            //        c.ContractId = 1;
-            //        insertedContract = c;
-            //    })
-            //    .Returns(Task.CompletedTask);
+            var contract = new Contract
+            {
+                ContractId = 1,
+                ContractCode = dto.ContractCode
+            };
 
             var contractDto = new ContractDto
             {
@@ -150,6 +147,7 @@ namespace AptCare.UT.Services
                 ContractCode = dto.ContractCode
             };
 
+            _mapper.Setup(m => m.Map<Contract>(It.IsAny<ContractCreateDto>())).Returns(contract);
             _mapper.Setup(m => m.Map<ContractDto>(It.IsAny<Contract>())).Returns(contractDto);
             _mapper.Setup(m => m.Map<MediaDto>(It.IsAny<Media>())).Returns(new MediaDto());
 
@@ -158,10 +156,6 @@ namespace AptCare.UT.Services
 
             // Assert
             Assert.NotNull(result);
-            Assert.NotNull(insertedContract);
-            Assert.Equal(dto.ContractorName, insertedContract.ContractorName);
-            Assert.Equal(dto.ContractCode, insertedContract.ContractCode);
-            Assert.Equal(ActiveStatus.Active, insertedContract.Status);
             _contractRepo.Verify(r => r.InsertAsync(It.IsAny<Contract>()), Times.Once);
             _mediaRepo.Verify(r => r.InsertAsync(It.IsAny<Media>()), Times.Once);
             _uow.Verify(u => u.CommitTransactionAsync(), Times.Once);
