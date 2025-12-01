@@ -196,14 +196,23 @@ namespace AptCare.Api.MapperProfile
             CreateMap<RepairRequest, RepairRequestDto>()
                 .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null))
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status.ToString()))
-                .ForMember(d => d.CommonArea, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.CommonAreaObject.CommonArea));
+                .ForMember(d => d.CommonArea, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.CommonAreaObject.CommonArea))
+                .ForMember(d => d.TechniqueId, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.RequiredTechniqueId))
+                .ForMember(d => d.RequiredTechnician, o => o.MapFrom(s =>  s.MaintenanceSchedule == null ? null : (int?) s.MaintenanceSchedule.RequiredTechnicians))
+                .ForMember(d => d.EstimatedDuration, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : (double?)s.MaintenanceSchedule.EstimatedDuration));
             CreateMap<RepairRequest, RepairRequestDetailDto>()
                 .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null))
-                .ForMember(d => d.CommonArea, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.CommonAreaObject.CommonArea));
+                .ForMember(d => d.CommonArea, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.CommonAreaObject.CommonArea))
+                .ForMember(d => d.TechniqueId, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.RequiredTechniqueId))
+                .ForMember(d => d.RequiredTechnician, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : (int?)s.MaintenanceSchedule.RequiredTechnicians))
+                .ForMember(d => d.EstimatedDuration, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : (double?)s.MaintenanceSchedule.EstimatedDuration)); ;
 
             CreateMap<RepairRequest, RepairRequestBasicDto>()
                 .ForMember(d => d.CreateUser, o => o.MapFrom(s => s.User))
-                .ForMember(d => d.CommonArea, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.CommonAreaObject.CommonArea));
+                .ForMember(d => d.CommonArea, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.CommonAreaObject.CommonArea))
+                .ForMember(d => d.TechniqueId, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.RequiredTechniqueId))
+                .ForMember(d => d.RequiredTechnician, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : (int?)s.MaintenanceSchedule.RequiredTechnicians))
+                .ForMember(d => d.EstimatedDuration, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : (double?)s.MaintenanceSchedule.EstimatedDuration)); ;
             CreateMap<RequestTracking, RequestTrackingDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
 

@@ -13,6 +13,10 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
+using Xunit;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 
 // ALIAS để tránh conflict giữa entity và service implementation
 using InvoiceServiceEntity = AptCare.Repository.Entities.InvoiceService;
@@ -30,14 +34,13 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<RepairRequest>> _repairRequestRepo = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<IUserContext> _userContext = new();
-        private readonly Mock<PayOSClient> _payOSClient = new();
-        private readonly Mock<IOptions<PayOSOptions>> _payOSOptions = new();
         private readonly Mock<ILogger<InvoiceServiceImpl>> _logger = new();
 
         private readonly InvoiceServiceImpl _service;
 
         public InvoiceServiceTests()
         {
+            // Setup repositories
             _uow.Setup(u => u.GetRepository<Invoice>()).Returns(_invoiceRepo.Object);
             _uow.Setup(u => u.GetRepository<InvoiceAccessory>()).Returns(_invoiceAccessoryRepo.Object);
             _uow.Setup(u => u.GetRepository<Accessory>()).Returns(_accessoryRepo.Object);
@@ -48,15 +51,12 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.CommitTransactionAsync()).Returns(Task.CompletedTask);
             _uow.Setup(u => u.RollbackTransactionAsync()).Returns(Task.CompletedTask);
 
-            _payOSOptions.Setup(o => o.Value).Returns(new PayOSOptions());
 
             _service = new InvoiceServiceImpl(
                 _uow.Object,
                 _logger.Object,
                 _mapper.Object,
-                _userContext.Object,
-                _payOSClient.Object,
-                _payOSOptions.Object);
+                _userContext.Object);
         }
 
         #region CreateInternalInvoiceAsync Tests
@@ -78,11 +78,14 @@ namespace AptCare.UT.Services
                 }
             };
 
-            _repairRequestRepo.Setup(r => r.AnyAsync(
+            var repairRequest = new RepairRequest { RepairRequestId = 1 };
+            _repairRequestRepo.Setup(r => r.SingleOrDefaultAsync(
                 It.IsAny<Expression<Func<RepairRequest, bool>>>(),
+                It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, System.Linq.IOrderedQueryable<RepairRequest>>>(),
                 It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
-            )).ReturnsAsync(true);
+            )).ReturnsAsync(repairRequest);
 
+            // Mock accessory
             var accessory = new Accessory
             {
                 AccessoryId = 1,
@@ -98,13 +101,33 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<System.Linq.IQueryable<Accessory>, IIncludableQueryable<Accessory, object>>>()
             )).ReturnsAsync(accessory);
 
+            // Mock invoice mapping
             var invoice = new Invoice
             {
                 InvoiceId = 1,
+                RepairRequestId = dto.RepairRequestId,
                 InvoiceAccessories = new List<InvoiceAccessory>(),
-                InvoiceServices = new List<InvoiceServiceEntity>()
+                InvoiceServices = new List<InvoiceServiceEntity>(),
+                Type = InvoiceType.InternalRepair,
+                Status = InvoiceStatus.Draft,
+                IsChargeable = true,
+                TotalAmount = 0
             };
             _mapper.Setup(m => m.Map<Invoice>(dto)).Returns(invoice);
+
+            // Mock insert operations
+            _invoiceRepo.Setup(r => r.InsertAsync(It.IsAny<Invoice>()))
+                .Callback<Invoice>(inv => inv.InvoiceId = 1)
+                .Returns(Task.CompletedTask);
+
+            _invoiceAccessoryRepo.Setup(r => r.InsertRangeAsync(It.IsAny<IEnumerable<InvoiceAccessory>>()))
+                .Returns(Task.CompletedTask);
+
+            _invoiceServiceRepo.Setup(r => r.InsertRangeAsync(It.IsAny<IEnumerable<InvoiceServiceEntity>>()))
+                .Returns(Task.CompletedTask);
+
+            _accessoryRepo.Setup(r => r.UpdateAsync(It.IsAny<Accessory>()))
+                .Verifiable();
 
             // Act
             var result = await _service.CreateInternalInvoiceAsync(dto);
@@ -114,6 +137,7 @@ namespace AptCare.UT.Services
             Assert.Equal(8, accessory.Quantity); // 10 - 2 = 8
             _invoiceRepo.Verify(r => r.InsertAsync(It.IsAny<Invoice>()), Times.Once);
             _accessoryRepo.Verify(r => r.UpdateAsync(It.IsAny<Accessory>()), Times.Once);
+            _uow.Verify(u => u.CommitAsync(), Times.AtLeastOnce);
             _uow.Verify(u => u.CommitTransactionAsync(), Times.Once);
         }
 
@@ -121,7 +145,12 @@ namespace AptCare.UT.Services
         public async Task CreateInternalInvoiceAsync_Throws_WhenRepairRequestNotExists()
         {
             // Arrange
-            var dto = new InvoiceInternalCreateDto { RepairRequestId = 999 };
+            var dto = new InvoiceInternalCreateDto
+            {
+                RepairRequestId = 999,
+                Accessories = new List<InvoiceAccessoryInternalCreateDto>(),
+                Services = new List<ServiceCreateDto>()
+            };
 
             _repairRequestRepo.Setup(r => r.AnyAsync(
                 It.IsAny<Expression<Func<RepairRequest, bool>>>(),
@@ -144,7 +173,8 @@ namespace AptCare.UT.Services
                 Accessories = new List<InvoiceAccessoryInternalCreateDto>
                 {
                     new InvoiceAccessoryInternalCreateDto { AccessoryId = 999, Quantity = 1 }
-                }
+                },
+                Services = new List<ServiceCreateDto>()
             };
 
             _repairRequestRepo.Setup(r => r.AnyAsync(
@@ -159,6 +189,9 @@ namespace AptCare.UT.Services
             };
             _mapper.Setup(m => m.Map<Invoice>(dto)).Returns(invoice);
 
+            _invoiceRepo.Setup(r => r.InsertAsync(It.IsAny<Invoice>()))
+                .Returns(Task.CompletedTask);
+
             _accessoryRepo.Setup(r => r.SingleOrDefaultAsync(
                 It.IsAny<Expression<Func<Accessory, bool>>>(),
                 It.IsAny<Func<System.Linq.IQueryable<Accessory>, System.Linq.IOrderedQueryable<Accessory>>>(),
@@ -168,6 +201,7 @@ namespace AptCare.UT.Services
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.CreateInternalInvoiceAsync(dto));
             Assert.Equal("Lỗi hệ thống: Phụ kiện không tồn tại.", ex.Message);
+            _uow.Verify(u => u.RollbackTransactionAsync(), Times.Once);
         }
 
         [Fact]
@@ -180,7 +214,8 @@ namespace AptCare.UT.Services
                 Accessories = new List<InvoiceAccessoryInternalCreateDto>
                 {
                     new InvoiceAccessoryInternalCreateDto { AccessoryId = 1, Quantity = 20 }
-                }
+                },
+                Services = new List<ServiceCreateDto>()
             };
 
             _repairRequestRepo.Setup(r => r.AnyAsync(
@@ -203,6 +238,9 @@ namespace AptCare.UT.Services
             };
             _mapper.Setup(m => m.Map<Invoice>(dto)).Returns(invoice);
 
+            _invoiceRepo.Setup(r => r.InsertAsync(It.IsAny<Invoice>()))
+                .Returns(Task.CompletedTask);
+
             _accessoryRepo.Setup(r => r.SingleOrDefaultAsync(
                 It.IsAny<Expression<Func<Accessory, bool>>>(),
                 It.IsAny<Func<System.Linq.IQueryable<Accessory>, System.Linq.IOrderedQueryable<Accessory>>>(),
@@ -212,6 +250,53 @@ namespace AptCare.UT.Services
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.CreateInternalInvoiceAsync(dto));
             Assert.Equal("Lỗi hệ thống: Phụ kiện trong kho không đủ số lượng.", ex.Message);
+            _uow.Verify(u => u.RollbackTransactionAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateInternalInvoiceAsync_Success_WithoutAccessories()
+        {
+            // Arrange
+            var dto = new InvoiceInternalCreateDto
+            {
+                RepairRequestId = 1,
+                Accessories = new List<InvoiceAccessoryInternalCreateDto>(),
+                Services = new List<ServiceCreateDto>
+                {
+                    new ServiceCreateDto { Name = "Labor Only", Price = 500 }
+                }
+            };
+
+            _repairRequestRepo.Setup(r => r.AnyAsync(
+                It.IsAny<Expression<Func<RepairRequest, bool>>>(),
+                It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
+            )).ReturnsAsync(true);
+
+            var invoice = new Invoice
+            {
+                InvoiceId = 1,
+                RepairRequestId = dto.RepairRequestId,
+                InvoiceAccessories = new List<InvoiceAccessory>(),
+                InvoiceServices = new List<InvoiceServiceEntity>(),
+                Type = InvoiceType.InternalRepair,
+                Status = InvoiceStatus.Draft
+            };
+            _mapper.Setup(m => m.Map<Invoice>(dto)).Returns(invoice);
+
+            _invoiceRepo.Setup(r => r.InsertAsync(It.IsAny<Invoice>()))
+                .Returns(Task.CompletedTask);
+
+            _invoiceServiceRepo.Setup(r => r.InsertRangeAsync(It.IsAny<IEnumerable<InvoiceServiceEntity>>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _service.CreateInternalInvoiceAsync(dto);
+
+            // Assert
+            Assert.Equal("Tạo biên lai sửa chữa thành công.", result);
+            _invoiceRepo.Verify(r => r.InsertAsync(It.IsAny<Invoice>()), Times.Once);
+            _accessoryRepo.Verify(r => r.UpdateAsync(It.IsAny<Accessory>()), Times.Never);
+            _uow.Verify(u => u.CommitTransactionAsync(), Times.Once);
         }
 
         #endregion
@@ -248,10 +333,22 @@ namespace AptCare.UT.Services
             var invoice = new Invoice
             {
                 InvoiceId = 1,
+                RepairRequestId = dto.RepairRequestId,
                 InvoiceAccessories = new List<InvoiceAccessory>(),
-                InvoiceServices = new List<InvoiceServiceEntity>()
+                InvoiceServices = new List<InvoiceServiceEntity>(),
+                Type = InvoiceType.ExternalContractor,
+                Status = InvoiceStatus.Draft
             };
             _mapper.Setup(m => m.Map<Invoice>(dto)).Returns(invoice);
+
+            _invoiceRepo.Setup(r => r.InsertAsync(It.IsAny<Invoice>()))
+                .Returns(Task.CompletedTask);
+
+            _invoiceAccessoryRepo.Setup(r => r.InsertRangeAsync(It.IsAny<IEnumerable<InvoiceAccessory>>()))
+                .Returns(Task.CompletedTask);
+
+            _invoiceServiceRepo.Setup(r => r.InsertRangeAsync(It.IsAny<IEnumerable<InvoiceServiceEntity>>()))
+                .Returns(Task.CompletedTask);
 
             // Act
             var result = await _service.CreateExternalInvoiceAsync(dto);
@@ -266,7 +363,12 @@ namespace AptCare.UT.Services
         public async Task CreateExternalInvoiceAsync_Throws_WhenRepairRequestNotExists()
         {
             // Arrange
-            var dto = new InvoiceExternalCreateDto { RepairRequestId = 999 };
+            var dto = new InvoiceExternalCreateDto
+            {
+                RepairRequestId = 999,
+                Accessories = new List<InvoiceAccessoryExternalCreateDto>(),
+                Services = new List<ServiceCreateDto>()
+            };
 
             _repairRequestRepo.Setup(r => r.AnyAsync(
                 It.IsAny<Expression<Func<RepairRequest, bool>>>(),
@@ -277,6 +379,48 @@ namespace AptCare.UT.Services
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.CreateExternalInvoiceAsync(dto));
             Assert.Equal("Lỗi hệ thống: Yêu cầu sửa chữa không tồn tại.", ex.Message);
             _uow.Verify(u => u.RollbackTransactionAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task CreateExternalInvoiceAsync_Success_WithoutAccessories()
+        {
+            // Arrange
+            var dto = new InvoiceExternalCreateDto
+            {
+                RepairRequestId = 1,
+                Accessories = new List<InvoiceAccessoryExternalCreateDto>(),
+                Services = new List<ServiceCreateDto>
+                {
+                    new ServiceCreateDto { Name = "External Service", Price = 1000 }
+                }
+            };
+
+            _repairRequestRepo.Setup(r => r.AnyAsync(
+                It.IsAny<Expression<Func<RepairRequest, bool>>>(),
+                It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
+            )).ReturnsAsync(true);
+
+            var invoice = new Invoice
+            {
+                InvoiceId = 1,
+                InvoiceAccessories = new List<InvoiceAccessory>(),
+                InvoiceServices = new List<InvoiceServiceEntity>(),
+                Type = InvoiceType.ExternalContractor
+            };
+            _mapper.Setup(m => m.Map<Invoice>(dto)).Returns(invoice);
+
+            _invoiceRepo.Setup(r => r.InsertAsync(It.IsAny<Invoice>()))
+                .Returns(Task.CompletedTask);
+
+            _invoiceServiceRepo.Setup(r => r.InsertRangeAsync(It.IsAny<IEnumerable<InvoiceServiceEntity>>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _service.CreateExternalInvoiceAsync(dto);
+
+            // Assert
+            Assert.Equal("Tạo biên lai bên thứ 3 thành công.", result);
+            _invoiceRepo.Verify(r => r.InsertAsync(It.IsAny<Invoice>()), Times.Once);
         }
 
         #endregion
@@ -290,7 +434,8 @@ namespace AptCare.UT.Services
             var repairRequestId = 1;
             var invoices = new List<InvoiceDto>
             {
-                new InvoiceDto { InvoiceId = 1, RepairRequestId = repairRequestId }
+                new InvoiceDto { InvoiceId = 1, RepairRequestId = repairRequestId },
+                new InvoiceDto { InvoiceId = 2, RepairRequestId = repairRequestId }
             };
 
             _repairRequestRepo.Setup(r => r.AnyAsync(
@@ -298,8 +443,11 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
             )).ReturnsAsync(true);
 
-            _mapper.Setup(m => m.ConfigurationProvider)
-                .Returns(new MapperConfiguration(cfg => { }).CreateMapper().ConfigurationProvider);
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<Invoice, InvoiceDto>();
+            });
+            _mapper.Setup(m => m.ConfigurationProvider).Returns(mapperConfig);
 
             _invoiceRepo.Setup(r => r.ProjectToListAsync<InvoiceDto>(
                 It.IsAny<IConfigurationProvider>(),
@@ -314,21 +462,57 @@ namespace AptCare.UT.Services
 
             // Assert
             Assert.NotNull(result);
-            Assert.Single(result);
+            Assert.Equal(2, result.Count());
+            Assert.All(result, invoice => Assert.Equal(repairRequestId, invoice.RepairRequestId));
         }
 
         [Fact]
         public async Task GetInvoicesAsync_Throws_WhenRepairRequestNotExists()
         {
             // Arrange
+            var repairRequestId = 999;
+
             _repairRequestRepo.Setup(r => r.AnyAsync(
                 It.IsAny<Expression<Func<RepairRequest, bool>>>(),
                 It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
             )).ReturnsAsync(false);
 
             // Act & Assert
-            var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.GetInvoicesAsync(999));
+            var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.GetInvoicesAsync(repairRequestId));
             Assert.Equal("Yêu cầu sửa chữa không tồn tại.", ex.Message);
+        }
+
+        [Fact]
+        public async Task GetInvoicesAsync_Success_ReturnsEmptyList()
+        {
+            // Arrange
+            var repairRequestId = 1;
+
+            _repairRequestRepo.Setup(r => r.AnyAsync(
+                It.IsAny<Expression<Func<RepairRequest, bool>>>(),
+                It.IsAny<Func<System.Linq.IQueryable<RepairRequest>, IIncludableQueryable<RepairRequest, object>>>()
+            )).ReturnsAsync(true);
+
+            var mapperConfig = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<Invoice, InvoiceDto>();
+            });
+            _mapper.Setup(m => m.ConfigurationProvider).Returns(mapperConfig);
+
+            _invoiceRepo.Setup(r => r.ProjectToListAsync<InvoiceDto>(
+                It.IsAny<IConfigurationProvider>(),
+                null,
+                It.IsAny<Expression<Func<Invoice, bool>>>(),
+                It.IsAny<Func<System.Linq.IQueryable<Invoice>, System.Linq.IOrderedQueryable<Invoice>>>(),
+                It.IsAny<Func<System.Linq.IQueryable<Invoice>, IIncludableQueryable<Invoice, object>>>()
+            )).ReturnsAsync(new List<InvoiceDto>());
+
+            // Act
+            var result = await _service.GetInvoicesAsync(repairRequestId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Empty(result);
         }
 
         #endregion

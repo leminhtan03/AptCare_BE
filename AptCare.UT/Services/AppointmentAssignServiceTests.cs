@@ -263,7 +263,7 @@ namespace AptCare.UT.Services
                 AppointmentId = 20,
                 StartTime = DateTime.UtcNow.Date.AddHours(9),
                 EndTime = DateTime.UtcNow.Date.AddHours(10),
-                RepairRequest = new RepairRequest { IsEmergency = false, Issue = null }
+                RepairRequest = new RepairRequest { IsEmergency = false, Issue = new Issue {TechniqueId = 1 } }
             };
 
             _apptRepo.Setup(r => r.SingleOrDefaultAsync(

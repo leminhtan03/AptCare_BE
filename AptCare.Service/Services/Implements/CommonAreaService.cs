@@ -199,7 +199,7 @@ namespace AptCare.Service.Services.Implements
 
             var cacheKey = $"common_area:paginate:page:{page}:size:{size}:search:{search}:filter:{filter}:sort:{dto.sortBy}";
 
-            var cachedResult = await _cacheService.GetAsync<Paginate<CommonAreaDto>>(cacheKey);
+            var cachedResult = await _cacheService.GetAsync<IPaginate<CommonAreaDto>>(cacheKey);
             if (cachedResult != null)
             {
                 return cachedResult;

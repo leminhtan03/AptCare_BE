@@ -21,6 +21,9 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public List<int>? ChildRequestIds { get; set; }
         public List<MediaDto>? Medias { get; set; }
         public string Status { get; set; } = null!;
+        public int? TechniqueId { get; set; }
+        public int? RequiredTechnician { get; set; }
+        public double? EstimatedDuration { get; set; }
     }
 
     public class RepairRequestDetailDto
@@ -41,6 +44,9 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public List<MediaDto>? Medias { get; set; }
         public List<RequestTrackingDto>? RequestTrackings { get; set; }
         public List<AppointmentBasicDto>? Appointments { get; set; }
+        public int? TechniqueId { get; set; }
+        public int? RequiredTechnician { get; set; }
+        public double? EstimatedDuration { get; set; }
     }
 
     public class RequestTrackingDto
@@ -64,6 +70,10 @@ namespace AptCare.Service.Dtos.RepairRequestDtos
         public List<MediaDto>? Medias { get; set; }
         public DateTime CreatedAt { get; set; }
         public UserBasicDto? CreateUser { get; set; } = null!;
+        public int? MaintenanceScheduleId { get; set; }
+        public int? TechniqueId { get; set; }
+        public int? RequiredTechnician { get; set; }
+        public double? EstimatedDuration { get; set; }
 
     }
 }
