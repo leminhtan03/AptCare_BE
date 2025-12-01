@@ -861,8 +861,8 @@ namespace AptCare.Service.Services.Implements
             var today = DateOnly.FromDateTime(now);
             var maintenanceSchedules = await _unitOfWork.GetRepository<MaintenanceSchedule>().GetListAsync(
                 predicate: p => p.Status == ActiveStatus.Active &&
-                        (today >= p.NextScheduledDate) &&
-                        (today <= p.NextScheduledDate.AddDays(3)),
+                        (today >= p.NextScheduledDate.AddDays(-3)) &&
+                        (today <= p.NextScheduledDate),
                 include: i => i.Include(x => x.CommonAreaObject)
                             .ThenInclude(x => x.CommonArea)
             );
