@@ -19,16 +19,16 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Tạo phụ kiện mới.
+        /// Tạo mới một linh kiện.
         /// </summary>
         /// <remarks>
-        /// Chỉ các role: Manager hoặc TechnicianLead.  
-        /// Body: `AccessoryCreateDto` (Name, Descrption, Price, Quantity)
+        /// Chỉ dành cho các vai trò: Manager hoặc TechnicianLead.  
+        /// Body: `AccessoryCreateDto` (Name, Description, Price, Quantity)
         /// </remarks>
         /// <response code="201">Tạo thành công, trả về thông điệp.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
-        /// <response code="401">Không có quyền (Unauthorized).</response>
-        /// <response code="403">Bị cấm (Forbidden).</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Bị từ chối truy cập.</response>
         [HttpPost]
         [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
@@ -42,18 +42,18 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Cập nhật phụ kiện.
+        /// Cập nhật thông tin linh kiện.
         /// </summary>
         /// <remarks>
-        /// Chỉ các role: Manager hoặc TechnicianLead.  
-        /// Body: `AccessoryUpdateDto` (Name, Descrption, Price, Quantity, Status)
+        /// Chỉ dành cho các vai trò: Manager hoặc TechnicianLead.  
+        /// Body: `AccessoryUpdateDto` (Name, Description, Price, Quantity, Status)
         /// </remarks>
-        /// <param name="id">ID phụ kiện cần cập nhật.</param>
+        /// <param name="id">ID của linh kiện cần cập nhật.</param>
         /// <response code="200">Cập nhật thành công, trả về thông điệp.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
-        /// <response code="401">Không có quyền.</response>
-        /// <response code="403">Bị cấm.</response>
-        /// <response code="404">Không tìm thấy phụ kiện.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Bị từ chối truy cập.</response>
+        /// <response code="404">Không tìm thấy linh kiện.</response>
         [HttpPut("{id:int}")]
         [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
@@ -68,16 +68,16 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Xóa phụ kiện (hoặc mark soft-delete tuỳ implement).
+        /// Xóa linh kiện hoặc đánh dấu đã xóa (soft-delete).
         /// </summary>
         /// <remarks>
-        /// Chỉ các role: Manager hoặc TechnicianLead.
+        /// Chỉ dành cho các vai trò: Manager hoặc TechnicianLead.
         /// </remarks>
-        /// <param name="id">ID phụ kiện cần xóa.</param>
+        /// <param name="id">ID của linh kiện cần xóa.</param>
         /// <response code="200">Xóa thành công, trả về thông điệp.</response>
-        /// <response code="401">Không có quyền.</response>
-        /// <response code="403">Bị cấm.</response>
-        /// <response code="404">Không tìm thấy phụ kiện.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Bị từ chối truy cập.</response>
+        /// <response code="404">Không tìm thấy linh kiện.</response>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
@@ -91,15 +91,15 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Lấy chi tiết một phụ kiện theo ID.
+        /// Lấy thông tin chi tiết của một linh kiện theo ID.
         /// </summary>
         /// <remarks>
-        /// Role: TechnicianLead, Manager, Technician.
+        /// Dành cho các vai trò: TechnicianLead, Manager, Technician.
         /// </remarks>
-        /// <param name="id">ID phụ kiện.</param>
-        /// <response code="200">Trả về thông tin phụ kiện.</response>
-        /// <response code="401">Không có quyền.</response>
-        /// <response code="404">Không tìm thấy phụ kiện.</response>
+        /// <param name="id">ID của linh kiện.</param>
+        /// <response code="200">Trả về thông tin linh kiện.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="404">Không tìm thấy linh kiện.</response>
         [HttpGet("{id:int}")]
         [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}, {nameof(AccountRole.Technician)}")]
         [ProducesResponseType(typeof(AccessoryDto), StatusCodes.Status200OK)]
@@ -113,7 +113,7 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Lấy danh sách phụ kiện có phân trang, tìm kiếm và lọc.
+        /// Lấy danh sách linh kiện có phân trang, tìm kiếm và lọc.
         /// </summary> 
         /// <remarks>
         /// Role: TechnicianLead, Manager, Technician.  
@@ -123,8 +123,8 @@ namespace AptCare.Api.Controllers
         /// - size (int, optional): số bản ghi mỗi trang. Mặc định 10.  
         /// - search (string, optional): tìm kiếm theo `Name` và `Descrption` (không phân biệt hoa thường).  
         /// - filter (string, optional): lọc theo trạng thái, giá trị hợp lệ:
-        ///     - "active"  => chỉ trả về phụ kiện có `Status = Active`  
-        ///     - "inactive" => chỉ trả về phụ kiện có `Status = Inactive`  
+        ///     - "active"  => chỉ trả về linh kiện có `Status = Active`  
+        ///     - "inactive" => chỉ trả về linh kiện có `Status = Inactive`  
         ///     - empty/null => không lọc theo trạng thái  
         /// - sortBy (string, optional): sắp xếp, giá trị hợp lệ:
         ///     - "name"        => theo `Name` tăng dần  
@@ -152,14 +152,14 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Lấy danh sách phụ kiện (chỉ trạng thái Active) để hiển thị dropdown hoặc sử dụng nội bộ.
+        /// Lấy danh sách linh kiện đang hoạt động để hiển thị hoặc sử dụng nội bộ.
         /// </summary>
         /// <remarks>
-        /// Role: TechnicianLead, Manager, Technician.   
-        /// Trả về danh sách sắp xếp theo `Name`.
+        /// Dành cho các vai trò: TechnicianLead, Manager, Technician.   
+        /// Trả về danh sách sắp xếp theo tên.
         /// </remarks>
-        /// <response code="200">Trả về `IEnumerable<AccessoryDto>`.</response>
-        /// <response code="401">Không có quyền.</response>
+        /// <response code="200">Trả về danh sách linh kiện.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet("list")]
         [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}, {nameof(AccountRole.Technician)}")]
         [ProducesResponseType(typeof(IEnumerable<AccessoryDto>), StatusCodes.Status200OK)]

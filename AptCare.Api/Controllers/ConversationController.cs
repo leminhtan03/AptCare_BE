@@ -1,14 +1,11 @@
-﻿using AptCare.Repository.Enum.AccountUserEnum;
-using AptCare.Repository.Paginate;
-using AptCare.Service.Dtos.BuildingDtos;
-using AptCare.Service.Dtos.ChatDtos;
+﻿using AptCare.Service.Dtos.ChatDtos;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AptCare.Api.Controllers
 {
-    [Authorize] 
+    [Authorize]
     public class ConversationController : BaseApiController
     {
         private readonly IConversationService _conversationService;
@@ -22,12 +19,18 @@ namespace AptCare.Api.Controllers
         /// Tạo cuộc trò chuyện mới giữa nhiều người dùng.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
-        ///  
-        /// Tạo cuộc trò chuyện với 1 người thì không cần nhập tiêu đề
-        /// Tạo cuộc trò chuyện với nhiều người: Nếu không nhập tiêu đề, hệ thống tự động tạo tiêu đề từ tên các người tham gia.  
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.<br/>
+        /// Tạo cuộc trò chuyện với 1 người thì không cần nhập tiêu đề.<br/>
+        /// Tạo cuộc trò chuyện với nhiều người: Nếu không nhập tiêu đề, hệ thống tự động tạo tiêu đề từ tên các người tham gia.<br/>
         /// Nếu 2 người đã có cuộc trò chuyện, không thể tạo lại.
+        /// <br/><b>ConversationCreateDto:</b>
+        /// <ul>
+        ///   <li><b>Title</b>: Tiêu đề cuộc trò chuyện (tùy chọn).</li>
+        ///   <li><b>UserIds</b>: Danh sách ID người dùng tham gia (bắt buộc, ít nhất 1).</li>
+        /// </ul>
         /// </remarks>
+        /// <param name="dto">Thông tin cuộc trò chuyện cần tạo.</param>
+        /// <returns>Thông báo tạo cuộc trò chuyện thành công.</returns>
         [HttpPost]
         [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -43,10 +46,27 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách các cuộc trò chuyện của người dùng hiện tại.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
-        ///  
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.<br/>
         /// Trả về danh sách gồm: tiêu đề, thành viên, tin nhắn gần nhất, và thời gian cập nhật cuối.
+        /// <br/><b>ConversationDto:</b>
+        /// <ul>
+        ///   <li><b>ConversationId</b>: ID cuộc trò chuyện.</li>
+        ///   <li><b>Title</b>: Tiêu đề cuộc trò chuyện.</li>
+        ///   <li><b>Slug</b>: Đường dẫn slug của cuộc trò chuyện.</li>
+        ///   <li><b>Image</b>: Ảnh đại diện cuộc trò chuyện.</li>
+        ///   <li><b>IsMuted</b>: Đã tắt thông báo hay chưa.</li>
+        ///   <li><b>LastMessage</b>: Tin nhắn gần nhất.</li>
+        ///   <li><b>Participants</b>: Danh sách thành viên (<b>ParticipantDto</b>).</li>
+        /// </ul>
+        /// <b>ParticipantDto:</b>
+        /// <ul>
+        ///   <li><b>UserId</b>: ID người dùng.</li>
+        ///   <li><b>FirstName</b>: Tên.</li>
+        ///   <li><b>LastName</b>: Họ.</li>
+        ///   <li><b>JoinedAt</b>: Thời gian tham gia.</li>
+        /// </ul>
         /// </remarks>
+        /// <returns>Danh sách cuộc trò chuyện của người dùng hiện tại.</returns>
         [HttpGet("my")]
         [ProducesResponseType(typeof(IEnumerable<ConversationDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -62,10 +82,28 @@ namespace AptCare.Api.Controllers
         /// Lấy chi tiết một cuộc trò chuyện cụ thể theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
-        ///  
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.<br/>
         /// Bao gồm danh sách tin nhắn, thông tin người tham gia và trạng thái đọc.
+        /// <br/><b>ConversationDto:</b>
+        /// <ul>
+        ///   <li><b>ConversationId</b>: ID cuộc trò chuyện.</li>
+        ///   <li><b>Title</b>: Tiêu đề cuộc trò chuyện.</li>
+        ///   <li><b>Slug</b>: Đường dẫn slug của cuộc trò chuyện.</li>
+        ///   <li><b>Image</b>: Ảnh đại diện cuộc trò chuyện.</li>
+        ///   <li><b>IsMuted</b>: Đã tắt thông báo hay chưa.</li>
+        ///   <li><b>LastMessage</b>: Tin nhắn gần nhất.</li>
+        ///   <li><b>Participants</b>: Danh sách thành viên (<b>ParticipantDto</b>).</li>
+        /// </ul>
+        /// <b>ParticipantDto:</b>
+        /// <ul>
+        ///   <li><b>UserId</b>: ID người dùng.</li>
+        ///   <li><b>FirstName</b>: Tên.</li>
+        ///   <li><b>LastName</b>: Họ.</li>
+        ///   <li><b>JoinedAt</b>: Thời gian tham gia.</li>
+        /// </ul>
         /// </remarks>
+        /// <param name="id">ID cuộc trò chuyện cần lấy chi tiết.</param>
+        /// <returns>Thông tin chi tiết cuộc trò chuyện.</returns>
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ConversationDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -83,9 +121,11 @@ namespace AptCare.Api.Controllers
         /// Tắt thông báo cho một cuộc trò chuyện.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.    
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.<br/>
         /// Dùng khi người dùng không muốn nhận thông báo tin nhắn mới.
         /// </remarks>
+        /// <param name="id">ID cuộc trò chuyện cần tắt thông báo.</param>
+        /// <returns>Thông báo tắt thông báo thành công.</returns>
         [HttpPatch("{id}/mute")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -101,8 +141,10 @@ namespace AptCare.Api.Controllers
         /// Bật lại thông báo cho một cuộc trò chuyện.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.<br/>
         /// </remarks>
+        /// <param name="id">ID cuộc trò chuyện cần bật lại thông báo.</param>
+        /// <returns>Thông báo bật lại thông báo thành công.</returns>
         [HttpPatch("{id}/unmute")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

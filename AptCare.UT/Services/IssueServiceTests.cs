@@ -319,5 +319,30 @@ namespace AptCare.UT.Services
         }
 
         #endregion
+
+        #region GetActiveIssuesAsync Tests
+
+        [Fact]
+        public async Task GetActiveIssuesAsync_ReturnsOnlyActiveIssues()
+        {
+            // Arrange
+            var issues = new List<Issue>
+            {
+                new Issue { IssueId = 1, Status = ActiveStatus.Active },
+                new Issue { IssueId = 2, Status = ActiveStatus.Inactive }
+            };
+            _issueRepo.Setup(r => r.GetListAsync(
+                It.IsAny<Expression<Func<Issue, bool>>>(),
+                null, null
+            )).ReturnsAsync(issues.Where(i => i.Status == ActiveStatus.Active).ToList());
+
+            // Act
+            var result = await _service.GetActiveIssuesAsync();
+
+            // Assert
+            Assert.All(result, i => Assert.Equal(ActiveStatus.Active, i.Status));
+        }
+
+        #endregion
     }
 }

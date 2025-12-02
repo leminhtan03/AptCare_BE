@@ -2,7 +2,6 @@
 using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.BuildingDtos;
-using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -23,21 +22,39 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách khu vực chung có phân trang, tìm kiếm và sắp xếp.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.    
-        ///  
-        /// **Tham số phân trang (PaginateDto):**
-        /// - <b>page</b>: Số trang hiện tại (bắt đầu từ 1).  
-        /// - <b>size</b>: Số bản ghi mỗi trang.  
-        /// - <b>search</b>: Từ khóa tìm kiếm (theo tên, mã khu vực, mô tả, vị trí).  
-        /// - <b>filter</b>: Lọc theo trạng thái khu vực (Active/Inactive).  
-        /// - <b>sortBy</b>: Tiêu chí sắp xếp kết quả:
-        ///   - <b>name</b>: Theo tên tăng dần.  
-        ///   - <b>name_desc</b>: Theo tên giảm dần.  
-        ///   - <b>floor</b>: Theo tầng tăng dần.  
-        ///   - <b>floor_desc</b>: Theo tầng giảm dần.  
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.<br/>
+        /// <b>Tham số phân trang (<c>PaginateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>page</b>: Số trang hiện tại (bắt đầu từ 1).</li>
+        ///   <li><b>size</b>: Số bản ghi mỗi trang.</li>
+        ///   <li><b>search</b>: Từ khóa tìm kiếm (theo tên, mã khu vực, mô tả, vị trí).</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái khu vực (Active/Inactive).</li>
+        ///   <li><b>sortBy</b>: Tiêu chí sắp xếp kết quả (name, name_desc, floor, floor_desc).</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="dto">Thông tin phân trang, tìm kiếm, và sắp xếp.</param>
-        /// <returns>Danh sách khu vực chung kèm thông tin phân trang.</returns>
+        /// <param name="dto">
+        /// <b>PaginateDto:</b>
+        /// <ul>
+        ///   <li><b>page</b>: Số trang hiện tại.</li>
+        ///   <li><b>size</b>: Số bản ghi mỗi trang.</li>
+        ///   <li><b>search</b>: Từ khóa tìm kiếm.</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái.</li>
+        ///   <li><b>sortBy</b>: Tiêu chí sắp xếp.</li>
+        /// </ul>
+        /// </param>
+        /// <returns>
+        /// <b>IPaginate&lt;CommonAreaDto&gt;:</b>
+        /// <ul>
+        ///   <li><b>CommonAreaId</b>: ID khu vực chung.</li>
+        ///   <li><b>FloorId</b>: ID tầng liên kết.</li>
+        ///   <li><b>Floor</b>: Tên tầng liên kết.</li>
+        ///   <li><b>AreaCode</b>: Mã khu vực.</li>
+        ///   <li><b>Name</b>: Tên khu vực.</li>
+        ///   <li><b>Description</b>: Mô tả khu vực.</li>
+        ///   <li><b>Location</b>: Vị trí khu vực.</li>
+        ///   <li><b>Status</b>: Trạng thái khu vực (Active/Inactive).</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về danh sách khu vực chung.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet]
@@ -54,10 +71,22 @@ namespace AptCare.Api.Controllers
         /// Lấy thông tin chi tiết của khu vực chung theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.
         /// </remarks>
         /// <param name="id">ID của khu vực chung cần lấy thông tin.</param>
-        /// <returns>Thông tin chi tiết của khu vực chung.</returns>
+        /// <returns>
+        /// <b>CommonAreaDto:</b>
+        /// <ul>
+        ///   <li><b>CommonAreaId</b>: ID khu vực chung.</li>
+        ///   <li><b>FloorId</b>: ID tầng liên kết.</li>
+        ///   <li><b>Floor</b>: Tên tầng liên kết.</li>
+        ///   <li><b>AreaCode</b>: Mã khu vực.</li>
+        ///   <li><b>Name</b>: Tên khu vực.</li>
+        ///   <li><b>Description</b>: Mô tả khu vực.</li>
+        ///   <li><b>Location</b>: Vị trí khu vực.</li>
+        ///   <li><b>Status</b>: Trạng thái khu vực (Active/Inactive).</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về thông tin khu vực chung.</response>
         /// <response code="404">Không tìm thấy khu vực chung.</response>
         /// <response code="401">Không có quyền truy cập.</response>
@@ -76,10 +105,19 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách khu vực chung.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
-        ///    
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.
         /// </remarks>
-        /// <returns>Danh sách khu vực chung.</returns>
+        /// <returns>
+        /// <b>FloorDto[]:</b>
+        /// <ul>
+        ///   <li><b>FloorId</b>: ID tầng.</li>
+        ///   <li><b>FloorNumber</b>: Số thứ tự tầng.</li>
+        ///   <li><b>Status</b>: Trạng thái tầng.</li>
+        ///   <li><b>Description</b>: Mô tả tầng.</li>
+        ///   <li><b>Apartments</b>: Danh sách căn hộ thuộc tầng.</li>
+        ///   <li><b>CommonAreas</b>: Danh sách khu vực chung thuộc tầng.</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về danh sách khu vực chung.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet("list")]
@@ -96,11 +134,26 @@ namespace AptCare.Api.Controllers
         /// Tạo mới khu vực chung.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
-        /// Dữ liệu yêu cầu gồm: mã khu vực, tên, vị trí, mô tả, ID tầng.
+        /// <b>Chỉ role:</b> Manager<br/>
+        /// <b>Dữ liệu yêu cầu (<c>CommonAreaCreateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>FloorId</b>: ID tầng liên kết (tùy chọn).</li>
+        ///   <li><b>AreaCode</b>: Mã khu vực (bắt buộc, tối đa 50 ký tự).</li>
+        ///   <li><b>Name</b>: Tên khu vực (bắt buộc, tối đa 256 ký tự).</li>
+        ///   <li><b>Description</b>: Mô tả khu vực (tối đa 500 ký tự, tùy chọn).</li>
+        ///   <li><b>Location</b>: Vị trí khu vực (tối đa 500 ký tự, tùy chọn).</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="dto">Thông tin khu vực chung cần tạo.</param>
+        /// <param name="dto">
+        /// <b>CommonAreaCreateDto:</b>
+        /// <ul>
+        ///   <li><b>FloorId</b>: ID tầng liên kết.</li>
+        ///   <li><b>AreaCode</b>: Mã khu vực.</li>
+        ///   <li><b>Name</b>: Tên khu vực.</li>
+        ///   <li><b>Description</b>: Mô tả khu vực.</li>
+        ///   <li><b>Location</b>: Vị trí khu vực.</li>
+        /// </ul>
+        /// </param>
         /// <returns>Thông báo tạo khu vực chung thành công.</returns>
         /// <response code="201">Khu vực chung được tạo thành công.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
@@ -122,12 +175,29 @@ namespace AptCare.Api.Controllers
         /// Cập nhật thông tin khu vực chung theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
-        /// Cập nhật thông tin như: mã khu vực, tên, mô tả, vị trí, trạng thái, ID tầng.
+        /// <b>Chỉ role:</b> Manager<br/>
+        /// <b>Dữ liệu cập nhật (<c>CommonAreaUpdateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>FloorId</b>: ID tầng liên kết (tùy chọn).</li>
+        ///   <li><b>AreaCode</b>: Mã khu vực (bắt buộc, tối đa 50 ký tự).</li>
+        ///   <li><b>Name</b>: Tên khu vực (bắt buộc, tối đa 256 ký tự).</li>
+        ///   <li><b>Description</b>: Mô tả khu vực (tối đa 500 ký tự, tùy chọn).</li>
+        ///   <li><b>Location</b>: Vị trí khu vực (tối đa 500 ký tự, tùy chọn).</li>
+        ///   <li><b>Status</b>: Trạng thái khu vực (Active/Inactive).</li>
+        /// </ul>
         /// </remarks>
         /// <param name="id">ID của khu vực chung cần cập nhật.</param>
-        /// <param name="dto">Thông tin khu vực chung cập nhật.</param>
+        /// <param name="dto">
+        /// <b>CommonAreaUpdateDto:</b>
+        /// <ul>
+        ///   <li><b>FloorId</b>: ID tầng liên kết.</li>
+        ///   <li><b>AreaCode</b>: Mã khu vực.</li>
+        ///   <li><b>Name</b>: Tên khu vực.</li>
+        ///   <li><b>Description</b>: Mô tả khu vực.</li>
+        ///   <li><b>Location</b>: Vị trí khu vực.</li>
+        ///   <li><b>Status</b>: Trạng thái khu vực.</li>
+        /// </ul>
+        /// </param>
         /// <returns>Không có nội dung trả về khi cập nhật thành công.</returns>
         /// <response code="204">Cập nhật khu vực chung thành công.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
@@ -151,8 +221,7 @@ namespace AptCare.Api.Controllers
         /// Xóa khu vực chung theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
+        /// <b>Chỉ role:</b> Manager<br/>
         /// Xóa khu vực chung sẽ không ảnh hưởng đến các dữ liệu khác ngoài quan hệ trực tiếp (nếu có).
         /// </remarks>
         /// <param name="id">ID của khu vực chung cần xóa.</param>

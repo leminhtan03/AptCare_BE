@@ -8,13 +8,8 @@ using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
 using AptCare.Service.Dtos.AccessoryDto;
 
 namespace AptCare.Service.Services.Implements
@@ -25,8 +20,8 @@ namespace AptCare.Service.Services.Implements
         private readonly IRedisCacheService _cacheService;
 
         public AccessoryService(
-        IUnitOfWork<AptCareSystemDBContext> unitOfWork, 
-        ILogger<AccessoryService> logger, 
+        IUnitOfWork<AptCareSystemDBContext> unitOfWork,
+        ILogger<AccessoryService> logger,
         ICloudinaryService cloudinaryService,
         IRedisCacheService cacheService,
         IMapper mapper) : base(unitOfWork, logger, mapper)

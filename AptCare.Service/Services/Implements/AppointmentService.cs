@@ -26,13 +26,7 @@ namespace AptCare.Service.Services.Implements
         private readonly INotificationService _notificationService;
         private readonly IRepairRequestService _repairRequestService;
 
-        public AppointmentService(
-            IUnitOfWork<AptCareSystemDBContext> unitOfWork,
-            ILogger<AppointmentService> logger,
-            IMapper mapper,
-            IUserContext userContext,
-            INotificationService notificationService,
-            IRepairRequestService IRepairRequestService) : base(unitOfWork, logger, mapper)
+        public AppointmentService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<AppointmentService> logger, IMapper mapper, IUserContext userContext, INotificationService notificationService, IRepairRequestService IRepairRequestService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _notificationService = notificationService;
@@ -326,7 +320,7 @@ namespace AptCare.Service.Services.Implements
                 var appointmentStartTime = appointment.StartTime;
                 if (timeNow < appointmentStartTime.AddMinutes(-30))
                 {
-                   throw new AppValidationException("Chưa đến thời gian check-in cho lịch hẹn này.");
+                    throw new AppValidationException("Chưa đến thời gian check-in cho lịch hẹn này.");
                 }
 
                 var latestRequestStaus = await _unitOfWork.GetRepository<RequestTracking>().SingleOrDefaultAsync(
@@ -476,7 +470,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error during StartRepairAsync for Appointment ID {AppointmentId}", id);
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 

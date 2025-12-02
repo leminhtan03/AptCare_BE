@@ -21,19 +21,35 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách tầng có phân trang, tìm kiếm và sắp xếp.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
-        ///  
-        /// **Tham số phân trang (PaginateDto):**
-        /// - <b>page</b>: Số trang hiện tại (bắt đầu từ 1).  
-        /// - <b>size</b>: Số bản ghi mỗi trang.  
-        /// - <b>search</b>: Từ khóa tìm kiếm (theo số tầng hoặc mô tả).  
-        /// - <b>filter</b>: Lọc theo trạng thái tầng.  
-        /// - <b>sortBy</b>: Tiêu chí sắp xếp kết quả:
-        ///   - <b>floor</b>: Sắp xếp theo số tầng tăng dần.  
-        ///   - <b>floor_desc</b>: Sắp xếp theo số tầng giảm dần.    
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.<br/>
+        /// <b>Tham số phân trang (<c>PaginateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>page</b>: Số trang hiện tại (bắt đầu từ 1).</li>
+        ///   <li><b>size</b>: Số bản ghi mỗi trang.</li>
+        ///   <li><b>search</b>: Từ khóa tìm kiếm (theo số tầng hoặc mô tả).</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái tầng.</li>
+        ///   <li><b>sortBy</b>: Tiêu chí sắp xếp (floor, floor_desc).</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="dto">Thông tin phân trang, tìm kiếm, sắp xếp và lọc.</param>
-        /// <returns>Danh sách tầng kèm thông tin phân trang.</returns>
+        /// <param name="dto">
+        /// <b>PaginateDto:</b>
+        /// <ul>
+        ///   <li><b>page</b>: Số trang hiện tại.</li>
+        ///   <li><b>size</b>: Số bản ghi mỗi trang.</li>
+        ///   <li><b>search</b>: Từ khóa tìm kiếm.</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái.</li>
+        ///   <li><b>sortBy</b>: Tiêu chí sắp xếp.</li>
+        /// </ul>
+        /// </param>
+        /// <returns>
+        /// <b>IPaginate&lt;GetAllFloorsDto&gt;:</b>
+        /// <ul>
+        ///   <li><b>FloorId</b>: ID tầng.</li>
+        ///   <li><b>FloorNumber</b>: Số thứ tự tầng.</li>
+        ///   <li><b>Status</b>: Trạng thái tầng.</li>
+        ///   <li><b>Description</b>: Mô tả tầng.</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về danh sách tầng.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet]
@@ -50,10 +66,17 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách tầng.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
-        ///    
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.
         /// </remarks>
-        /// <returns>Danh sách tầng.</returns>
+        /// <returns>
+        /// <b>FloorBasicDto[]:</b>
+        /// <ul>
+        ///   <li><b>FloorId</b>: ID tầng.</li>
+        ///   <li><b>FloorNumber</b>: Số thứ tự tầng.</li>
+        ///   <li><b>Status</b>: Trạng thái tầng.</li>
+        ///   <li><b>Description</b>: Mô tả tầng.</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về danh sách tầng.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet("list")]
@@ -70,10 +93,20 @@ namespace AptCare.Api.Controllers
         /// Lấy thông tin chi tiết của một tầng theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.
         /// </remarks>
         /// <param name="id">ID của tầng cần lấy thông tin.</param>
-        /// <returns>Thông tin chi tiết của tầng.</returns>
+        /// <returns>
+        /// <b>FloorDto:</b>
+        /// <ul>
+        ///   <li><b>FloorId</b>: ID tầng.</li>
+        ///   <li><b>FloorNumber</b>: Số thứ tự tầng.</li>
+        ///   <li><b>Status</b>: Trạng thái tầng.</li>
+        ///   <li><b>Description</b>: Mô tả tầng.</li>
+        ///   <li><b>Apartments</b>: Danh sách căn hộ thuộc tầng.</li>
+        ///   <li><b>CommonAreas</b>: Danh sách khu vực chung thuộc tầng.</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về thông tin tầng.</response>
         /// <response code="404">Không tìm thấy tầng.</response>
         /// <response code="401">Không có quyền truy cập.</response>
@@ -92,11 +125,20 @@ namespace AptCare.Api.Controllers
         /// Tạo mới một tầng.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
-        /// Dữ liệu yêu cầu gồm: số tầng, mô tả, Mã tòa nhà, v.v.
+        /// <b>Chỉ role:</b> Manager<br/>
+        /// <b>Dữ liệu yêu cầu (<c>FloorCreateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>FloorNumber</b>: Số thứ tự tầng (bắt buộc, từ 1 đến 100).</li>
+        ///   <li><b>Description</b>: Mô tả tầng (bắt buộc).</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="dto">Thông tin tầng cần tạo.</param>
+        /// <param name="dto">
+        /// <b>FloorCreateDto:</b>
+        /// <ul>
+        ///   <li><b>FloorNumber</b>: Số thứ tự tầng.</li>
+        ///   <li><b>Description</b>: Mô tả tầng.</li>
+        /// </ul>
+        /// </param>
         /// <returns>Thông báo tạo tầng thành công.</returns>
         /// <response code="201">Tầng được tạo thành công.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
@@ -118,12 +160,23 @@ namespace AptCare.Api.Controllers
         /// Cập nhật thông tin tầng theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
-        /// Cập nhật thông tin như: mô tả, trạng thái, Mã tòa nhà, hoặc số tầng.
+        /// <b>Chỉ role:</b> Manager<br/>
+        /// <b>Dữ liệu cập nhật (<c>FloorUpdateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>FloorNumber</b>: Số thứ tự tầng (bắt buộc, từ 1 đến 100).</li>
+        ///   <li><b>Description</b>: Mô tả tầng (bắt buộc).</li>
+        ///   <li><b>Status</b>: Trạng thái tầng (Active/Inactive).</li>
+        /// </ul>
         /// </remarks>
         /// <param name="id">ID của tầng cần cập nhật.</param>
-        /// <param name="dto">Thông tin tầng cập nhật.</param>
+        /// <param name="dto">
+        /// <b>FloorUpdateDto:</b>
+        /// <ul>
+        ///   <li><b>FloorNumber</b>: Số thứ tự tầng.</li>
+        ///   <li><b>Description</b>: Mô tả tầng.</li>
+        ///   <li><b>Status</b>: Trạng thái tầng.</li>
+        /// </ul>
+        /// </param>
         /// <returns>Thông báo cập nhật thành công.</returns>
         /// <response code="200">Cập nhật tầng thành công.</response>
         /// <response code="404">Không tìm thấy tầng.</response>
@@ -145,8 +198,7 @@ namespace AptCare.Api.Controllers
         /// Xóa một tầng theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
+        /// <b>Chỉ role:</b> Manager<br/>
         /// Xóa tầng sẽ không ảnh hưởng đến các dữ liệu khác ngoài quan hệ trực tiếp (nếu có).
         /// </remarks>
         /// <param name="id">ID của tầng cần xóa.</param>
