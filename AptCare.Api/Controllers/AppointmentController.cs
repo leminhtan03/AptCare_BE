@@ -22,16 +22,25 @@ namespace AptCare.Api.Controllers
         /// Tạo lịch hẹn sửa chữa mới.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Technician (Kĩ thuật viên) và TechnicianLead (Trưởng bộ phận kĩ thuật) 
-        /// Dùng khi trưởng bộ phận kĩ thuật muốn đặt lịch cho yêu cầu sửa chữa cụ thể.  
-        /// 
-        /// **Yêu cầu:**  
-        /// - `RepairRequestId` phải tồn tại.  
-        /// - Thời gian bắt đầu (`StartTime`) và kết thúc (`EndTime`) hợp lệ.  
-        /// 
-        /// **Resident và Technician** không được phép gọi API này.
+        /// <b>Chỉ role:</b> Technician, TechnicianLead<br/>
+        /// <b>Yêu cầu:</b>
+        /// <ul>
+        ///   <li><b>RepairRequestId</b>: ID yêu cầu sửa chữa, phải tồn tại.</li>
+        ///   <li><b>StartTime</b>: Thời gian bắt đầu lịch hẹn (yyyy-MM-dd HH:mm).</li>
+        ///   <li><b>EndTime</b>: Thời gian kết thúc lịch hẹn (yyyy-MM-dd HH:mm).</li>
+        ///   <li><b>Note</b>: Ghi chú cho lịch hẹn (tùy chọn).</li>
+        /// </ul>
+        /// <b>Resident và Technician</b> không được phép gọi API này.
         /// </remarks>
-        /// <param name="dto">Thông tin lịch hẹn.</param>
+        /// <param name="dto">
+        /// <b>AppointmentCreateDto:</b>
+        /// <ul>
+        ///   <li><b>RepairRequestId</b>: ID yêu cầu sửa chữa liên kết.</li>
+        ///   <li><b>StartTime</b>: Thời gian bắt đầu lịch hẹn.</li>
+        ///   <li><b>EndTime</b>: Thời gian kết thúc lịch hẹn.</li>
+        ///   <li><b>Note</b>: Ghi chú (tùy chọn).</li>
+        /// </ul>
+        /// </param>
         /// <returns>Thông báo tạo lịch hẹn thành công.</returns>
         /// <response code="201">Tạo lịch hẹn thành công.</response>
         /// <response code="400">Dữ liệu không hợp lệ.</response>
@@ -57,20 +66,26 @@ namespace AptCare.Api.Controllers
         /// Cập nhật lịch hẹn sửa chữa.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Technician (Kĩ thuật viên) và TechnicianLead (Trưởng bộ phận kĩ thuật) 
-        /// Dùng khi muốn điều chỉnh thời gian hoặc thông tin của lịch hẹn hiện có.
-        /// 
-        /// /// **Các trạng thái (`Status`) có thể cập nhật:**
-        /// - `Pending` → Chưa được phân công.  
-        /// - `Assigned` → Đã gán kỹ thuật viên.  
-        /// - `Confirmed` → Kỹ thuật viên đã xác nhận.  
-        /// - `InProgress` → Đang thực hiện.  
-        /// - `Completed` → Đã hoàn tất.  
-        /// - `Canceled` → Bị hủy.  
-        /// 
+        /// <b>Chỉ role:</b> Technician, TechnicianLead<br/>
+        /// <b>Các trạng thái có thể cập nhật:</b>
+        /// <ul>
+        ///   <li><b>Pending</b>: Chưa được phân công.</li>
+        ///   <li><b>Assigned</b>: Đã gán kỹ thuật viên.</li>
+        ///   <li><b>Confirmed</b>: Kỹ thuật viên đã xác nhận.</li>
+        ///   <li><b>InProgress</b>: Đang thực hiện.</li>
+        ///   <li><b>Completed</b>: Đã hoàn tất.</li>
+        ///   <li><b>Canceled</b>: Bị hủy.</li>
+        /// </ul>
         /// </remarks>
         /// <param name="id">ID lịch hẹn cần cập nhật.</param>
-        /// <param name="dto">Thông tin cần cập nhật.</param>
+        /// <param name="dto">
+        /// <b>AppointmentUpdateDto:</b>
+        /// <ul>
+        ///   <li><b>StartTime</b>: Thời gian bắt đầu mới.</li>
+        ///   <li><b>EndTime</b>: Thời gian kết thúc mới.</li>
+        ///   <li><b>Note</b>: Ghi chú cập nhật (tùy chọn).</li>
+        /// </ul>
+        /// </param>
         /// <returns>Thông báo cập nhật thành công.</returns>
         /// <response code="200">Cập nhật lịch hẹn thành công.</response>
         /// <response code="404">Không tìm thấy lịch hẹn.</response>
@@ -124,7 +139,20 @@ namespace AptCare.Api.Controllers
         /// **Resident** không có quyền xem lịch hẹn chi tiết của người khác.
         /// </remarks>
         /// <param name="id">ID lịch hẹn cần xem.</param>
-        /// <returns>Thông tin chi tiết lịch hẹn.</returns>
+        /// <returns>
+        /// <b>AppointmentDto:</b>
+        /// <ul>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn.</li>
+        ///   <li><b>StartTime</b>: Thời gian bắt đầu.</li>
+        ///   <li><b>EndTime</b>: Thời gian kết thúc.</li>
+        ///   <li><b>Note</b>: Ghi chú.</li>
+        ///   <li><b>Status</b>: Trạng thái lịch hẹn.</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo.</li>
+        ///   <li><b>RepairRequest</b>: Thông tin yêu cầu sửa chữa liên kết.</li>
+        ///   <li><b>Technicians</b>: Danh sách kỹ thuật viên được gán.</li>
+        ///   <li><b>AppointmentTrackings</b>: Lịch sử trạng thái lịch hẹn.</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về thông tin chi tiết lịch hẹn.</response>
         /// <response code="404">Không tìm thấy lịch hẹn.</response>
         /// <response code="401">Không có quyền truy cập.</response>
@@ -148,22 +176,29 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách lịch hẹn có phân trang, tìm kiếm, lọc và theo khoảng thời gian.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** 👷 TechnicianLead (Trưởng bộ phận kỹ thuật), 🧑‍💼 Manager, 🧑‍🔧 Technician  
-        /// 
-        /// API này cho phép phân trang, tìm kiếm theo ghi chú (`Note`), lọc theo trạng thái (`Status`), 
-        /// và giới hạn trong khoảng thời gian (`fromDate`, `toDate`).  
-        /// 
-        /// **Tham số truy vấn:**  
-        /// - `page`: Trang hiện tại (bắt đầu từ 1).  
-        /// - `size`: Số bản ghi mỗi trang.  
-        /// - `search`: Từ khóa tìm kiếm theo ghi chú.  
-        /// - `filter`: Lọc theo trạng thái (ví dụ: pending, assigned, confirmed, completed, canceled).  
-        /// - `fromDate`: Ngày bắt đầu (định dạng `yyyy-MM-dd`).  
-        /// - `toDate`: Ngày kết thúc (định dạng `yyyy-MM-dd`).   
-        /// - `isAprroved`: Lọc lịch hẹn của những request đã được chấp nhận hay chưa.  
-        /// - `sortBy`: Tiêu chí sắp xếp (`starttime`, `starttime_desc`, v.v.).  
+        /// <b>Chỉ role:</b> TechnicianLead, Manager, Technician<br/>
+        /// <b>Tham số truy vấn:</b>
+        /// <ul>
+        ///   <li><b>dto.page</b>: Trang hiện tại (bắt đầu từ 1).</li>
+        ///   <li><b>dto.size</b>: Số bản ghi mỗi trang.</li>
+        ///   <li><b>dto.sortBy</b>: Tiêu chí sắp xếp (starttime, starttime_desc,...).</li>
+        ///   <li><b>dto.search</b>: Từ khóa tìm kiếm theo ghi chú.</li>
+        ///   <li><b>dto.filter</b>: Lọc theo trạng thái.</li>
+        ///   <li><b>fromDate</b>: Ngày bắt đầu (yyyy-MM-dd).</li>
+        ///   <li><b>toDate</b>: Ngày kết thúc (yyyy-MM-dd).</li>
+        ///   <li><b>isAprroved</b>: Lọc theo trạng thái chấp nhận của yêu cầu.</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="dto">Thông tin phân trang, tìm kiếm, sắp xếp và lọc.</param>
+        /// <param name="dto">
+        /// <b>PaginateDto:</b>
+        /// <ul>
+        ///   <li><b>page</li>
+        ///   <li><b>size</b>: Số bản ghi mỗi trang.</li>
+        ///   <li><b>sortBy</b>: Tiêu chí sắp xếp.</li>
+        ///   <li><b>search</b>: Từ khóa tìm kiếm.</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái.</li>
+        /// </ul>
+        /// </param>
         /// <param name="fromDate">Ngày bắt đầu (tùy chọn).</param>
         /// <param name="toDate">Ngày kết thúc (tùy chọn).</param>
         /// <param name="isAprroved">Đã chấp nhận chưa (tùy chọn).</param>
@@ -196,19 +231,32 @@ namespace AptCare.Api.Controllers
         /// Lấy lịch hẹn của cư dân trong khoảng thời gian.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** 🏠 Resident.  
-        /// Trả về các lịch hẹn mà căn hộ của cư dân đó có liên quan trong khoảng thời gian chỉ định.
-        /// 
-        /// **Tham số bắt buộc:**
-        /// - `fromDate`: ngày bắt đầu (định dạng `yyyy-MM-dd`)  
-        /// - `toDate`: ngày kết thúc (định dạng `yyyy-MM-dd`)
-        /// 
-        /// Kết quả được nhóm theo từng ngày.
+        /// <b>Chỉ role:</b> Resident<br/>
+        /// Trả về các lịch hẹn mà căn hộ của cư dân đó có liên quan trong khoảng thời gian chỉ định.<br/>
+        /// <b>Kết quả:</b> Nhóm theo từng ngày.
         /// </remarks>
-        /// <param name="fromDate">Ngày bắt đầu.</param>
-        /// <param name="toDate">Ngày kết thúc.</param>
-        /// <returns>Danh sách lịch hẹn theo ngày.</returns>
-        /// <response code="200">Trả về danh sách lịch hẹn.</response>
+        /// <param name="fromDate">Ngày bắt đầu (định dạng yyyy-MM-dd).</param>
+        /// <param name="toDate">Ngày kết thúc (định dạng yyyy-MM-dd).</param>
+        /// <returns>
+        /// <b>ResidentAppointmentScheduleDto[]:</b>
+        /// <ul>
+        ///   <li><b>Date</b>: Ngày của lịch hẹn.</li>
+        ///   <li><b>Appointments</b>: Danh sách lịch hẹn trong ngày đó (xem <b>AppointmentDto</b>).</li>
+        /// </ul>
+        /// <b>AppointmentDto:</b>
+        /// <ul>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn.</li>
+        ///   <li><b>StartTime</b>: Thời gian bắt đầu.</li>
+        ///   <li><b>EndTime</b>: Thời gian kết thúc.</li>
+        ///   <li><b>Note</b>: Ghi chú.</li>
+        ///   <li><b>Status</b>: Trạng thái lịch hẹn.</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo.</li>
+        ///   <li><b>RepairRequest</b>: Thông tin yêu cầu sửa chữa liên kết.</li>
+        ///   <li><b>Technicians</b>: Danh sách kỹ thuật viên được gán.</li>
+        ///   <li><b>AppointmentTrackings</b>: Lịch sử trạng thái lịch hẹn.</li>
+        /// </ul>
+        /// </returns>
+        /// <response code="200">Trả về danh sách lịch hẹn theo ngày.</response>
         /// <response code="400">Ngày không hợp lệ.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         /// <response code="403">Không đủ quyền.</response>
@@ -234,22 +282,25 @@ namespace AptCare.Api.Controllers
         /// Lấy lịch hẹn sửa chữa của kỹ thuật viên trong khoảng thời gian.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** 👷 TechnicianLead (Trưởng bộ phận kỹ thuật).  
-        /// Dùng để xem lịch hẹn của **một kỹ thuật viên cụ thể** trong khoảng thời gian nhất định.  
-        /// 
-        /// **Tham số bắt buộc:**
-        /// - `fromDate`: ngày bắt đầu (`yyyy-MM-dd`)
-        /// - `toDate`: ngày kết thúc (`yyyy-MM-dd`)
-        /// 
-        /// **Tham số tùy chọn:**
-        /// - `technicianId`: ID kỹ thuật viên (nếu bỏ trống, lấy toàn bộ)
-        /// 
-        /// Kết quả được nhóm theo ngày và chia theo ca làm việc (slot).
+        /// <b>Chỉ role:</b> TechnicianLead, Manager<br/>
+        /// Dùng để xem lịch hẹn của một kỹ thuật viên cụ thể hoặc toàn bộ trong khoảng thời gian nhất định.<br/>
+        /// <b>Kết quả:</b> Nhóm theo ngày và chia theo ca làm việc (slot).
         /// </remarks>
         /// <param name="technicianId">ID kỹ thuật viên (tùy chọn).</param>
-        /// <param name="fromDate">Ngày bắt đầu.</param>
-        /// <param name="toDate">Ngày kết thúc.</param>
-        /// <returns>Danh sách lịch hẹn theo ngày và ca làm việc.</returns>
+        /// <param name="fromDate">Ngày bắt đầu (định dạng yyyy-MM-dd).</param>
+        /// <param name="toDate">Ngày kết thúc (định dạng yyyy-MM-dd).</param>
+        /// <returns>
+        /// <b>TechnicianAppointmentScheduleDto[]:</b>
+        /// <ul>
+        ///   <li><b>Date</b>: Ngày của lịch hẹn.</li>
+        ///   <li><b>Slots</b>: Danh sách ca làm việc trong ngày đó.</li>
+        /// </ul>
+        /// <b>SlotAppointmentDto:</b>
+        /// <ul>
+        ///   <li><b>SlotId</b>: ID ca làm việc.</li>
+        ///   <li><b>Appointments</b>: Danh sách lịch hẹn trong ca (xem <b>AppointmentDto</b>).</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về danh sách lịch hẹn.</response>
         /// <response code="400">Ngày không hợp lệ.</response>
         /// <response code="401">Không có quyền truy cập.</response>
@@ -274,19 +325,26 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Lấy lịch hẹn sửa chữa của **chính kỹ thuật viên đang đăng nhập** trong khoảng thời gian.
+        /// Lấy lịch hẹn sửa chữa của chính kỹ thuật viên đang đăng nhập trong khoảng thời gian.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** 👷 Technician.  
+        /// <b>Chỉ role:</b> Technician<br/>
         /// Dùng cho kỹ thuật viên xem lịch làm việc của mình theo ngày và slot.
-        /// 
-        /// **Tham số bắt buộc:**
-        /// - `fromDate`: ngày bắt đầu (`yyyy-MM-dd`)
-        /// - `toDate`: ngày kết thúc (`yyyy-MM-dd`)
         /// </remarks>
-        /// <param name="fromDate">Ngày bắt đầu.</param>
-        /// <param name="toDate">Ngày kết thúc.</param>
-        /// <returns>Lịch hẹn của kỹ thuật viên hiện tại.</returns>
+        /// <param name="fromDate">Ngày bắt đầu (định dạng yyyy-MM-dd).</param>
+        /// <param name="toDate">Ngày kết thúc (định dạng yyyy-MM-dd).</param>
+        /// <returns>
+        /// <b>TechnicianAppointmentScheduleDto[]:</b>
+        /// <ul>
+        ///   <li><b>Date</b>: Ngày của lịch hẹn.</li>
+        ///   <li><b>Slots</b>: Danh sách ca làm việc trong ngày đó.</li>
+        /// </ul>
+        /// <b>SlotAppointmentDto:</b>
+        /// <ul>
+        ///   <li><b>SlotId</b>: ID ca làm việc.</li>
+        ///   <li><b>Appointments</b>: Danh sách lịch hẹn trong ca (xem <b>AppointmentDto</b>).</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về danh sách lịch hẹn.</response>
         /// <response code="400">Ngày không hợp lệ.</response>
         /// <response code="401">Không có quyền truy cập.</response>
@@ -312,6 +370,12 @@ namespace AptCare.Api.Controllers
         /// <summary>
         /// Kỹ thuật viên check-in để bắt đầu buổi hẹn.
         /// </summary>
+        /// <remarks>
+        /// <b>Chỉ role:</b> Technician<br/>
+        /// Gọi khi kỹ thuật viên đến địa điểm và bắt đầu buổi hẹn.
+        /// </remarks>
+        /// <param name="id">ID lịch hẹn cần check-in.</param>
+        /// <returns>Thông báo check-in thành công.</returns>
         [HttpPost("{id}/check-in")]
         [Authorize(Roles = nameof(AccountRole.Technician))]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
@@ -324,6 +388,12 @@ namespace AptCare.Api.Controllers
         /// <summary>
         /// Bắt đầu thi công sửa chữa.
         /// </summary>
+        /// <remarks>
+        /// <b>Chỉ role:</b> Technician<br/>
+        /// Gọi khi kỹ thuật viên bắt đầu thực hiện công việc sửa chữa.
+        /// </remarks>
+        /// <param name="id">ID lịch hẹn cần bắt đầu sửa chữa.</param>
+        /// <returns>Thông báo bắt đầu sửa chữa thành công.</returns>
         [HttpPost("{id}/start-repair")]
         [Authorize(Roles = nameof(AccountRole.Technician))]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
@@ -337,15 +407,19 @@ namespace AptCare.Api.Controllers
         /// Hoàn thành lịch hẹn.
         /// </summary>
         /// <remarks>
-        /// Gọi khi kỹ thuật viên hoàn tất công việc tại lịch hẹn.
-        /// - `note`: ghi chú hoàn thành (tùy chọn).
-        /// - `hasNextAppointment`: nếu true sẽ tạo tracking chuyển Request sang trạng thái Scheduling.
+        /// <b>Chỉ role:</b> Technician, TechnicianLead<br/>
+        /// Gọi khi kỹ thuật viên hoàn tất công việc tại lịch hẹn.<br/>
+        /// <ul>
+        ///   <li><b>note</b>: Ghi chú hoàn thành (tùy chọn).</li>
+        ///   <li><b>hasNextAppointment</b>: Nếu true sẽ tạo tracking chuyển Request sang trạng thái Scheduling.</li>
+        ///   <li><b>acceptanceTime</b>: Thời gian nghiệm thu (tùy chọn).</li>
+        /// </ul>
         /// </remarks>
         /// <param name="id">ID lịch hẹn cần hoàn thành.</param>
-        /// <param name="note">Ghi chú.</param>
+        /// <param name="note">Ghi chú hoàn thành (tùy chọn).</param>
         /// <param name="hasNextAppointment">Có lịch hẹn tiếp theo không.</param>
-        /// <param name="acceptanceTime">Thời gian nghiêm thu.</param>
-        /// <returns>True nếu hoàn thành thành công.</returns>
+        /// <param name="acceptanceTime">Thời gian nghiệm thu (tùy chọn).</param>
+        /// <returns>Thông báo hoàn thành thành công.</returns>
         /// <response code="200">Hoàn thành thành công.</response>
         /// <response code="400">Yêu cầu không hợp lệ hoặc chuyển trạng thái không hợp lệ.</response>
         /// <response code="401">Không có quyền truy cập.</response>

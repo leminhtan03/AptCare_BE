@@ -7,14 +7,12 @@ using AptCare.Repository.Repositories;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.BuildingDtos;
-using AptCare.Service.Dtos.TechniqueDto;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.Globalization;
 using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
@@ -49,13 +47,12 @@ namespace AptCare.Service.Services.Implements
 
             await _unitOfWork.GetRepository<Apartment>().InsertAsync(apartment);
             await _unitOfWork.CommitAsync();
-            
+
             // Clear cache after create
             await _cacheService.RemoveByPrefixAsync("apartment");
-            
+
             return "Tạo căn hộ mới thành công";
         }
-
         public async Task<string> UpdateApartmentAsync(int id, ApartmentUpdateDto dto)
         {
             var apartment = await _unitOfWork.GetRepository<Apartment>()
@@ -84,15 +81,14 @@ namespace AptCare.Service.Services.Implements
             _mapper.Map(dto, apartment);
             _unitOfWork.GetRepository<Apartment>().UpdateAsync(apartment);
             await _unitOfWork.CommitAsync();
-            
+
             // Clear cache after update
             await _cacheService.RemoveAsync($"apartment:{id}");
             await _cacheService.RemoveByPrefixAsync("apartment:list");
             await _cacheService.RemoveByPrefixAsync("apartment:paginate");
-            
+
             return "Cập nhật căn hộ thành công";
         }
-
         public async Task<string> DeleteApartmentAsync(int id)
         {
             var apartment = await _unitOfWork.GetRepository<Apartment>()
@@ -103,13 +99,12 @@ namespace AptCare.Service.Services.Implements
 
             _unitOfWork.GetRepository<Apartment>().DeleteAsync(apartment);
             await _unitOfWork.CommitAsync();
-            
+
             // Clear cache after delete
             await _cacheService.RemoveByPrefixAsync("apartment");
-            
+
             return "Xóa căn hộ thành công";
         }
-
         public async Task<ApartmentDto> GetApartmentByIdAsync(int id)
         {
             var cacheKey = $"apartment:{id}";
@@ -128,15 +123,14 @@ namespace AptCare.Service.Services.Implements
                                .ThenInclude(x => x.Account));
             if (apt == null)
                 throw new AppValidationException("Căn hộ không tồn tại.", StatusCodes.Status404NotFound);
-                
+
             await LoadUserProfileImagesAsync(apt);
-            
+
             // Cache for 20 minutes
             await _cacheService.SetAsync(cacheKey, apt, TimeSpan.FromMinutes(20));
-            
+
             return apt;
         }
-
         public async Task<IPaginate<ApartmentDto>> GetPaginateApartmentAsync(PaginateDto dto, int? floorId)
         {
             int page = dto.page > 0 ? dto.page : 1;
@@ -185,16 +179,15 @@ namespace AptCare.Service.Services.Implements
                 page: page,
                 size: size
             );
-            
+
             foreach (var apartment in result.Items)
                 await LoadUserProfileImagesAsync(apartment);
-            
+
             // Cache for 10 minutes
             await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(10));
-            
+
             return result;
         }
-
         public async Task<IEnumerable<ApartmentBasicDto>> GetApartmentsByFloorAsync(int floorId)
         {
             var cacheKey = $"apartment:list:by_floor:{floorId}";
@@ -212,13 +205,12 @@ namespace AptCare.Service.Services.Implements
                                .Include(x => x.UserApartments),
                 orderBy: o => o.OrderBy(x => x.Room)
             );
-            
+
             // Cache for 30 minutes
             await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(30));
-            
+
             return result;
         }
-
         private Func<IQueryable<Apartment>, IOrderedQueryable<Apartment>> BuildOrderBy(string sortBy)
         {
             if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.ApartmentId);
@@ -230,9 +222,6 @@ namespace AptCare.Service.Services.Implements
                 _ => q => q.OrderByDescending(p => p.Room) // Default sort
             };
         }
-
-
-
         public async Task<ApartmentDto> UpadteUserDataForAptAsync(int AptId, UpdateApartmentWithResidentDataDto dto)
         {
             var aptRepo = _unitOfWork.GetRepository<Apartment>();
@@ -263,7 +252,7 @@ namespace AptCare.Service.Services.Implements
                 }
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
-                
+
                 // Clear cache after update
                 await _cacheService.RemoveAsync($"apartment:{AptId}");
                 await _cacheService.RemoveByPrefixAsync("apartment:list");
@@ -361,7 +350,7 @@ namespace AptCare.Service.Services.Implements
                     Status = ActiveStatus.Active,
                     CreatedAt = DateTime.Now
                 };
-               await uaRepo.InsertAsync(newUserApartment);
+                await uaRepo.InsertAsync(newUserApartment);
             }
             foreach (var userId in usersToUpdate)
             {
@@ -419,7 +408,6 @@ namespace AptCare.Service.Services.Implements
                     $"Các User ID sau không tồn tại hoặc đã bị vô hiệu hóa: {string.Join(", ", missingUserIds)}");
             }
         }
-
         private void ValidateMemberLimit(Apartment apartment, HashSet<int> existingUserIds, HashSet<int> newUserIds)
         {
             var finalMemberCount = newUserIds.Count;
@@ -442,7 +430,6 @@ namespace AptCare.Service.Services.Implements
             var currentOwner = existingUserApartments.FirstOrDefault(ua =>
                 ua.RoleInApartment == RoleInApartmentType.Owner);
         }
-
         private async Task LoadUserProfileImagesAsync(ApartmentDto apartment)
         {
             var userIds = apartment.Users?.Select(ua => ua.User.UserId).ToList() ?? new List<int>();

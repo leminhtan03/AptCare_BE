@@ -21,22 +21,38 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách đối tượng khu vực chung có phân trang, tìm kiếm và sắp xếp.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.    
-        ///  
-        /// **Tham số phân trang (PaginateDto):**
-        /// - <b>page</b>: Số trang hiện tại (bắt đầu từ 1).  
-        /// - <b>size</b>: Số bản ghi mỗi trang.  
-        /// - <b>search</b>: Từ khóa tìm kiếm (theo tên, mô tả).  
-        /// - <b>filter</b>: Lọc theo trạng thái (Active/Inactive).  
-        /// - <b>sortBy</b>: Tiêu chí sắp xếp kết quả:
-        ///   - <b>name</b>: Sắp xếp theo tên tăng dần.  
-        ///   - <b>name_desc</b>: Sắp xếp theo tên giảm dần.  
-        ///   - <b>common_area</b>: Sắp xếp theo ID khu vực chung tăng dần.  
-        ///   - <b>common_area_desc</b>: Sắp xếp theo ID khu vực chung giảm dần.  
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.<br/>
+        /// <b>Tham số phân trang (<c>PaginateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>page</b>: Số trang hiện tại (bắt đầu từ 1).</li>
+        ///   <li><b>size</b>: Số bản ghi mỗi trang.</li>
+        ///   <li><b>search</b>: Từ khóa tìm kiếm (theo tên, mô tả).</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái (Active/Inactive).</li>
+        ///   <li><b>sortBy</b>: Tiêu chí sắp xếp (name, name_desc, common_area, common_area_desc).</li>
+        /// </ul>
+        /// <b>commonAreaId</b>: ID khu vực chung (tùy chọn để lọc theo khu vực chung cụ thể).
         /// </remarks>
-        /// <param name="dto">Thông tin phân trang, tìm kiếm, sắp xếp và lọc.</param>
-        /// <param name="commonAreaId">ID khu vực chung (tùy chọn để lọc theo khu vực chung cụ thể).</param>
-        /// <returns>Danh sách đối tượng khu vực chung kèm thông tin phân trang.</returns>
+        /// <param name="dto">
+        /// <b>PaginateDto:</b>
+        /// <ul>
+        ///   <li><b>page</b>: Số trang hiện tại.</li>
+        ///   <li><b>size</b>: Số bản ghi mỗi trang.</li>
+        ///   <li><b>search</b>: Từ khóa tìm kiếm.</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái.</li>
+        ///   <li><b>sortBy</b>: Tiêu chí sắp xếp.</li>
+        /// </ul>
+        /// </param>
+        /// <param name="commonAreaId">ID khu vực chung (tùy chọn để lọc).</param>
+        /// <returns>
+        /// <b>IPaginate&lt;CommonAreaObjectDto&gt;:</b>
+        /// <ul>
+        ///   <li><b>CommonAreaObjectId</b>: ID đối tượng khu vực chung.</li>
+        ///   <li><b>Name</b>: Tên đối tượng.</li>
+        ///   <li><b>Description</b>: Mô tả đối tượng.</li>
+        ///   <li><b>Status</b>: Trạng thái (Active/Inactive).</li>
+        ///   <li><b>CommonArea</b>: Thông tin khu vực chung liên kết.</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về danh sách đối tượng khu vực chung.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet]
@@ -53,12 +69,18 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách đối tượng theo ID khu vực chung.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
-        ///  
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.<br/>
         /// Dùng khi cần hiển thị các đối tượng thuộc một khu vực chung cụ thể.
         /// </remarks>
         /// <param name="commonAreaId">ID của khu vực chung cần lấy danh sách đối tượng.</param>
-        /// <returns>Danh sách đối tượng thuộc khu vực chung đó.</returns>
+        /// <returns>
+        /// <b>CommonAreaObjectBasicDto[]:</b>
+        /// <ul>
+        ///   <li><b>CommonAreaObjectId</b>: ID đối tượng khu vực chung.</li>
+        ///   <li><b>Name</b>: Tên đối tượng.</li>
+        ///   <li><b>Status</b>: Trạng thái đối tượng.</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về danh sách đối tượng theo khu vực chung.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet("by-common-area/{commonAreaId}")]
@@ -75,10 +97,19 @@ namespace AptCare.Api.Controllers
         /// Lấy thông tin chi tiết của một đối tượng khu vực chung theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** tất cả người dùng đã đăng nhập.  
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.
         /// </remarks>
         /// <param name="id">ID của đối tượng khu vực chung cần lấy thông tin.</param>
-        /// <returns>Thông tin chi tiết của đối tượng khu vực chung.</returns>
+        /// <returns>
+        /// <b>CommonAreaObjectDto:</b>
+        /// <ul>
+        ///   <li><b>CommonAreaObjectId</b>: ID đối tượng khu vực chung.</li>
+        ///   <li><b>Name</b>: Tên đối tượng.</li>
+        ///   <li><b>Description</b>: Mô tả đối tượng.</li>
+        ///   <li><b>Status</b>: Trạng thái (Active/Inactive).</li>
+        ///   <li><b>CommonArea</b>: Thông tin khu vực chung liên kết.</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Trả về thông tin đối tượng khu vực chung.</response>
         /// <response code="404">Không tìm thấy đối tượng khu vực chung.</response>
         /// <response code="401">Không có quyền truy cập.</response>
@@ -97,12 +128,23 @@ namespace AptCare.Api.Controllers
         /// Tạo mới một đối tượng khu vực chung.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
-        /// Dữ liệu yêu cầu gồm: tên đối tượng, mô tả, ID khu vực chung.
+        /// <b>Chỉ role:</b> Manager<br/>
+        /// <b>Dữ liệu yêu cầu (<c>CommonAreaObjectCreateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>CommonAreaId</b>: ID khu vực chung liên kết (bắt buộc).</li>
+        ///   <li><b>Name</b>: Tên đối tượng (bắt buộc, tối đa 256 ký tự).</li>
+        ///   <li><b>Description</b>: Mô tả đối tượng (tối đa 1000 ký tự, tùy chọn).</li>
+        /// </ul>
         /// Trạng thái sẽ tự động được đặt là Active khi tạo mới.
         /// </remarks>
-        /// <param name="dto">Thông tin đối tượng khu vực chung cần tạo.</param>
+        /// <param name="dto">
+        /// <b>CommonAreaObjectCreateDto:</b>
+        /// <ul>
+        ///   <li><b>CommonAreaId</b>: ID khu vực chung liên kết.</li>
+        ///   <li><b>Name</b>: Tên đối tượng.</li>
+        ///   <li><b>Description</b>: Mô tả đối tượng.</li>
+        /// </ul>
+        /// </param>
         /// <returns>Thông báo tạo đối tượng khu vực chung thành công.</returns>
         /// <response code="201">Đối tượng khu vực chung được tạo thành công.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
@@ -128,12 +170,25 @@ namespace AptCare.Api.Controllers
         /// Cập nhật thông tin đối tượng khu vực chung theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
-        /// Cập nhật thông tin như: tên, mô tả, trạng thái, ID khu vực chung.
+        /// <b>Chỉ role:</b> Manager<br/>
+        /// <b>Dữ liệu cập nhật (<c>CommonAreaObjectUpdateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>CommonAreaId</b>: ID khu vực chung liên kết (bắt buộc).</li>
+        ///   <li><b>Name</b>: Tên đối tượng (bắt buộc, tối đa 256 ký tự).</li>
+        ///   <li><b>Description</b>: Mô tả đối tượng (tối đa 1000 ký tự, tùy chọn).</li>
+        ///   <li><b>Status</b>: Trạng thái đối tượng (Active/Inactive).</li>
+        /// </ul>
         /// </remarks>
         /// <param name="id">ID của đối tượng khu vực chung cần cập nhật.</param>
-        /// <param name="dto">Thông tin đối tượng khu vực chung cập nhật.</param>
+        /// <param name="dto">
+        /// <b>CommonAreaObjectUpdateDto:</b>
+        /// <ul>
+        ///   <li><b>CommonAreaId</b>: ID khu vực chung liên kết.</li>
+        ///   <li><b>Name</b>: Tên đối tượng.</li>
+        ///   <li><b>Description</b>: Mô tả đối tượng.</li>
+        ///   <li><b>Status</b>: Trạng thái đối tượng.</li>
+        /// </ul>
+        /// </param>
         /// <returns>Thông báo cập nhật thành công.</returns>
         /// <response code="200">Cập nhật đối tượng khu vực chung thành công.</response>
         /// <response code="404">Không tìm thấy đối tượng khu vực chung hoặc khu vực chung.</response>
@@ -159,8 +214,7 @@ namespace AptCare.Api.Controllers
         /// Xóa một đối tượng khu vực chung theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
+        /// <b>Chỉ role:</b> Manager<br/>
         /// Xóa đối tượng khu vực chung sẽ không ảnh hưởng đến các dữ liệu khác ngoài quan hệ trực tiếp (nếu có).
         /// </remarks>
         /// <param name="id">ID của đối tượng khu vực chung cần xóa.</param>
@@ -185,10 +239,9 @@ namespace AptCare.Api.Controllers
         /// Kích hoạt đối tượng khu vực chung.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
-        /// Chuyển trạng thái của đối tượng khu vực chung từ Inactive sang Active.
-        /// Lưu ý: Không thể kích hoạt nếu khu vực chung cha đã bị vô hiệu hóa.
+        /// <b>Chỉ role:</b> Manager<br/>
+        /// Chuyển trạng thái của đối tượng khu vực chung từ Inactive sang Active.<br/>
+        /// <b>Lưu ý:</b> Không thể kích hoạt nếu khu vực chung cha đã bị vô hiệu hóa.
         /// </remarks>
         /// <param name="id">ID của đối tượng khu vực chung cần kích hoạt.</param>
         /// <returns>Thông báo kích hoạt thành công.</returns>
@@ -214,8 +267,7 @@ namespace AptCare.Api.Controllers
         /// Vô hiệu hóa đối tượng khu vực chung.
         /// </summary>
         /// <remarks>
-        /// **Chỉ role:** Manager  
-        ///  
+        /// <b>Chỉ role:</b> Manager<br/>
         /// Chuyển trạng thái của đối tượng khu vực chung từ Active sang Inactive.
         /// </remarks>
         /// <param name="id">ID của đối tượng khu vực chung cần vô hiệu hóa.</param>

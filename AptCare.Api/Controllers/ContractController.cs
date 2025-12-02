@@ -18,32 +18,63 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Tạo hợp đồng cho yêu cầu sửa chữa với file PDF đính kèm
+        /// Tạo hợp đồng cho yêu cầu sửa chữa với file PDF đính kèm.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Tạo hợp đồng thuê ngoài cho yêu cầu sửa chữa.
-        /// - Tự động upload file PDF hợp đồng lên AWS S3.
-        /// - Lưu thông tin file vào bảng Media.
-        /// 
-        /// **Ràng buộc:**  
-        /// - Yêu cầu sửa chữa phải tồn tại.
-        /// - Báo cáo kiểm tra gần nhất phải có giải pháp là **Outsource** (Thuê ngoài).
-        /// - Mã hợp đồng phải duy nhất.
-        /// - File phải là định dạng PDF.
-        /// 
-        /// **Tham số:**  
-        /// - `RepairRequestId`: ID yêu cầu sửa chữa (bắt buộc)
-        /// - `ContractorName`: Tên nhà thầu (bắt buộc)
-        /// - `ContractCode`: Mã hợp đồng (bắt buộc, duy nhất)
-        /// - `StartDate`: Ngày bắt đầu hợp đồng (bắt buộc)
-        /// - `EndDate`: Ngày kết thúc hợp đồng (tùy chọn)
-        /// - `Amount`: Giá trị hợp đồng (tùy chọn)
-        /// - `Description`: Mô tả hợp đồng (bắt buộc)
-        /// - `ContractFile`: File PDF hợp đồng (bắt buộc)
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Tạo hợp đồng thuê ngoài cho yêu cầu sửa chữa.</li>
+        ///   <li>Tự động upload file PDF hợp đồng lên AWS S3.</li>
+        ///   <li>Lưu thông tin file vào bảng Media.</li>
+        /// </ul>
+        /// <b>Ràng buộc:</b>
+        /// <ul>
+        ///   <li>Yêu cầu sửa chữa phải tồn tại.</li>
+        ///   <li>Báo cáo kiểm tra gần nhất phải có giải pháp là <b>Outsource</b> (Thuê ngoài).</li>
+        ///   <li>Mã hợp đồng phải duy nhất.</li>
+        ///   <li>File phải là định dạng PDF.</li>
+        /// </ul>
+        /// <b>Tham số (<c>ContractCreateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>RepairRequestId</b>: ID yêu cầu sửa chữa (bắt buộc).</li>
+        ///   <li><b>ContractorName</b>: Tên nhà thầu (bắt buộc).</li>
+        ///   <li><b>ContractCode</b>: Mã hợp đồng (bắt buộc, duy nhất).</li>
+        ///   <li><b>StartDate</b>: Ngày bắt đầu hợp đồng (bắt buộc).</li>
+        ///   <li><b>EndDate</b>: Ngày kết thúc hợp đồng (tùy chọn).</li>
+        ///   <li><b>Amount</b>: Giá trị hợp đồng (tùy chọn).</li>
+        ///   <li><b>Description</b>: Mô tả hợp đồng (bắt buộc).</li>
+        ///   <li><b>ContractFile</b>: File PDF hợp đồng (bắt buộc).</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="dto">Thông tin hợp đồng và file đính kèm</param>
-        /// <returns>Thông tin hợp đồng đã tạo</returns>
+        /// <param name="dto">
+        /// <b>ContractCreateDto:</b>
+        /// <ul>
+        ///   <li><b>RepairRequestId</b>: ID yêu cầu sửa chữa liên kết.</li>
+        ///   <li><b>ContractorName</b>: Tên nhà thầu.</li>
+        ///   <li><b>ContractCode</b>: Mã hợp đồng.</li>
+        ///   <li><b>StartDate</b>: Ngày bắt đầu hợp đồng.</li>
+        ///   <li><b>EndDate</b>: Ngày kết thúc hợp đồng.</li>
+        ///   <li><b>Amount</b>: Giá trị hợp đồng.</li>
+        ///   <li><b>Description</b>: Mô tả hợp đồng.</li>
+        ///   <li><b>ContractFile</b>: File PDF hợp đồng.</li>
+        /// </ul>
+        /// </param>
+        /// <returns>
+        /// <b>ContractDto:</b>
+        /// <ul>
+        ///   <li><b>ContractId</b>: ID hợp đồng.</li>
+        ///   <li><b>RepairRequestId</b>: ID yêu cầu sửa chữa liên kết.</li>
+        ///   <li><b>ContractorName</b>: Tên nhà thầu.</li>
+        ///   <li><b>ContractCode</b>: Mã hợp đồng.</li>
+        ///   <li><b>StartDate</b>: Ngày bắt đầu hợp đồng.</li>
+        ///   <li><b>EndDate</b>: Ngày kết thúc hợp đồng.</li>
+        ///   <li><b>Amount</b>: Giá trị hợp đồng.</li>
+        ///   <li><b>Description</b>: Mô tả hợp đồng.</li>
+        ///   <li><b>Status</b>: Trạng thái hợp đồng (Active/Inactive).</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo hợp đồng.</li>
+        ///   <li><b>ContractFile</b>: Thông tin file PDF hợp đồng (MediaDto).</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Tạo hợp đồng thành công</response>
         /// <response code="400">Dữ liệu không hợp lệ hoặc không đủ điều kiện tạo hợp đồng</response>
         /// <response code="404">Không tìm thấy yêu cầu sửa chữa</response>
@@ -63,19 +94,22 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Kiểm tra xem yêu cầu sửa chữa có thể tạo hợp đồng không
+        /// Kiểm tra xem yêu cầu sửa chữa có thể tạo hợp đồng không.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Kiểm tra báo cáo kiểm tra gần nhất của yêu cầu sửa chữa.
-        /// - Trả về `true` nếu báo cáo có giải pháp là **Outsource** và đã được phê duyệt.
-        /// 
-        /// **Use case:**  
-        /// - Validate trước khi hiển thị form tạo hợp đồng.
-        /// - Kiểm tra điều kiện nghiệp vụ.
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Kiểm tra báo cáo kiểm tra gần nhất của yêu cầu sửa chữa.</li>
+        ///   <li>Trả về <b>true</b> nếu báo cáo có giải pháp là <b>Outsource</b> và đã được phê duyệt.</li>
+        /// </ul>
+        /// <b>Use case:</b>
+        /// <ul>
+        ///   <li>Validate trước khi hiển thị form tạo hợp đồng.</li>
+        ///   <li>Kiểm tra điều kiện nghiệp vụ.</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="repairRequestId">ID yêu cầu sửa chữa</param>
-        /// <returns>True nếu có thể tạo hợp đồng, False nếu không</returns>
+        /// <param name="repairRequestId">ID yêu cầu sửa chữa.</param>
+        /// <returns>True nếu có thể tạo hợp đồng, False nếu không.</returns>
         /// <response code="200">Kiểm tra thành công</response>
         /// <response code="401">Không có quyền truy cập</response>
         [HttpGet("can-create/{repairRequestId}")]
@@ -89,19 +123,37 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Lấy thông tin chi tiết hợp đồng theo ID
+        /// Lấy thông tin chi tiết hợp đồng theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Trả về thông tin đầy đủ của hợp đồng.
-        /// - Bao gồm thông tin file PDF đính kèm.
-        /// - Có thể download file qua endpoint `/api/files/view/{key}`.
-        /// 
-        /// **Kết quả:**  
-        /// - `ContractFile`: Chứa `FilePath` (key trên S3) để download file.
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Trả về thông tin đầy đủ của hợp đồng.</li>
+        ///   <li>Bao gồm thông tin file PDF đính kèm.</li>
+        ///   <li>Có thể download file qua endpoint <c>/api/files/view/{key}</c>.</li>
+        /// </ul>
+        /// <b>Kết quả (<c>ContractDto</c>):</b>
+        /// <ul>
+        ///   <li><b>ContractFile</b>: Chứa <b>FilePath</b> (key trên S3) để download file.</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="id">ID hợp đồng</param>
-        /// <returns>Thông tin chi tiết hợp đồng</returns>
+        /// <param name="id">ID hợp đồng.</param>
+        /// <returns>
+        /// <b>ContractDto:</b>
+        /// <ul>
+        ///   <li><b>ContractId</b>: ID hợp đồng.</li>
+        ///   <li><b>RepairRequestId</b>: ID yêu cầu sửa chữa liên kết.</li>
+        ///   <li><b>ContractorName</b>: Tên nhà thầu.</li>
+        ///   <li><b>ContractCode</b>: Mã hợp đồng.</li>
+        ///   <li><b>StartDate</b>: Ngày bắt đầu hợp đồng.</li>
+        ///   <li><b>EndDate</b>: Ngày kết thúc hợp đồng.</li>
+        ///   <li><b>Amount</b>: Giá trị hợp đồng.</li>
+        ///   <li><b>Description</b>: Mô tả hợp đồng.</li>
+        ///   <li><b>Status</b>: Trạng thái hợp đồng (Active/Inactive).</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo hợp đồng.</li>
+        ///   <li><b>ContractFile</b>: Thông tin file PDF hợp đồng (MediaDto).</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Lấy thông tin thành công</response>
         /// <response code="404">Không tìm thấy hợp đồng</response>
         /// <response code="401">Không có quyền truy cập</response>
@@ -117,19 +169,37 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Lấy danh sách hợp đồng theo yêu cầu sửa chữa
+        /// Lấy danh sách hợp đồng theo yêu cầu sửa chữa.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Lấy tất cả hợp đồng liên quan đến một yêu cầu sửa chữa.
-        /// - Sắp xếp theo thời gian tạo giảm dần.
-        /// 
-        /// **Use case:**  
-        /// - Hiển thị lịch sử hợp đồng của một yêu cầu sửa chữa.
-        /// - Theo dõi các lần ký hợp đồng với nhà thầu.
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Lấy tất cả hợp đồng liên quan đến một yêu cầu sửa chữa.</li>
+        ///   <li>Sắp xếp theo thời gian tạo giảm dần.</li>
+        /// </ul>
+        /// <b>Use case:</b>
+        /// <ul>
+        ///   <li>Hiển thị lịch sử hợp đồng của một yêu cầu sửa chữa.</li>
+        ///   <li>Theo dõi các lần ký hợp đồng với nhà thầu.</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="repairRequestId">ID yêu cầu sửa chữa</param>
-        /// <returns>Danh sách hợp đồng</returns>
+        /// <param name="repairRequestId">ID yêu cầu sửa chữa.</param>
+        /// <returns>
+        /// <b>ContractDto[]:</b>
+        /// <ul>
+        ///   <li><b>ContractId</b>: ID hợp đồng.</li>
+        ///   <li><b>RepairRequestId</b>: ID yêu cầu sửa chữa liên kết.</li>
+        ///   <li><b>ContractorName</b>: Tên nhà thầu.</li>
+        ///   <li><b>ContractCode</b>: Mã hợp đồng.</li>
+        ///   <li><b>StartDate</b>: Ngày bắt đầu hợp đồng.</li>
+        ///   <li><b>EndDate</b>: Ngày kết thúc hợp đồng.</li>
+        ///   <li><b>Amount</b>: Giá trị hợp đồng.</li>
+        ///   <li><b>Description</b>: Mô tả hợp đồng.</li>
+        ///   <li><b>Status</b>: Trạng thái hợp đồng (Active/Inactive).</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo hợp đồng.</li>
+        ///   <li><b>ContractFile</b>: Thông tin file PDF hợp đồng (MediaDto).</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Lấy danh sách thành công</response>
         /// <response code="401">Không có quyền truy cập</response>
         [HttpGet("by-repair-request/{repairRequestId}")]
@@ -143,22 +213,49 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Lấy danh sách hợp đồng có phân trang và tìm kiếm
+        /// Lấy danh sách hợp đồng có phân trang và tìm kiếm.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Lấy danh sách hợp đồng với phân trang.
-        /// - Hỗ trợ tìm kiếm và lọc theo trạng thái.
-        /// 
-        /// **Tham số lọc:**  
-        /// - `page`: Số trang (mặc định = 1)
-        /// - `size`: Số bản ghi trên trang (mặc định = 10)
-        /// - `search`: Tìm kiếm theo mã hợp đồng, tên nhà thầu, mô tả
-        /// - `filter`: Lọc theo trạng thái (Active, Inactive)
-        /// - `sortBy`: Sắp xếp (id, id_desc, date, date_desc, code, code_desc)
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Lấy danh sách hợp đồng với phân trang.</li>
+        ///   <li>Hỗ trợ tìm kiếm và lọc theo trạng thái.</li>
+        /// </ul>
+        /// <b>Tham số lọc (<c>PaginateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>page</b>: Số trang (mặc định = 1).</li>
+        ///   <li><b>size</b>: Số bản ghi trên trang (mặc định = 10).</li>
+        ///   <li><b>search</b>: Tìm kiếm theo mã hợp đồng, tên nhà thầu, mô tả.</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái (Active, Inactive).</li>
+        ///   <li><b>sortBy</b>: Sắp xếp (id, id_desc, date, date_desc, code, code_desc).</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="dto">Tham số phân trang và lọc</param>
-        /// <returns>Danh sách hợp đồng có phân trang</returns>
+        /// <param name="dto">
+        /// <b>PaginateDto:</b>
+        /// <ul>
+        ///   <li><b>page</b>: Số trang hiện tại.</li>
+        ///   <li><b>size</b>: Số bản ghi mỗi trang.</li>
+        ///   <li><b>search</b>: Từ khóa tìm kiếm.</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái.</li>
+        ///   <li><b>sortBy</b>: Tiêu chí sắp xếp.</li>
+        /// </ul>
+        /// </param>
+        /// <returns>
+        /// <b>IPaginate&lt;ContractDto&gt;:</b>
+        /// <ul>
+        ///   <li><b>ContractId</b>: ID hợp đồng.</li>
+        ///   <li><b>RepairRequestId</b>: ID yêu cầu sửa chữa liên kết.</li>
+        ///   <li><b>ContractorName</b>: Tên nhà thầu.</li>
+        ///   <li><b>ContractCode</b>: Mã hợp đồng.</li>
+        ///   <li><b>StartDate</b>: Ngày bắt đầu hợp đồng.</li>
+        ///   <li><b>EndDate</b>: Ngày kết thúc hợp đồng.</li>
+        ///   <li><b>Amount</b>: Giá trị hợp đồng.</li>
+        ///   <li><b>Description</b>: Mô tả hợp đồng.</li>
+        ///   <li><b>Status</b>: Trạng thái hợp đồng (Active/Inactive).</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo hợp đồng.</li>
+        ///   <li><b>ContractFile</b>: Thông tin file PDF hợp đồng (MediaDto).</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Lấy danh sách thành công</response>
         /// <response code="401">Không có quyền truy cập</response>
         [HttpGet("paginate")]
@@ -172,24 +269,47 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Cập nhật thông tin hợp đồng
+        /// Cập nhật thông tin hợp đồng.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Cập nhật thông tin hợp đồng.
-        /// - Có thể thay thế file PDF hợp đồng.
-        /// 
-        /// **Ràng buộc:**  
-        /// - Không thể cập nhật hợp đồng đã bị vô hiệu hóa.
-        /// - File mới phải là định dạng PDF.
-        /// 
-        /// **Lưu ý:**  
-        /// - Khi upload file mới, file cũ sẽ bị đánh dấu Inactive.
-        /// - Tất cả tham số đều là optional.
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Cập nhật thông tin hợp đồng.</li>
+        ///   <li>Có thể thay thế file PDF hợp đồng.</li>
+        /// </ul>
+        /// <b>Ràng buộc:</b>
+        /// <ul>
+        ///   <li>Không thể cập nhật hợp đồng đã bị vô hiệu hóa.</li>
+        ///   <li>File mới phải là định dạng PDF.</li>
+        /// </ul>
+        /// <b>Lưu ý:</b>
+        /// <ul>
+        ///   <li>Khi upload file mới, file cũ sẽ bị đánh dấu Inactive.</li>
+        ///   <li>Tất cả tham số đều là optional.</li>
+        /// </ul>
+        /// <b>Tham số (<c>ContractUpdateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>ContractorName</b>: Tên nhà thầu (tùy chọn).</li>
+        ///   <li><b>StartDate</b>: Ngày bắt đầu hợp đồng (tùy chọn).</li>
+        ///   <li><b>EndDate</b>: Ngày kết thúc hợp đồng (tùy chọn).</li>
+        ///   <li><b>Amount</b>: Giá trị hợp đồng (tùy chọn).</li>
+        ///   <li><b>Description</b>: Mô tả hợp đồng (tùy chọn).</li>
+        ///   <li><b>ContractFile</b>: File PDF hợp đồng mới (tùy chọn).</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="id">ID hợp đồng</param>
-        /// <param name="dto">Thông tin cập nhật</param>
-        /// <returns>Thông báo cập nhật thành công</returns>
+        /// <param name="id">ID hợp đồng.</param>
+        /// <param name="dto">
+        /// <b>ContractUpdateDto:</b>
+        /// <ul>
+        ///   <li><b>ContractorName</b>: Tên nhà thầu.</li>
+        ///   <li><b>StartDate</b>: Ngày bắt đầu hợp đồng.</li>
+        ///   <li><b>EndDate</b>: Ngày kết thúc hợp đồng.</li>
+        ///   <li><b>Amount</b>: Giá trị hợp đồng.</li>
+        ///   <li><b>Description</b>: Mô tả hợp đồng.</li>
+        ///   <li><b>ContractFile</b>: File PDF hợp đồng mới.</li>
+        /// </ul>
+        /// </param>
+        /// <returns>Thông báo cập nhật thành công.</returns>
         /// <response code="200">Cập nhật thành công</response>
         /// <response code="400">Dữ liệu không hợp lệ hoặc hợp đồng đã vô hiệu hóa</response>
         /// <response code="404">Không tìm thấy hợp đồng</response>
@@ -209,22 +329,26 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Vô hiệu hóa hợp đồng
+        /// Vô hiệu hóa hợp đồng.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Đánh dấu hợp đồng là Inactive.
-        /// - Hợp đồng vẫn tồn tại trong hệ thống nhưng không hoạt động.
-        /// 
-        /// **Ràng buộc:**  
-        /// - Không thể vô hiệu hóa hợp đồng đã bị vô hiệu hóa.
-        /// 
-        /// **Use case:**  
-        /// - Hủy hợp đồng khi nhà thầu vi phạm.
-        /// - Kết thúc hợp đồng sớm.
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Đánh dấu hợp đồng là Inactive.</li>
+        ///   <li>Hợp đồng vẫn tồn tại trong hệ thống nhưng không hoạt động.</li>
+        /// </ul>
+        /// <b>Ràng buộc:</b>
+        /// <ul>
+        ///   <li>Không thể vô hiệu hóa hợp đồng đã bị vô hiệu hóa.</li>
+        /// </ul>
+        /// <b>Use case:</b>
+        /// <ul>
+        ///   <li>Hủy hợp đồng khi nhà thầu vi phạm.</li>
+        ///   <li>Kết thúc hợp đồng sớm.</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="id">ID hợp đồng</param>
-        /// <returns>Thông báo vô hiệu hóa thành công</returns>
+        /// <param name="id">ID hợp đồng.</param>
+        /// <returns>Thông báo vô hiệu hóa thành công.</returns>
         /// <response code="200">Vô hiệu hóa thành công</response>
         /// <response code="400">Hợp đồng đã bị vô hiệu hóa</response>
         /// <response code="404">Không tìm thấy hợp đồng</response>

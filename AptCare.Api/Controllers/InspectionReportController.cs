@@ -20,23 +20,69 @@ namespace AptCare.Api.Controllers
         /// Tạo báo cáo kiểm tra cho một lịch hẹn.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Tạo báo cáo kiểm tra dựa trên thông tin lịch hẹn.  
-        /// - Xác định loại lỗi (lỗi tòa nhà hoặc lỗi cư dân).  
-        /// - Ghi nhận giải pháp xử lý (sửa chữa, thay thế, thuê ngoài).  
-        /// - Lưu mô tả chi tiết và giải pháp đề xuất.
-        /// 
-        /// **Ràng buộc:**  
-        /// - `FaultOwner`: Chỉ chấp nhận giá trị enum `FaultType`:
-        ///   - `1` = BuildingFault (Lỗi tòa nhà)
-        ///   - `2` = ResidentFault (Lỗi cư dân)
-        /// - `SolutionType`: Chỉ chấp nhận giá trị enum `SolutionType`:
-        ///   - `1` = Repair (Sửa chữa)
-        ///   - `2` = Replacement (Thay thế)
-        ///   - `3` = Outsource (Thuê ngoài)
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Tạo báo cáo kiểm tra dựa trên thông tin lịch hẹn.</li>
+        ///   <li>Xác định loại lỗi (lỗi tòa nhà hoặc lỗi cư dân).</li>
+        ///   <li>Ghi nhận giải pháp xử lý (sửa chữa, thay thế, thuê ngoài).</li>
+        ///   <li>Lưu mô tả chi tiết và giải pháp đề xuất.</li>
+        /// </ul>
+        /// <b>Ràng buộc:</b>
+        /// <ul>
+        ///   <li><b>FaultOwner</b>: Chỉ chấp nhận giá trị enum <c>FaultType</c>:
+        ///     <ul>
+        ///       <li>1 = BuildingFault (Lỗi tòa nhà)</li>
+        ///       <li>2 = ResidentFault (Lỗi cư dân)</li>
+        ///     </ul>
+        ///   </li>
+        ///   <li><b>SolutionType</b>: Chỉ chấp nhận giá trị enum <c>SolutionType</c>:
+        ///     <ul>
+        ///       <li>1 = Repair (Sửa chữa)</li>
+        ///       <li>2 = Replacement (Thay thế)</li>
+        ///       <li>3 = Outsource (Thuê ngoài)</li>
+        ///     </ul>
+        ///   </li>
+        /// </ul>
+        /// <b>Tham số (<c>CreateInspectionReporDto</c>):</b>
+        /// <ul>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn liên kết (bắt buộc).</li>
+        ///   <li><b>FaultOwner</b>: Loại lỗi (enum, bắt buộc).</li>
+        ///   <li><b>SolutionType</b>: Loại giải pháp (enum, bắt buộc).</li>
+        ///   <li><b>Description</b>: Mô tả chi tiết lỗi.</li>
+        ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
+        ///   <li><b>Files</b>: Danh sách file đính kèm (hình ảnh/video, tùy chọn).</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="dto">Thông tin báo cáo kiểm tra bao gồm AppointmentId, FaultOwner (enum), SolutionType (enum), Description và Solution</param>
-        /// <returns>Thông báo xác nhận tạo báo cáo thành công</returns>
+        /// <param name="dto">
+        /// <b>CreateInspectionReporDto:</b>
+        /// <ul>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn liên kết.</li>
+        ///   <li><b>FaultOwner</b>: Loại lỗi (enum).</li>
+        ///   <li><b>SolutionType</b>: Loại giải pháp (enum).</li>
+        ///   <li><b>Description</b>: Mô tả chi tiết lỗi.</li>
+        ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
+        ///   <li><b>Files</b>: Danh sách file đính kèm.</li>
+        /// </ul>
+        /// </param>
+        /// <returns>
+        /// <b>InspectionReportDto:</b>
+        /// <ul>
+        ///   <li><b>InspectionReportId</b>: ID báo cáo kiểm tra.</li>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn liên kết.</li>
+        ///   <li><b>UserId</b>: ID kỹ thuật viên tạo báo cáo.</li>
+        ///   <li><b>FaultOwner</b>: Loại lỗi.</li>
+        ///   <li><b>SolutionType</b>: Loại giải pháp.</li>
+        ///   <li><b>Description</b>: Mô tả chi tiết lỗi.</li>
+        ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
+        ///   <li><b>Status</b>: Trạng thái báo cáo.</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo báo cáo.</li>
+        ///   <li><b>AreaName</b>: Tên khu vực liên quan.</li>
+        ///   <li><b>Technican</b>: Thông tin kỹ thuật viên.</li>
+        ///   <li><b>Medias</b>: Danh sách media đính kèm.</li>
+        ///   <li><b>ReportApprovals</b>: Danh sách phê duyệt báo cáo.</li>
+        ///   <li><b>Appointment</b>: Thông tin lịch hẹn liên kết.</li>
+        /// </ul>
+        /// </returns>
         [HttpPost("inspection-report")]
         [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -53,25 +99,33 @@ namespace AptCare.Api.Controllers
         /// Lấy thông tin chi tiết của báo cáo kiểm tra theo ID.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Truy xuất thông tin chi tiết của một báo cáo kiểm tra cụ thể.  
-        /// - Hiển thị thông tin bao gồm: loại lỗi, giải pháp xử lý, mô tả, trạng thái báo cáo.  
-        /// - Bao gồm thông tin lịch hẹn liên quan và kỹ thuật viên thực hiện.
-        /// 
-        /// **Kết quả trả về:**  
-        /// - `InspectionReportId`: ID của báo cáo kiểm tra
-        /// - `AppointmentId`: ID lịch hẹn liên quan
-        /// - `FaultOwner`: Loại lỗi (BuildingFault = 1, ResidentFault = 2)
-        /// - `SolutionType`: Loại giải pháp (Repair = 1, Replacement = 2, Outsource = 3)
-        /// - `Description`: Mô tả chi tiết lỗi
-        /// - `Solution`: Giải pháp đề xuất
-        /// - `Status`: Trạng thái báo cáo
-        /// - `CreatedAt`: Thời gian tạo báo cáo
-        /// - `AreaName`: Tên khu vực
-        /// - `Technican`: Thông tin kỹ thuật viên
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Truy xuất thông tin chi tiết của một báo cáo kiểm tra cụ thể.</li>
+        ///   <li>Hiển thị thông tin bao gồm: loại lỗi, giải pháp xử lý, mô tả, trạng thái báo cáo.</li>
+        ///   <li>Bao gồm thông tin lịch hẹn liên quan và kỹ thuật viên thực hiện.</li>
+        /// </ul>
+        /// <b>Kết quả (<c>InspectionReportDetailDto</c>):</b>
+        /// <ul>
+        ///   <li><b>InspectionReportId</b>: ID báo cáo kiểm tra.</li>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn liên quan.</li>
+        ///   <li><b>UserId</b>: ID kỹ thuật viên tạo báo cáo.</li>
+        ///   <li><b>FaultOwner</b>: Loại lỗi.</li>
+        ///   <li><b>SolutionType</b>: Loại giải pháp.</li>
+        ///   <li><b>Description</b>: Mô tả chi tiết lỗi.</li>
+        ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
+        ///   <li><b>Status</b>: Trạng thái báo cáo.</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo báo cáo.</li>
+        ///   <li><b>AreaName</b>: Tên khu vực liên quan.</li>
+        ///   <li><b>Technican</b>: Thông tin kỹ thuật viên.</li>
+        ///   <li><b>Medias</b>: Danh sách media đính kèm.</li>
+        ///   <li><b>ReportApprovals</b>: Danh sách phê duyệt báo cáo.</li>
+        ///   <li><b>Appointment</b>: Thông tin lịch hẹn liên kết.</li>
+        ///   <li><b>Invoice</b>: Thông tin hóa đơn liên quan (nếu có).</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="id">ID của báo cáo kiểm tra cần lấy thông tin</param>
-        /// <returns>Thông tin chi tiết của báo cáo kiểm tra</returns>
+        /// <param name="id">ID của báo cáo kiểm tra cần lấy thông tin.</param>
+        /// <returns>Thông tin chi tiết của báo cáo kiểm tra.</returns>
         [HttpGet("inspection-report/{id}")]
         [ProducesResponseType(typeof(InspectionReportDetailDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -88,50 +142,58 @@ namespace AptCare.Api.Controllers
         /// </summary>
         /// <remarks>
         /// <b>Phân quyền &amp; hành vi theo role:</b>
-        /// <list type="bullet">
-        ///   <item>🔧 <b>Technician (Kỹ thuật viên):</b> xem danh sách báo cáo do mình tạo.</item>
-        ///   <item>🧑‍💼 <b>TechnicianLead / Manager:</b> xem và quản lý toàn bộ báo cáo.</item>
-        ///   <item>👨‍💻 <b>Admin:</b> xem toàn bộ báo cáo trong hệ thống.</item>
-        /// </list>
-        /// <br/>
-        /// <b>Tham số lọc &amp; tìm kiếm:</b>
-        /// <list type="bullet">
-        ///   <item><c>page</c>: Số trang (mặc định = 1).</item>
-        ///   <item><c>size</c>: Số bản ghi trên mỗi trang (mặc định = 10).</item>
-        ///   <item><c>sortBy</c>: Sắp xếp theo trường (id, id_desc, date, date_desc).</item>
-        ///   <item><c>search</c>: Tìm kiếm theo Description, Solution, AreaName.</item>
-        ///   <item><c>filter</c>: Lọc theo trạng thái (Pending, Approved, Rejected).</item>
-        ///   <item><c>FaultType</c>: Lọc theo loại lỗi:
-        ///     <list type="bullet">
-        ///     <item><description>BuildingFault (1) - Lỗi tòa nhà</description></item>
-        ///     <item><description>ResidentFault (2) - Lỗi cư dân</description></item>
-        ///     </list>
-        ///   </item>
-        ///   <item><c>SolutionType</c>: Lọc theo giải pháp:
-        ///     <list type="bullet">
-        ///     <item><description>Repair (1) - Sửa chữa</description></item>
-        ///     <item><description>Replacement (2) - Thay thế</description></item>
-        ///     <item><description>Outsource (3) - Thuê ngoài</description></item>
-        ///     </list>
-        ///   </item>
-        ///   <item><c>Fromdate</c>: Lọc từ ngày (định dạng: yyyy-MM-dd).</item>
-        ///   <item><c>Todate</c>: Lọc đến ngày (định dạng: yyyy-MM-dd).</item>
-        /// </list>
-        /// <br/>
-        /// <b>Kết quả:</b>
-        /// <list type="bullet">
-        ///   <item>Danh sách báo cáo dạng rút gọn (ID, loại lỗi, giải pháp, trạng thái, ngày tạo).</item>
-        ///   <item>Thông tin phân trang (tổng số, số trang, trang hiện tại).</item>
-        ///   <item>Danh sách ảnh đính kèm cho mỗi báo cáo (nếu có).</item>
-        /// </list>
-        /// <br/>
-        /// <b>Tham số:</b>
-        /// <list type="bullet">
-        ///   <item><c>filterDto</c>: DTO chứa các tham số lọc và phân trang.</item>
-        /// </list> 
+        /// <ul>
+        ///   <li>🔧 <b>Technician (Kỹ thuật viên):</b> xem danh sách báo cáo do mình tạo.</li>
+        ///   <li>🧑‍💼 <b>TechnicianLead / Manager:</b> xem và quản lý toàn bộ báo cáo.</li>
+        ///   <li>👨‍💻 <b>Admin:</b> xem toàn bộ báo cáo trong hệ thống.</li>
+        /// </ul>
+        /// <b>Tham số lọc &amp; tìm kiếm (<c>InspectionReportFilterDto</c>):</b>
+        /// <ul>
+        ///   <li><b>page</b>: Số trang (mặc định = 1).</li>
+        ///   <li><b>size</b>: Số bản ghi trên mỗi trang (mặc định = 10).</li>
+        ///   <li><b>sortBy</b>: Sắp xếp theo trường (id, id_desc, date, date_desc).</li>
+        ///   <li><b>search</b>: Tìm kiếm theo Description, Solution, AreaName.</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái (Pending, Approved, Rejected).</li>
+        ///   <li><b>FaultType</b>: Lọc theo loại lỗi (BuildingFault, ResidentFault).</li>
+        ///   <li><b>SolutionType</b>: Lọc theo giải pháp (Repair, Replacement, Outsource).</li>
+        ///   <li><b>Fromdate</b>: Lọc từ ngày (yyyy-MM-dd).</li>
+        ///   <li><b>Todate</b>: Lọc đến ngày (yyyy-MM-dd).</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="filterDto">Tham số phân trang và lọc dữ liệu.</param>
-        /// <returns>Danh sách báo cáo kiểm tra có phân trang.</returns>
+        /// <param name="filterDto">
+        /// <b>InspectionReportFilterDto:</b>
+        /// <ul>
+        ///   <li><b>page</b>: Số trang hiện tại.</li>
+        ///   <li><b>size</b>: Số bản ghi mỗi trang.</li>
+        ///   <li><b>sortBy</b>: Tiêu chí sắp xếp.</li>
+        ///   <li><b>search</b>: Từ khóa tìm kiếm.</li>
+        ///   <li><b>filter</b>: Lọc theo trạng thái.</li>
+        ///   <li><b>FaultType</b>: Lọc theo loại lỗi.</li>
+        ///   <li><b>SolutionType</b>: Lọc theo giải pháp.</li>
+        ///   <li><b>Fromdate</b>: Lọc từ ngày.</li>
+        ///   <li><b>Todate</b>: Lọc đến ngày.</li>
+        /// </ul>
+        /// </param>
+        /// <returns>
+        /// <b>IPaginate&lt;InspectionReportDetailDto&gt;:</b>
+        /// <ul>
+        ///   <li><b>InspectionReportId</b>: ID báo cáo kiểm tra.</li>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn liên kết.</li>
+        ///   <li><b>UserId</b>: ID kỹ thuật viên tạo báo cáo.</li>
+        ///   <li><b>FaultOwner</b>: Loại lỗi.</li>
+        ///   <li><b>SolutionType</b>: Loại giải pháp.</li>
+        ///   <li><b>Description</b>: Mô tả chi tiết lỗi.</li>
+        ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
+        ///   <li><b>Status</b>: Trạng thái báo cáo.</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo báo cáo.</li>
+        ///   <li><b>AreaName</b>: Tên khu vực liên quan.</li>
+        ///   <li><b>Technican</b>: Thông tin kỹ thuật viên.</li>
+        ///   <li><b>Medias</b>: Danh sách media đính kèm.</li>
+        ///   <li><b>ReportApprovals</b>: Danh sách phê duyệt báo cáo.</li>
+        ///   <li><b>Appointment</b>: Thông tin lịch hẹn liên kết.</li>
+        ///   <li><b>Invoice</b>: Thông tin hóa đơn liên quan (nếu có).</li>
+        /// </ul>
+        /// </returns>
         /// <response code="200">Lấy danh sách báo cáo kiểm tra thành công.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
         /// <response code="401">Không có quyền truy cập.</response>
@@ -193,28 +255,33 @@ namespace AptCare.Api.Controllers
         /// Lấy thông tin báo cáo kiểm tra theo ID lịch hẹn.
         /// </summary>
         /// <remarks>
-        /// **Chức năng:**  
-        /// - Truy xuất thông tin báo cáo kiểm tra dựa trên ID lịch hẹn.  
-        /// - Hiển thị thông tin cơ bản của báo cáo bao gồm: loại lỗi, giải pháp xử lý, trạng thái.  
-        /// - Bao gồm thông tin kỹ thuật viên thực hiện và khu vực liên quan.  
-        /// - Hiển thị danh sách media (hình ảnh/video) đính kèm nếu có.
-        /// 
-        /// **Kết quả trả về:**  
-        /// - `InspectionReportId`: ID của báo cáo kiểm tra
-        /// - `FaultOwner`: Loại lỗi (BuildingFault = 1, ResidentFault = 2)
-        /// - `SolutionType`: Loại giải pháp (Repair = 1, Replacement = 2, Outsource = 3)
-        /// - `Status`: Trạng thái báo cáo (Pending, Approved, Rejected)
-        /// - `CreatedAt`: Thời gian tạo báo cáo
-        /// - `AreaName`: Tên khu vực
-        /// - `Technican`: Thông tin kỹ thuật viên (TechnicanDto)
-        /// - `Medias`: Danh sách media đính kèm (List&lt;MediaDto&gt;)
-        /// 
-        /// **Lưu ý:**  
-        /// - Trả về 404 nếu không tìm thấy báo cáo với AppointmentId được cung cấp
-        /// - Chỉ người dùng có quyền phù hợp mới có thể truy cập
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Truy xuất thông tin báo cáo kiểm tra dựa trên ID lịch hẹn.</li>
+        ///   <li>Hiển thị thông tin cơ bản của báo cáo bao gồm: loại lỗi, giải pháp xử lý, trạng thái.</li>
+        ///   <li>Bao gồm thông tin kỹ thuật viên thực hiện và khu vực liên quan.</li>
+        ///   <li>Hiển thị danh sách media (hình ảnh/video) đính kèm nếu có.</li>
+        /// </ul>
+        /// <b>Kết quả (<c>InspectionReportDto</c>):</b>
+        /// <ul>
+        ///   <li><b>InspectionReportId</b>: ID báo cáo kiểm tra.</li>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn liên kết.</li>
+        ///   <li><b>UserId</b>: ID kỹ thuật viên tạo báo cáo.</li>
+        ///   <li><b>FaultOwner</b>: Loại lỗi.</li>
+        ///   <li><b>SolutionType</b>: Loại giải pháp.</li>
+        ///   <li><b>Description</b>: Mô tả chi tiết lỗi.</li>
+        ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
+        ///   <li><b>Status</b>: Trạng thái báo cáo.</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo báo cáo.</li>
+        ///   <li><b>AreaName</b>: Tên khu vực liên quan.</li>
+        ///   <li><b>Technican</b>: Thông tin kỹ thuật viên.</li>
+        ///   <li><b>Medias</b>: Danh sách media đính kèm.</li>
+        ///   <li><b>ReportApprovals</b>: Danh sách phê duyệt báo cáo.</li>
+        ///   <li><b>Appointment</b>: Thông tin lịch hẹn liên kết.</li>
+        /// </ul>
         /// </remarks>
-        /// <param name="id">ID của lịch hẹn cần lấy báo cáo kiểm tra</param>
-        /// <returns>Thông tin cơ bản của báo cáo kiểm tra liên quan đến lịch hẹn</returns>
+        /// <param name="id">ID của lịch hẹn cần lấy báo cáo kiểm tra.</param>
+        /// <returns>Thông tin cơ bản của báo cáo kiểm tra liên quan đến lịch hẹn.</returns>
         [HttpGet("inspection-report/by-appointment-id/{id}")]
         [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

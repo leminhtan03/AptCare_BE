@@ -2,10 +2,8 @@
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
-using AptCare.Repository.Enum.Apartment;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
-using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
@@ -13,11 +11,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -83,91 +77,6 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error creating account for user ID {UserId}", id);
                 throw new Exception("Lỗi khi tạo tài khoản: " + ex.Message);
-            }
-        }
-        public async Task<IPaginate<UserDto>> GetSystemUserPageAsync(string searchQuery, string role, string status, int page, int pageSize)
-        {
-            AccountRole? roleEnum = null;
-            if (!string.IsNullOrEmpty(role))
-            {
-                if (Enum.TryParse<AccountRole>(role, true, out AccountRole parsedRole))
-                {
-                    roleEnum = parsedRole;
-                }
-                else
-                {
-                    return new Paginate<UserDto>();
-                }
-            }
-            ActiveStatus? statusEnum = null;
-            if (!string.IsNullOrEmpty(status))
-            {
-                if (Enum.TryParse<ActiveStatus>(status, true, out ActiveStatus parsedStatus))
-                {
-                    statusEnum = parsedStatus;
-                }
-                else
-                {
-                    return new Paginate<UserDto>();
-                }
-            }
-            var users = await _unitOfWork.GetRepository<User>().GetPagingListAsync(
-               selector: u => _mapper.Map<UserDto>(u),
-               predicate: u =>
-                   (string.IsNullOrEmpty(searchQuery) ||
-                       ((u.FirstName + " " + u.LastName).ToLower().Contains(searchQuery) ||
-                       u.Email.ToLower().Contains(searchQuery) ||
-                       u.PhoneNumber.ToLower().Contains(searchQuery) ||
-                       u.CitizenshipIdentity.ToLower().Contains(searchQuery))) &&
-                       (u.Account != null) &&
-                   (string.IsNullOrEmpty(role) || u.Account.Role == roleEnum.Value) &&
-                   (string.IsNullOrEmpty(status) || u.Status == statusEnum.Value),
-               include: source => source
-                   .Include(u => u.Account)
-                   .Include(u => u.UserApartments)
-                   .ThenInclude(ua => ua.Apartment),
-               orderBy: users => users.OrderBy(u => u.UserId),
-               page: page,
-               size: pageSize
-           );
-            var userIds = users.Items.Select(u => u.UserId).ToList();
-            var profileImages = await _unitOfWork.GetRepository<Media>()
-                .GetListAsync(
-                    predicate: m => userIds.Contains(m.EntityId)
-                        && m.Entity == nameof(User)
-                        && m.Status == ActiveStatus.Active
-                );
-            var imageDict = profileImages.ToDictionary(m => m.EntityId, m => m.FilePath);
-            foreach (var user in users.Items)
-            {
-                if (imageDict.TryGetValue(user.UserId, out var imagePath))
-                {
-                    user.ProfileImageUrl = imagePath;
-                }
-            }
-            return users;
-        }
-
-        public async Task<string> TogleAccontStatus(int accountId)
-        {
-            try
-            {
-                var account = await _unitOfWork.GetRepository<Account>().SingleOrDefaultAsync(
-                    predicate: a => a.AccountId == accountId
-                );
-                if (account == null)
-                {
-                    throw new AppValidationException($"Tài khoản với ID '{accountId}' không tồn tại.");
-                }
-                account.LockoutEnabled = !account.LockoutEnabled;
-                _unitOfWork.GetRepository<Account>().UpdateAsync(account);
-                _unitOfWork.Commit();
-                return account.LockoutEnabled ? "Đã khóa tài khoản thành công." : "Đã mở khóa tài khoản thành công.";
-
-            }
-            catch (Exception ex)
-            {
-                throw new Exception("Lỗi khi thay đổi trạng thái tài khoản: " + ex.Message);
             }
         }
         private string GenerateRandomPassword(int length = 12)

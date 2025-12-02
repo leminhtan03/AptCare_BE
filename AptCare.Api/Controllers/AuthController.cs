@@ -1,13 +1,9 @@
-﻿using AptCare.Repository.Paginate;
-using AptCare.Service.Dtos.Account;
+﻿using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.AuthenDto;
-using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Exceptions;
-using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.DataProtection.AuthenticatedEncryption;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AptCare.Api.Controllers

@@ -29,14 +29,7 @@ namespace AptCare.Service.Services.Implements
         private readonly ICloudinaryService _cloudinaryService;
         private readonly IRedisCacheService _cacheService;
 
-        public UserService(
-            IUnitOfWork<AptCareSystemDBContext> unitOfWork,
-            IPasswordHasher<Account> pwdHasher,
-            IMailSenderService mailSenderService,
-            ILogger<UserService> logger,
-            ICloudinaryService cloudinaryService,
-            IRedisCacheService cacheService,
-            IMapper mapper) : base(unitOfWork, logger, mapper)
+        public UserService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IPasswordHasher<Account> pwdHasher, IMailSenderService mailSenderService, ILogger<UserService> logger, ICloudinaryService cloudinaryService, IRedisCacheService cacheService, IMapper mapper) : base(unitOfWork, logger, mapper)
         {
             _mailSender = mailSenderService;
             _pwdHasher = pwdHasher;
@@ -132,7 +125,6 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception("Lỗi khi tạo người dùng: " + ex.Message);
             }
         }
-
         public async Task<UserDto?> GetUserByIdAsync(int userId)
         {
             var cacheKey = $"user:{userId}";
@@ -167,7 +159,6 @@ namespace AptCare.Service.Services.Implements
 
             return user;
         }
-
         public async Task<IPaginate<UserGetAllDto>> GetProfileDataPageAsync(UserPaginateDto dto)
         {
             int page = dto.page > 0 ? dto.page : 1;
@@ -236,12 +227,10 @@ namespace AptCare.Service.Services.Implements
                 }
             }
 
-            // Cache for 10 minutes
             await _cacheService.SetAsync(cacheKey, users, TimeSpan.FromMinutes(10));
 
             return users;
         }
-
         private Func<IQueryable<User>, IOrderedQueryable<User>> BuildOrderBy(string sortBy)
         {
             if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.UserId);
@@ -253,7 +242,6 @@ namespace AptCare.Service.Services.Implements
                 _ => q => q.OrderByDescending(p => p.UserId)
             };
         }
-
         public async Task<string> UpdateUserAsync(int userId, UpdateUserDto updateUserDto)
         {
             var userRepo = _unitOfWork.GetRepository<User>();
@@ -265,11 +253,12 @@ namespace AptCare.Service.Services.Implements
                 include: i => i
                     .Include(u => u.Account));
 
-            if (user == null) throw new KeyNotFoundException("Người dùng không tồn tại.");
+            if (user == null)
+                throw new KeyNotFoundException("Người dùng không tồn tại.");
 
-            await _unitOfWork.BeginTransactionAsync();
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
                 if (!string.IsNullOrWhiteSpace(updateUserDto.FirstName)) user.FirstName = updateUserDto.FirstName;
                 if (!string.IsNullOrWhiteSpace(updateUserDto.LastName)) user.LastName = updateUserDto.LastName;
                 if (updateUserDto.CitizenshipIdentity != null) user.CitizenshipIdentity = updateUserDto.CitizenshipIdentity;
@@ -297,13 +286,12 @@ namespace AptCare.Service.Services.Implements
                 if (media != null) resultUser.ProfileImageUrl = media.FilePath;
                 return "Cập nhật người dùng thành công!!";
             }
-            catch
+            catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                throw;
+                throw new Exception(ex.Message);
             }
         }
-
         public async Task<ImportResultDto> ImportResidentsFromExcelAsync(Stream fileStream)
         {
             var result = new ImportResultDto();
@@ -314,12 +302,14 @@ namespace AptCare.Service.Services.Implements
                 using (var package = new ExcelPackage(fileStream))
                 {
                     var usersSheet = package.Workbook.Worksheets["ResidentsProfile"];
-                    if (usersSheet == null) throw new AppValidationException("Không tìm thấy sheet 'ResidentsProfile' trong file Excel.");
+                    if (usersSheet == null)
+                        throw new AppValidationException("Không tìm thấy sheet 'ResidentsProfile' trong file Excel.");
 
                     await ProcessUsersSheet(usersSheet, result);
 
                     var relationsSheet = package.Workbook.Worksheets["ApartmentRelation"];
-                    if (relationsSheet == null) throw new AppValidationException("Không tìm thấy sheet 'ApartmentRelation' trong file Excel.");
+                    if (relationsSheet == null)
+                        throw new AppValidationException("Không tìm thấy sheet 'ApartmentRelation' trong file Excel.");
 
                     await ProcessUserApartmentsSheet(relationsSheet, result);
 
@@ -344,7 +334,6 @@ namespace AptCare.Service.Services.Implements
             }
             return result;
         }
-
         public async Task UpdateUserProfileImageAsync(UpdateUserImageProfileDto dto)
         {
             try
@@ -387,7 +376,6 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception("Lỗi khi cập nhật ảnh đại diện: " + ex.Message);
             }
         }
-
         private async Task ProcessUsersSheet(ExcelWorksheet worksheet, ImportResultDto result)
         {
             var rowCount = worksheet.Dimension.Rows;
@@ -447,7 +435,6 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.CommitAsync();
             }
         }
-
         private async Task ProcessUserApartmentsSheet(ExcelWorksheet worksheet, ImportResultDto result)
         {
             var rowCount = worksheet.Dimension.Rows;
@@ -608,7 +595,6 @@ namespace AptCare.Service.Services.Implements
 
             await _unitOfWork.CommitAsync();
         }
-
         private string GenerateRandomPassword(int length = 12)
         {
             const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -638,7 +624,6 @@ namespace AptCare.Service.Services.Implements
 
             return new string(passwordArray);
         }
-
         private async Task ValidateUserDataByRole(AccountRole role, CreateUserDto dto, IGenericRepository<Apartment> aptRepo, IGenericRepository<Technique> techRepo)
         {
             switch (role)
@@ -721,7 +706,6 @@ namespace AptCare.Service.Services.Implements
                     break;
             }
         }
-
         private async Task AssignUserToApartmentsAsync(int userId, List<ApartmentForUserCreateDto> apartments, IGenericRepository<Apartment> aptRepo, IGenericRepository<UserApartment> uaRepo)
         {
             var IdApartmentCodes = apartments.Select(a => a.ApartmentId).ToList();
@@ -764,7 +748,6 @@ namespace AptCare.Service.Services.Implements
                 await uaRepo.InsertAsync(userApartment);
             }
         }
-
         private async Task AssignTechniquesToUserAsync(int userId, List<int> techniqueIds, IGenericRepository<Technique> techRepo, IGenericRepository<TechnicianTechnique> ttRepo)
         {
             var techniques = await techRepo.GetListAsync(
@@ -789,7 +772,6 @@ namespace AptCare.Service.Services.Implements
                 }
             }
         }
-
         private bool ShouldCreateAccount(AccountRole role, bool createAccountFlag)
         {
             switch (role)
@@ -802,12 +784,10 @@ namespace AptCare.Service.Services.Implements
                 case AccountRole.Receptionist:
                 case AccountRole.Admin:
                     return true;
-
                 default:
                     return false;
             }
         }
-
         private async Task CreateAccountForNewUserAsync(User user, AccountRole role, IGenericRepository<Account> accountRepo)
         {
             var existingAccount = await accountRepo.AnyAsync(a => a.AccountId == user.UserId);
@@ -831,7 +811,6 @@ namespace AptCare.Service.Services.Implements
             await accountRepo.InsertAsync(account);
             await SendAccountCredentialsEmailAsync(user, password);
         }
-
         private async Task SendAccountCredentialsEmailAsync(User user, string password)
         {
             var replacements = new Dictionary<string, string>
@@ -854,7 +833,6 @@ namespace AptCare.Service.Services.Implements
                 replacements: replacements
             );
         }
-
         private async Task UserbasicProfileImageAsync(User user)
         {
             var mediaRepo = _unitOfWork.GetRepository<Media>();
@@ -871,7 +849,6 @@ namespace AptCare.Service.Services.Implements
             await mediaRepo.InsertAsync(newMedia);
             await _unitOfWork.CommitAsync();
         }
-
         public async Task<string> InactivateUserAsync(int userId, InactivateUserDto dto)
         {
             var userRepo = _unitOfWork.GetRepository<User>();
@@ -897,9 +874,7 @@ namespace AptCare.Service.Services.Implements
                 if (user.Account.Role == AccountRole.Admin)
                     throw new AppValidationException("Không thể vô hiệu hóa người dùng với vai trò Admin.");
                 if (user.Account.Role == AccountRole.Manager)
-                    throw new AppValidationException(
-                        "Không thể vô hiệu hóa người dùng này vì họ là Manager hoạt động cuối cùng trong hệ thống. "
-                    );
+                    throw new AppValidationException("Không thể vô hiệu hóa người dùng này vì họ là Manager hoạt động cuối cùng trong hệ thống. ");
                 if (user.Status == ActiveStatus.Inactive)
                     throw new AppValidationException("Người dùng đã ở trạng thái Inactive.");
 
@@ -969,11 +944,10 @@ namespace AptCare.Service.Services.Implements
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                _logger.LogError(ex, $"❌ Error inactivating User {userId}");
+                _logger.LogError(ex, $"Error inactivating User {userId}");
                 throw new Exception($"Lỗi khi vô hiệu hóa người dùng: {ex.Message}", ex);
             }
         }
-
         public async Task<string> UpdateTechniqueTechnican(int userId, ICollection<int> newTechnique)
         {
             try
@@ -990,7 +964,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     throw new KeyNotFoundException($"Người dùng với ID {userId} không tồn tại.");
                 }
-                if (user.Account.Role != AccountRole.Technician && user.Account.Role != AccountRole.TechnicianLead)
+                if (user.Account.Role != AccountRole.Technician)
                 {
                     throw new AppValidationException("Chỉ có thể cập nhật kỹ thuật cho kỹ thuật viên.");
                 }
