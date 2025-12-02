@@ -38,7 +38,6 @@ namespace AptCare.API.Controllers
         /// <response code="200">Trả về danh sách slot.</response>
         /// <response code="401">Không có quyền truy cập.</response>
         [HttpGet]
-        [Authorize]
         [ProducesResponseType(typeof(IPaginate<SlotDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> GetPaginateSlots([FromQuery] PaginateDto dto)
@@ -55,7 +54,6 @@ namespace AptCare.API.Controllers
         /// </remarks>
         /// <returns>Danh sách slot đang hoạt động.</returns>
         [HttpGet("active")]
-        [Authorize]
         [ProducesResponseType(typeof(IEnumerable<SlotDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         public async Task<ActionResult> GetActiveSlots()
@@ -73,7 +71,6 @@ namespace AptCare.API.Controllers
         /// <param name="id">ID của slot cần lấy thông tin.</param>
         /// <returns>Thông tin chi tiết slot.</returns>
         [HttpGet("{id}")]
-        [Authorize]
         [ProducesResponseType(typeof(SlotDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
