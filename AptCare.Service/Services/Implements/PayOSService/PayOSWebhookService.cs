@@ -36,7 +36,7 @@ namespace AptCare.Service.Services.Implements.PayOSService
             try
             {
                 var isValidSignature = _payOS.Webhooks.VerifyAsync(webhookData);
-                if (isValidSignature != null)
+                if (isValidSignature == null)
                 {
                     _logger.LogWarning("Invalid PayOS webhook signature for orderCode {OrderCode}",
                         webhookData.Data.OrderCode);
@@ -83,7 +83,7 @@ namespace AptCare.Service.Services.Implements.PayOSService
                 await _uow.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error processing PayOS webhook for orderCode {OrderCode}",
                     webhookData.Data.OrderCode);
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 
