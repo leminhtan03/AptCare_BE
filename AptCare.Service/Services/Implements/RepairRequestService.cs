@@ -836,6 +836,8 @@ namespace AptCare.Service.Services.Implements
                         Note = "Yêu cầu sửa chữa được tự động hoàn thành "
                     });
                 }
+
+                await _unitOfWork.CommitAsync();
             }
             catch (Exception e)
             {
