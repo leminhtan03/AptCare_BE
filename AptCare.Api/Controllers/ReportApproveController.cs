@@ -90,7 +90,7 @@ namespace AptCare.Api.Controllers
         /// <response code="403">Không đủ quyền thực hiện thao tác này.</response>
         /// <response code="500">Lỗi hệ thống.</response>
         [HttpPost("approve-report")]
-        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}")]
+        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Manager)}, {nameof(AccountRole.Admin)}")]
         [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]

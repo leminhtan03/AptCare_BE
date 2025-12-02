@@ -198,7 +198,13 @@ namespace AptCare.Service.Services.Implements
 
             Expression<Func<User, bool>> predicate;
 
-            if (appointment.RepairRequest.IsEmergency)
+            var firstAppointmentId = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
+               selector: s => s.AppointmentId,
+               predicate: x => x.RepairRequestId == appointment.RepairRequestId && x.AppointmentId != appointmentId,
+               orderBy: o => o.OrderBy(x => x.CreatedAt)
+               );
+
+            if (appointment.RepairRequest.IsEmergency && firstAppointmentId == appointmentId)
             {
                 predicate = p => p.Account.Role == AccountRole.Technician &&
                                 p.TechnicianTechniques.Any(tt => tt.TechniqueId == techniqueId) &&
@@ -276,9 +282,9 @@ namespace AptCare.Service.Services.Implements
             }
 
             var orderedTechnicians = technicians
-                .OrderBy(t => t.AssignCountThatDay)
-                    .ThenByDescending(t => (t.GapFromPrevious == null || t.GapFromPrevious > 30 ? 30 : t.GapFromPrevious) +
+                .OrderByDescending(t => (t.GapFromPrevious == null || t.GapFromPrevious > 30 ? 30 : t.GapFromPrevious) +
                                         (t.GapToNext == null || t.GapToNext > 30 ? 30 : t.GapToNext))
+                    .ThenBy(t => t.AssignCountThatDay)
                         .ThenBy(t => t.AssignCountThatMonth)
                 .ToList();
 

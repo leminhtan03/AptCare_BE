@@ -17,7 +17,7 @@ namespace AptCare.Service.Services.Implements
     {
         private readonly IUserContext _userContext;
 
-        public InvoiceService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InvoiceService> logger, IMapper mapper, IUserContext userContext, PayOS.PayOSClient @object, Microsoft.Extensions.Options.IOptions<PayOS.PayOSOptions> object1) : base(unitOfWork, logger, mapper)
+        public InvoiceService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InvoiceService> logger, IMapper mapper, IUserContext userContext) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
         }

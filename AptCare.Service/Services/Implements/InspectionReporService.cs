@@ -213,7 +213,10 @@ namespace AptCare.Service.Services.Implements
                     selector: s => _mapper.Map<MediaDto>(s),
                     predicate: p => p.Entity == nameof(InspectionReport) && p.EntityId == result.InspectionReportId
                     );
-                result.Medias = medias.ToList();
+                if (medias.Count != 0)
+                {
+                    result.Medias = medias.ToList();
+                }
 
                 var invoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
                     selector: s => _mapper.Map<InvoiceDto>(s),
