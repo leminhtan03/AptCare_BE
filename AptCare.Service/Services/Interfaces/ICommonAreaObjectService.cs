@@ -18,6 +18,6 @@ namespace AptCare.Service.Services.Interfaces
         Task<string> DeactivateCommonAreaObjectAsync(int id);
         Task<CommonAreaObjectDto> GetCommonAreaObjectByIdAsync(int id);
         Task<IPaginate<CommonAreaObjectDto>> GetPaginateCommonAreaObjectAsync(PaginateDto dto, int? commonAreaId);
-        Task<IEnumerable<CommonAreaObjectBasicDto>> GetCommonAreaObjectsByCommonAreaAsync(int commonAreaId);
+        Task<IEnumerable<CommonAreaObjectBasicDto>> GetCommonAreaObjectsByCommonAreaAsync(int commonAreaId); Task<IEnumerable<CommonAreaObjectBasicDto>> GetCommonAreaObjectsByTypeAsync(int typeId);
     }
 }
