@@ -2,13 +2,10 @@
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.Apartment;
+using AptCare.Repository.Enum.TransactionEnum;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AptCare.Repository.Seeds
 {
@@ -33,6 +30,7 @@ namespace AptCare.Repository.Seeds
             await SeedAccessories(context);
             await SeedAccessoryMedias(context);
             await SeedBudget(context);
+            await SeedMonthlyManagementFeeTransactions(context);
         }
 
         private static async Task SeedFloors(AptCareSystemDBContext context)
@@ -1259,6 +1257,57 @@ namespace AptCare.Repository.Seeds
                 };
 
                 context.Budgets.AddRange(budget);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        private static async Task SeedMonthlyManagementFeeTransactions(AptCareSystemDBContext context)
+        {
+            if (!context.Transactions.Any())
+            {
+                var apartments = context.Apartments
+                    .OrderBy(a => a.ApartmentId)
+                    .Take(10) // Seed cho 10 căn đầu tiên, có thể tăng nếu muốn
+                    .ToList();
+
+                var userApartments = context.UserApartments
+                    .Where(ua => ua.RoleInApartment == RoleInApartmentType.Owner)
+                    .ToList();
+
+                var transactions = new List<Transaction>();
+                var feeAmount = 1500000M; // Phí quản lý mẫu
+
+                // 3 tháng: 10, 11, 12/2025
+                var months = new[]
+                {
+            new DateTime(2025, 10, 1),
+            new DateTime(2025, 11, 1),
+            new DateTime(2025, 12, 1)
+        };
+
+                foreach (var apartment in apartments)
+                {
+                    var owner = userApartments.FirstOrDefault(ua => ua.ApartmentId == apartment.ApartmentId);
+                    if (owner == null) continue;
+
+                    foreach (var month in months)
+                    {
+                        transactions.Add(new Transaction
+                        {
+                            UserId = owner.UserId,
+                            TransactionType = TransactionType.Payment,
+                            Status = TransactionStatus.Success,
+                            Provider = PaymentProvider.UnKnow,
+                            Direction = TransactionDirection.Income,
+                            Amount = feeAmount,
+                            Description = $"Phí quản lý căn hộ {apartment.Room} tháng {month:MM/yyyy}",
+                            CreatedAt = month,
+                            PaidAt = month
+                        });
+                    }
+                }
+
+                context.Transactions.AddRange(transactions);
                 await context.SaveChangesAsync();
             }
         }

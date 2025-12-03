@@ -400,13 +400,26 @@ namespace AptCare.Service.Services.Implements
 
                 var txRepo = _unitOfWork.GetRepository<Transaction>();
                 var mediaRepo = _unitOfWork.GetRepository<Media>();
-
+                decimal? amountSearch = null;
+                DateTime? dateSearch = null;
+                if (!string.IsNullOrEmpty(search))
+                {
+                    if (decimal.TryParse(search, out var parsedAmount))
+                        amountSearch = parsedAmount;
+                    if (DateTime.TryParse(search, out var parsedDate))
+                        dateSearch = parsedDate;
+                }
                 Expression<Func<Transaction, bool>> predicate = t =>
-                    (string.IsNullOrEmpty(search) || t.Description.ToLower().Contains(search))
+                    (string.IsNullOrEmpty(search)
+                        || t.Description != null && t.Description.Contains(search, StringComparison.OrdinalIgnoreCase)
+                        || (amountSearch.HasValue && t.Amount == amountSearch.Value)
+                        || (dateSearch.HasValue && t.CreatedAt.Date == dateSearch.Value.Date)
+                    )
                     && (!filterDto.InvoiceId.HasValue || t.InvoiceId == filterDto.InvoiceId.Value)
-                    && (!filterDto.UserId.HasValue || t.UserId == filterDto.UserId.Value)
-                    && (string.IsNullOrEmpty(filterDto.Status) || t.Status.ToString().ToLower() == filterDto.Status.ToLower())
-                    && (string.IsNullOrEmpty(filterDto.Provider) || t.Provider.ToString().ToLower() == filterDto.Provider.ToLower())
+                    && (!filterDto.Direction.HasValue || t.Direction == filterDto.Direction.Value)
+                    && (!filterDto.Status.HasValue || t.Status == filterDto.Status)
+                    && (!filterDto.Provider.HasValue || t.Provider == filterDto.Provider)
+                    && (!filterDto.TransactionType.HasValue || t.TransactionType == filterDto.TransactionType)
                     && (!filterDto.FromDate.HasValue || DateOnly.FromDateTime(t.CreatedAt) >= filterDto.FromDate.Value)
                     && (!filterDto.ToDate.HasValue || DateOnly.FromDateTime(t.CreatedAt) <= filterDto.ToDate.Value);
 
