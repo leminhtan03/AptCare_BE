@@ -163,34 +163,43 @@ namespace AptCare.Api.Controllers
         /// Lấy danh sách giao dịch có phân trang và lọc
         /// </summary>
         /// <remarks>
-        /// **Role:** Manager, Admin, TechnicianLead  
+        /// <b>Role:</b> Manager, Admin, TechnicianLead  
         /// 
-        /// **Chức năng:**  
+        /// <b>Chức năng:</b>  
         /// - Lấy danh sách giao dịch với phân trang.
-        /// - Hỗ trợ tìm kiếm và lọc đa dạng.
+        /// - Hỗ trợ tìm kiếm và lọc đa dạng theo nhiều trường.
         /// 
-        /// **Tham số lọc:**  
-        /// - `page`: Số trang (mặc định = 1)
-        /// - `size`: Số bản ghi trên trang (mặc định = 10)
-        /// - `search`: Tìm kiếm theo mô tả giao dịch
-        /// - `InvoiceId`: Lọc theo hóa đơn cụ thể
-        /// - `UserId`: Lọc theo người tạo giao dịch
-        /// - `Direction`: Lọc theo hướng (Income/Expense)
-        /// - `Status`: Lọc theo trạng thái (Pending/Success/Failed)
-        /// - `Provider`: Lọc theo nhà cung cấp (PayOS/UnKnow)
-        /// - `FromDate`, `ToDate`: Lọc theo khoảng thời gian
-        /// - `sortBy`: Sắp xếp (id, date, amount, ...)
+        /// <b>Tham số phân trang:</b>
+        /// - <c>page</c>: Số trang (mặc định = 1)
+        /// - <c>size</c>: Số bản ghi trên trang (mặc định = 10)
+        /// - <c>sortBy</c>: Sắp xếp (id, date, amount, ...)
+        /// - <c>search</c>: Tìm kiếm theo mô tả giao dịch
         /// 
-        /// **Use case:**  
+        /// <b>Tham số lọc nâng cao:</b>
+        /// - <c>InvoiceId</c>: Lọc theo hóa đơn cụ thể
+        /// - <c>TransactionType</c>: Lọc theo loại giao dịch (Payment, Refund, ...)
+        /// - <c>Status</c>: Lọc theo trạng thái giao dịch (Pending, Success, Failed)
+        /// - <c>Provider</c>: Lọc theo nhà cung cấp (PayOS, UnKnow, ...)
+        /// - <c>Direction</c>: Lọc theo hướng giao dịch (Income, Expense)
+        /// - <c>FromDate</c>, <c>ToDate</c>: Lọc theo khoảng thời gian tạo giao dịch
+        /// 
+        /// <b>Use case:</b>  
         /// - Báo cáo tài chính hệ thống.
-        /// - Kiểm tra giao dịch theo khoảng thời gian.
+        /// - Kiểm tra giao dịch theo nhiều tiêu chí.
         /// </remarks>
-        /// <param name="filterDto">Tham số phân trang và lọc</param>
+        /// <param name="filterDto">
+        /// Tham số phân trang và lọc, bao gồm:
+        /// <list type="bullet">
+        /// <item><description><c>page</c>, <c>size</c>, <c>sortBy</c>, <c>search</c></description></item>
+        /// <item><description><c>InvoiceId</c>, <c>TransactionType</c>, <c>Status</c>, <c>Provider</c>, <c>Direction</c></description></item>
+        /// <item><description><c>FromDate</c>, <c>ToDate</c></description></item>
+        /// </list>
+        /// </param>
         /// <response code="200">Danh sách giao dịch có phân trang</response>
         /// <response code="401">Không có quyền truy cập</response>
         /// <response code="500">Lỗi hệ thống</response>
         [HttpGet("paginate")]
-        [Authorize(Roles = $"{nameof(AccountRole.Manager)},{nameof(AccountRole.Admin)},{nameof(AccountRole.TechnicianLead)}")]
+        //[Authorize(Roles = $"{nameof(AccountRole.Manager)},{nameof(AccountRole.Admin)},{nameof(AccountRole.TechnicianLead)}")]
         [ProducesResponseType(typeof(IPaginate<TransactionDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]

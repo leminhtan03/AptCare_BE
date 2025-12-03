@@ -11,7 +11,7 @@ namespace AptCare.Repository.Entities
         [Key]
         public int TransactionId { get; set; }
         public int UserId { get; set; }
-        public int InvoiceId { get; set; }
+        public int? InvoiceId { get; set; } // Change from int to int?
 
         public TransactionType TransactionType { get; set; }
         public TransactionStatus Status { get; set; }
@@ -35,6 +35,6 @@ namespace AptCare.Repository.Entities
         public User User { get; set; } = null!;
 
         [ForeignKey(nameof(InvoiceId))]
-        public Invoice Invoice { get; set; } = null!;
+        public Invoice? Invoice { get; set; } = null!;
     }
 }
