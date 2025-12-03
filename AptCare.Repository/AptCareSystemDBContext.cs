@@ -47,6 +47,10 @@ namespace AptCare.Repository
         public DbSet<MaintenanceTrackingHistory> MaintenanceTrackingHistories { get; set; }
         public DbSet<Media> Medias { get; set; }
         public DbSet<Slot> Slots { get; set; }
+        public DbSet<CommonAreaObjectType> CommonAreaObjectTypes { get; set; }
+        public DbSet<MaintenanceTask> MaintenanceTasks { get; set; }
+        public DbSet<RepairRequestTask> RepairRequestTasks { get; set; }
+        public DbSet<Budget> Budgets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -122,6 +126,43 @@ namespace AptCare.Repository
                       .WithMany(a => a.UserApartments)
                       .HasForeignKey(ua => ua.ApartmentId);
             });
+
+            // ========================= CommonAreaObjectType & Maintenance Task System =========================
+            // CommonAreaObjectType - CommonAreaObject (1 - n)
+            modelBuilder.Entity<CommonAreaObject>()
+                .HasOne(cao => cao.CommonAreaObjectType)
+                .WithMany(caot => caot.CommonAreaObjects)
+                .HasForeignKey(cao => cao.CommonAreaObjectTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // CommonAreaObjectType - MaintenanceTask (1 - n)
+            modelBuilder.Entity<MaintenanceTask>()
+                .HasOne(mtt => mtt.CommonAreaObjectType)
+                .WithMany(caot => caot.MaintenanceTasks)
+                .HasForeignKey(mtt => mtt.CommonAreaObjectTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // RepairRequest - RepairRequestTask (1 - n)
+            modelBuilder.Entity<RepairRequestTask>()
+                .HasOne(rrt => rrt.RepairRequest)
+                .WithMany(rr => rr.RepairRequestTasks)
+                .HasForeignKey(rrt => rrt.RepairRequestId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // MaintenanceTaskTemplate - RepairRequestTask (1 - n) - Optional relationship
+            modelBuilder.Entity<RepairRequestTask>()
+                .HasOne(rrt => rrt.MaintenanceTask)
+                .WithMany(mtt => mtt.RepairRequestTasks)
+                .HasForeignKey(rrt => rrt.MaintenanceTaskTemplateId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // User - RepairRequestTask (1 - n) - CompletedBy relationship
+            modelBuilder.Entity<RepairRequestTask>()
+                .HasOne(rrt => rrt.CompletedBy)
+                .WithMany()
+                .HasForeignKey(rrt => rrt.CompletedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // ========================= Report =========================
             // User - Report (1 - n)
             // CommonAreaObject - Report (1 - n)

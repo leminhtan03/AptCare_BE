@@ -65,7 +65,8 @@ namespace AptCare.Api.Extensions
             service.AddScoped<IRabbitMQService, RabbitMQService>();
             service.AddScoped<IFeedbackService, FeedbackService>();
             service.AddScoped<IMaintenanceScheduleService, MaintenanceScheduleService>();
-
+            service.AddScoped<ICommonAreaObjectTypeService, CommonAreaObjectTypeService>();
+            service.AddScoped<IMaintenanceTaskService, MaintenanceTaskService>();
 
 
             service.AddHostedService<NotificationBackgroundService>();

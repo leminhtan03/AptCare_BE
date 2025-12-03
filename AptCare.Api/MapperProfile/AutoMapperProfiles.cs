@@ -12,12 +12,14 @@ using AptCare.Service.Dtos.ApproveReportDtos;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
 using AptCare.Service.Dtos.CommonAreaObjectDtos;
+using AptCare.Service.Dtos.CommonAreaObjectTypeDtos;
 using AptCare.Service.Dtos.ContractDtos;
 using AptCare.Service.Dtos.FeedbackDtos;
 using AptCare.Service.Dtos.InspectionReporDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Dtos.IssueDto;
 using AptCare.Service.Dtos.MaintenanceScheduleDtos;
+using AptCare.Service.Dtos.MaintenanceTaskDtos;
 using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairReportDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
@@ -405,6 +407,14 @@ namespace AptCare.Api.MapperProfile
             CreateMap<CommonAreaObjectUpdateDto, CommonAreaObject>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
+            // COMMONAREAOBJECTTYPE
+            CreateMap<CommonAreaObjectType, CommonAreaObjectTypeDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<CommonAreaObjectTypeCreateDto, CommonAreaObjectType>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
+            CreateMap<CommonAreaObjectTypeUpdateDto, CommonAreaObjectType>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
             // REPORT
             CreateMap<Report, ReportDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
@@ -435,6 +445,16 @@ namespace AptCare.Api.MapperProfile
             CreateMap<MaintenanceTrackingHistory, MaintenanceTrackingHistoryDto>()
                 .ForMember(dest => dest.UpdatedByUserName,
                     opt => opt.MapFrom(src => $"{src.User.FirstName} {src.User.LastName}"));
+
+            // MAINTENANCETASK
+            CreateMap<MaintenanceTask, MaintenanceTaskDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<MaintenanceTask, MaintenanceTaskBasicDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<MaintenanceTaskCreateDto, MaintenanceTask>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
+            CreateMap<MaintenanceTaskUpdateDto, MaintenanceTask>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
 }

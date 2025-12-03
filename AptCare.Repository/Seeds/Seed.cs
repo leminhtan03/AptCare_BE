@@ -26,10 +26,13 @@ namespace AptCare.Repository.Seeds
             await SeedUserMedias(context);
             await SeedUserApartments(context);
             await SeedCommonAreas(context);
+            await SeedCommonAreaObjectTypes(context);
+            await SeedMaintenanceTasks(context);
             await SeedCommonAreaObjects(context);
             await SeedSlots(context);
             await SeedAccessories(context);
             await SeedAccessoryMedias(context);
+            await SeedBudget(context);
         }
 
         private static async Task SeedFloors(AptCareSystemDBContext context)
@@ -450,7 +453,7 @@ namespace AptCare.Repository.Seeds
                     commonAreas.Add(new CommonArea
                     {
                         FloorId = floor.FloorId,
-                        AreaCode = $"L{floor:D2}-WASTE",
+                        AreaCode = $"L{floor.FloorNumber:D2}-WASTE",
                         Name = $"Phòng rác tầng {floor.FloorNumber}",
                         Description = $"Khu vực tập kết rác tầng {floor.FloorNumber}",
                         Location = $"Góc hành lang tầng {floor.FloorNumber}",
@@ -471,33 +474,466 @@ namespace AptCare.Repository.Seeds
             }
         }
 
+        private static async Task SeedCommonAreaObjectTypes(AptCareSystemDBContext context)
+        {
+            if (!context.CommonAreaObjectTypes.Any())
+            {
+                var objectTypes = new List<CommonAreaObjectType>
+                {
+                    new CommonAreaObjectType
+                    {
+                        TypeName = "Thang máy",
+                        Description = "Hệ thống thang máy chở người và hàng hóa",
+                        Status = ActiveStatus.Active
+                    },
+                    new CommonAreaObjectType
+                    {
+                        TypeName = "Đèn chiếu sáng",
+                        Description = "Hệ thống đèn LED, huỳnh quang trong khu vực chung",
+                        Status = ActiveStatus.Active
+                    },
+                    new CommonAreaObjectType
+                    {
+                        TypeName = "Camera an ninh",
+                        Description = "Thiết bị giám sát an ninh",
+                        Status = ActiveStatus.Active
+                    },
+                    new CommonAreaObjectType
+                    {
+                        TypeName = "Cảm biến báo cháy",
+                        Description = "Cảm biến khói, nhiệt độ phát hiện cháy",
+                        Status = ActiveStatus.Active
+                    },
+                    new CommonAreaObjectType
+                    {
+                        TypeName = "Tủ điện",
+                        Description = "Tủ phân phối điện tổng cho tầng hoặc khu vực",
+                        Status = ActiveStatus.Active
+                    },
+                    new CommonAreaObjectType
+                    {
+                        TypeName = "Quạt thông gió",
+                        Description = "Quạt hút gió cho phòng rác, hầm xe",
+                        Status = ActiveStatus.Active
+                    },
+                    new CommonAreaObjectType
+                    {
+                        TypeName = "Bồn nước",
+                        Description = "Bể chứa nước sinh hoạt cho tòa nhà",
+                        Status = ActiveStatus.Active
+                    },
+                    new CommonAreaObjectType
+                    {
+                        TypeName = "Máy lọc nước",
+                        Description = "Thiết bị lọc nước hồ bơi, nước sinh hoạt",
+                        Status = ActiveStatus.Active
+                    },
+                    new CommonAreaObjectType
+                    {
+                        TypeName = "Cảm biến CO",
+                        Description = "Giám sát nồng độ khí CO trong hầm xe",
+                        Status = ActiveStatus.Active
+                    }
+                };
+
+                context.CommonAreaObjectTypes.AddRange(objectTypes);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        private static async Task SeedMaintenanceTasks(AptCareSystemDBContext context)
+        {
+            if (!context.MaintenanceTasks.Any())
+            {
+                var taskTemplates = new List<MaintenanceTask>
+                {
+                    // Tasks cho Thang máy (TypeId = 1)
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 1,
+                        TaskName = "Kiểm tra dây cáp",
+                        TaskDescription = "Kiểm tra độ căng, mài mòn của dây cáp thang máy",
+                        RequiredTools = "Đèn pin, thước đo",
+                        DisplayOrder = 1,
+                        EstimatedDurationMinutes = 30,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 1,
+                        TaskName = "Kiểm tra hệ thống phanh",
+                        TaskDescription = "Test phanh khẩn cấp và phanh thường",
+                        RequiredTools = "Bộ dụng cụ test phanh",
+                        DisplayOrder = 2,
+                        EstimatedDurationMinutes = 45,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 1,
+                        TaskName = "Tra dầu động cơ",
+                        TaskDescription = "Bôi trơn các bộ phận chuyển động",
+                        RequiredTools = "Dầu bôi trơn chuyên dụng",
+                        DisplayOrder = 3,
+                        EstimatedDurationMinutes = 20,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 1,
+                        TaskName = "Kiểm tra cửa cabin",
+                        TaskDescription = "Kiểm tra cảm biến cửa, động cơ đóng mở",
+                        RequiredTools = "Đồng hồ vạn năng",
+                        DisplayOrder = 4,
+                        EstimatedDurationMinutes = 25,
+                        Status = ActiveStatus.Active
+                    },
+
+                    // Tasks cho Đèn chiếu sáng (TypeId = 2)
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 2,
+                        TaskName = "Kiểm tra bóng đèn",
+                        TaskDescription = "Kiểm tra và thay thế các bóng đèn hỏng",
+                        RequiredTools = "Thang, bóng đèn dự phòng",
+                        DisplayOrder = 1,
+                        EstimatedDurationMinutes = 15,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 2,
+                        TaskName = "Vệ sinh chụp đèn",
+                        TaskDescription = "Lau sạch bụi bẩn trên chụp đèn",
+                        RequiredTools = "Khăn, nước lau kính",
+                        DisplayOrder = 2,
+                        EstimatedDurationMinutes = 10,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 2,
+                        TaskName = "Kiểm tra hệ thống điều khiển",
+                        TaskDescription = "Test công tắc tự động, cảm biến ánh sáng",
+                        RequiredTools = "Đồng hồ vạn năng",
+                        DisplayOrder = 3,
+                        EstimatedDurationMinutes = 20,
+                        Status = ActiveStatus.Active
+                    },
+
+                    // Tasks cho Camera an ninh (TypeId = 3)
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 3,
+                        TaskName = "Kiểm tra góc quay camera",
+                        TaskDescription = "Đảm bảo camera quan sát đúng khu vực",
+                        RequiredTools = "Laptop, phần mềm test",
+                        DisplayOrder = 1,
+                        EstimatedDurationMinutes = 15,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 3,
+                        TaskName = "Vệ sinh ống kính",
+                        TaskDescription = "Lau sạch bụi bẩn trên ống kính camera",
+                        RequiredTools = "Khăn mềm, dung dịch vệ sinh ống kính",
+                        DisplayOrder = 2,
+                        EstimatedDurationMinutes = 10,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 3,
+                        TaskName = "Kiểm tra kết nối mạng",
+                        TaskDescription = "Test ping, băng thông truyền hình ảnh",
+                        RequiredTools = "Laptop, cable tester",
+                        DisplayOrder = 3,
+                        EstimatedDurationMinutes = 20,
+                        Status = ActiveStatus.Active
+                    },
+
+                    // Tasks cho Cảm biến báo cháy (TypeId = 4)
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 4,
+                        TaskName = "Test cảm biến khói",
+                        TaskDescription = "Dùng khói test để kiểm tra độ nhạy",
+                        RequiredTools = "Khói test chuyên dụng",
+                        DisplayOrder = 1,
+                        EstimatedDurationMinutes = 10,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 4,
+                        TaskName = "Vệ sinh cảm biến",
+                        TaskDescription = "Hút bụi, lau sạch cảm biến",
+                        RequiredTools = "Máy hút bụi mini, khăn sạch",
+                        DisplayOrder = 2,
+                        EstimatedDurationMinutes = 8,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 4,
+                        TaskName = "Kiểm tra pin backup",
+                        TaskDescription = "Đo điện áp pin dự phòng",
+                        RequiredTools = "Đồng hồ vạn năng",
+                        DisplayOrder = 3,
+                        EstimatedDurationMinutes = 5,
+                        Status = ActiveStatus.Active
+                    },
+
+                    // Tasks cho Tủ điện (TypeId = 5)
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 5,
+                        TaskName = "Kiểm tra CB, contactor",
+                        TaskDescription = "Test các CB, contactor hoạt động tốt",
+                        RequiredTools = "Đồng hồ đo điện, găng tay cách điện",
+                        DisplayOrder = 1,
+                        EstimatedDurationMinutes = 30,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 5,
+                        TaskName = "Siết chặt đầu nối",
+                        TaskDescription = "Siết lại các đầu cốt nối dây điện",
+                        RequiredTools = "Tuốc nơ vít, mỏ lết",
+                        DisplayOrder = 2,
+                        EstimatedDurationMinutes = 20,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 5,
+                        TaskName = "Đo nhiệt độ tủ điện",
+                        TaskDescription = "Dùng súng nhiệt để phát hiện điểm nóng bất thường",
+                        RequiredTools = "Súng đo nhiệt hồng ngoại",
+                        DisplayOrder = 3,
+                        EstimatedDurationMinutes = 15,
+                        Status = ActiveStatus.Active
+                    },
+
+                    // Tasks cho Quạt thông gió (TypeId = 6)
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 6,
+                        TaskName = "Vệ sinh cánh quạt",
+                        TaskDescription = "Lau sạch bụi bẩn trên cánh quạt",
+                        RequiredTools = "Khăn, nước tẩy rửa",
+                        DisplayOrder = 1,
+                        EstimatedDurationMinutes = 20,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 6,
+                        TaskName = "Kiểm tra motor",
+                        TaskDescription = "Nghe tiếng kêu bất thường, đo dòng điện motor",
+                        RequiredTools = "Đồng hồ đo ampe",
+                        DisplayOrder = 2,
+                        EstimatedDurationMinutes = 15,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 6,
+                        TaskName = "Tra dầu ổ trục",
+                        TaskDescription = "Bôi trơn ổ bi, bạc đạn",
+                        RequiredTools = "Dầu bôi trơn",
+                        DisplayOrder = 3,
+                        EstimatedDurationMinutes = 10,
+                        Status = ActiveStatus.Active
+                    },
+
+                    // Tasks cho Bồn nước (TypeId = 7)
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 7,
+                        TaskName = "Vệ sinh bể chứa",
+                        TaskDescription = "Cọ rửa, khử trùng bể nước",
+                        RequiredTools = "Chổi cọ, hóa chất khử trùng",
+                        DisplayOrder = 1,
+                        EstimatedDurationMinutes = 120,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 7,
+                        TaskName = "Kiểm tra phao nước",
+                        TaskDescription = "Test cơ chế đóng mở van phao",
+                        RequiredTools = "Không cần",
+                        DisplayOrder = 2,
+                        EstimatedDurationMinutes = 15,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 7,
+                        TaskName = "Kiểm tra độ kín nắp bể",
+                        TaskDescription = "Đảm bảo không có rò rỉ, côn trùng xâm nhập",
+                        RequiredTools = "Không cần",
+                        DisplayOrder = 3,
+                        EstimatedDurationMinutes = 10,
+                        Status = ActiveStatus.Active
+                    },
+
+                    // Tasks cho Máy lọc nước (TypeId = 8)
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 8,
+                        TaskName = "Thay lõi lọc",
+                        TaskDescription = "Thay thế lõi lọc theo định kỳ",
+                        RequiredTools = "Lõi lọc mới, mỏ lết",
+                        DisplayOrder = 1,
+                        EstimatedDurationMinutes = 30,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 8,
+                        TaskName = "Kiểm tra áp suất nước",
+                        TaskDescription = "Đo áp suất đầu vào, đầu ra",
+                        RequiredTools = "Đồng hồ đo áp suất",
+                        DisplayOrder = 2,
+                        EstimatedDurationMinutes = 10,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 8,
+                        TaskName = "Vệ sinh bơm tuần hoàn",
+                        TaskDescription = "Kiểm tra và vệ sinh bơm nước",
+                        RequiredTools = "Chổi, nước rửa",
+                        DisplayOrder = 3,
+                        EstimatedDurationMinutes = 25,
+                        Status = ActiveStatus.Active
+                    },
+
+                    // Tasks cho Cảm biến CO (TypeId = 9)
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 9,
+                        TaskName = "Test cảm biến CO",
+                        TaskDescription = "Dùng khí CO test để kiểm tra độ nhạy",
+                        RequiredTools = "Khí CO test",
+                        DisplayOrder = 1,
+                        EstimatedDurationMinutes = 10,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 9,
+                        TaskName = "Hiệu chuẩn cảm biến",
+                        TaskDescription = "Điều chỉnh ngưỡng báo động",
+                        RequiredTools = "Laptop, phần mềm hiệu chuẩn",
+                        DisplayOrder = 2,
+                        EstimatedDurationMinutes = 15,
+                        Status = ActiveStatus.Active
+                    },
+                    new MaintenanceTask
+                    {
+                        CommonAreaObjectTypeId = 9,
+                        TaskName = "Kiểm tra hệ thống báo động",
+                        TaskDescription = "Test còi báo, đèn cảnh báo",
+                        RequiredTools = "Không cần",
+                        DisplayOrder = 3,
+                        EstimatedDurationMinutes = 8,
+                        Status = ActiveStatus.Active
+                    }
+                };
+
+                context.MaintenanceTasks.AddRange(taskTemplates);
+                await context.SaveChangesAsync();
+            }
+        }
+
         private static async Task SeedCommonAreaObjects(AptCareSystemDBContext context)
         {
             if (!context.CommonAreaObjects.Any())
             {
                 var areaObjects = new List<CommonAreaObject>();
                 var areas = context.CommonAreas.AsNoTracking().ToList();
+                var objectTypes = context.CommonAreaObjectTypes.AsNoTracking().ToList();
+
+                // Helper để lấy TypeId theo tên
+                int GetTypeId(string typeName)
+                {
+                    return objectTypes.FirstOrDefault(t => t.TypeName == typeName)?.CommonAreaObjectTypeId ?? 1;
+                }
 
                 foreach (var area in areas)
                 {
                     if (area.AreaCode.Contains("CORRIDOR"))
                     {
-                        areaObjects.Add(new CommonAreaObject { CommonAreaId = area.CommonAreaId, Name = $"Đèn hành lang {area.Name}", Description = "Hệ thống chiếu sáng dọc hành lang", Status = ActiveStatus.Active });
-                        areaObjects.Add(new CommonAreaObject { CommonAreaId = area.CommonAreaId, Name = $"Camera hành lang {area.Name}", Description = "Camera an ninh giám sát hành lang", Status = ActiveStatus.Active });
-                        areaObjects.Add(new CommonAreaObject { CommonAreaId = area.CommonAreaId, Name = $"Cảm biến khói {area.Name}", Description = "Phát hiện khói, kết nối hệ thống báo cháy", Status = ActiveStatus.Active });
+                        areaObjects.Add(new CommonAreaObject
+                        {
+                            CommonAreaId = area.CommonAreaId,
+                            CommonAreaObjectTypeId = GetTypeId("Đèn chiếu sáng"),
+                            Name = $"Đèn hành lang {area.Name}",
+                            Description = "Hệ thống chiếu sáng dọc hành lang",
+                            Status = ActiveStatus.Active
+                        });
+                        areaObjects.Add(new CommonAreaObject
+                        {
+                            CommonAreaId = area.CommonAreaId,
+                            CommonAreaObjectTypeId = GetTypeId("Camera an ninh"),
+                            Name = $"Camera hành lang {area.Name}",
+                            Description = "Camera an ninh giám sát hành lang",
+                            Status = ActiveStatus.Active
+                        });
+                        areaObjects.Add(new CommonAreaObject
+                        {
+                            CommonAreaId = area.CommonAreaId,
+                            CommonAreaObjectTypeId = GetTypeId("Cảm biến báo cháy"),
+                            Name = $"Cảm biến khói {area.Name}",
+                            Description = "Phát hiện khói, kết nối hệ thống báo cháy",
+                            Status = ActiveStatus.Active
+                        });
                     }
                     else if (area.AreaCode.Contains("LIFT"))
                     {
-                        areaObjects.Add(new CommonAreaObject { CommonAreaId = area.CommonAreaId, Name = $"Thang máy A - {area.Name}", Description = "Thang máy chở người khu A", Status = ActiveStatus.Active });
-                        areaObjects.Add(new CommonAreaObject { CommonAreaId = area.CommonAreaId, Name = $"Thang máy B - {area.Name}", Description = "Thang máy chở hàng khu B", Status = ActiveStatus.Active });
+                        areaObjects.Add(new CommonAreaObject
+                        {
+                            CommonAreaId = area.CommonAreaId,
+                            CommonAreaObjectTypeId = GetTypeId("Thang máy"),
+                            Name = $"Thang máy A - {area.Name}",
+                            Description = "Thang máy chở người khu A",
+                            Status = ActiveStatus.Active
+                        });
+                        areaObjects.Add(new CommonAreaObject
+                        {
+                            CommonAreaId = area.CommonAreaId,
+                            CommonAreaObjectTypeId = GetTypeId("Thang máy"),
+                            Name = $"Thang máy B - {area.Name}",
+                            Description = "Thang máy chở hàng khu B",
+                            Status = ActiveStatus.Active
+                        });
                     }
                     else if (area.AreaCode.Contains("ELECTRIC"))
                     {
-                        areaObjects.Add(new CommonAreaObject { CommonAreaId = area.CommonAreaId, Name = $"Tủ điện tổng - {area.Name}", Description = "Phân phối điện cho tầng", Status = ActiveStatus.Active });
+                        areaObjects.Add(new CommonAreaObject
+                        {
+                            CommonAreaId = area.CommonAreaId,
+                            CommonAreaObjectTypeId = GetTypeId("Tủ điện"),
+                            Name = $"Tủ điện tổng - {area.Name}",
+                            Description = "Phân phối điện cho tầng",
+                            Status = ActiveStatus.Active
+                        });
                     }
                     else if (area.AreaCode.Contains("WASTE"))
                     {
-                        areaObjects.Add(new CommonAreaObject { CommonAreaId = area.CommonAreaId, Name = $"Quạt thông gió - {area.Name}", Description = "Hút mùi, thông gió phòng rác", Status = ActiveStatus.Active });
+                        areaObjects.Add(new CommonAreaObject
+                        {
+                            CommonAreaId = area.CommonAreaId,
+                            CommonAreaObjectTypeId = GetTypeId("Quạt thông gió"),
+                            Name = $"Quạt thông gió - {area.Name}",
+                            Description = "Hút mùi, thông gió phòng rác",
+                            Status = ActiveStatus.Active
+                        });
                     }
                 }
 
@@ -505,23 +941,72 @@ namespace AptCare.Repository.Seeds
                 var basement = areas.FirstOrDefault(a => a.AreaCode == "PARK-B1");
                 if (basement != null)
                 {
-                    areaObjects.Add(new CommonAreaObject { CommonAreaId = basement.CommonAreaId, Name = "Đèn chiếu sáng hầm xe", Description = "Dàn đèn huỳnh quang chiếu sáng toàn bộ khu vực B1", Status = ActiveStatus.Active });
-                    areaObjects.Add(new CommonAreaObject { CommonAreaId = basement.CommonAreaId, Name = "Camera an ninh hầm B1", Description = "Camera giám sát khu vực đỗ xe", Status = ActiveStatus.Active });
-                    areaObjects.Add(new CommonAreaObject { CommonAreaId = basement.CommonAreaId, Name = "Cảm biến CO", Description = "Giám sát nồng độ khí thải trong hầm", Status = ActiveStatus.Active });
+                    areaObjects.Add(new CommonAreaObject
+                    {
+                        CommonAreaId = basement.CommonAreaId,
+                        CommonAreaObjectTypeId = GetTypeId("Đèn chiếu sáng"),
+                        Name = "Đèn chiếu sáng hầm xe",
+                        Description = "Dàn đèn huỳnh quang chiếu sáng toàn bộ khu vực B1",
+                        Status = ActiveStatus.Active
+                    });
+                    areaObjects.Add(new CommonAreaObject
+                    {
+                        CommonAreaId = basement.CommonAreaId,
+                        CommonAreaObjectTypeId = GetTypeId("Camera an ninh"),
+                        Name = "Camera an ninh hầm B1",
+                        Description = "Camera giám sát khu vực đỗ xe",
+                        Status = ActiveStatus.Active
+                    });
+                    areaObjects.Add(new CommonAreaObject
+                    {
+                        CommonAreaId = basement.CommonAreaId,
+                        CommonAreaObjectTypeId = GetTypeId("Cảm biến CO"),
+                        Name = "Cảm biến CO",
+                        Description = "Giám sát nồng độ khí thải trong hầm",
+                        Status = ActiveStatus.Active
+                    });
                 }
 
                 var roof = areas.FirstOrDefault(a => a.AreaCode == "ROOF");
                 if (roof != null)
                 {
-                    areaObjects.Add(new CommonAreaObject { CommonAreaId = roof.CommonAreaId, Name = "Bồn nước mái", Description = "Bồn chứa nước chính của tòa nhà", Status = ActiveStatus.Active });
-                    areaObjects.Add(new CommonAreaObject { CommonAreaId = roof.CommonAreaId, Name = "Quạt thông gió mái", Description = "Thiết bị hút gió tầng mái", Status = ActiveStatus.Active });
+                    areaObjects.Add(new CommonAreaObject
+                    {
+                        CommonAreaId = roof.CommonAreaId,
+                        CommonAreaObjectTypeId = GetTypeId("Bồn nước"),
+                        Name = "Bồn nước mái",
+                        Description = "Bồn chứa nước chính của tòa nhà",
+                        Status = ActiveStatus.Active
+                    });
+                    areaObjects.Add(new CommonAreaObject
+                    {
+                        CommonAreaId = roof.CommonAreaId,
+                        CommonAreaObjectTypeId = GetTypeId("Quạt thông gió"),
+                        Name = "Quạt thông gió mái",
+                        Description = "Thiết bị hút gió tầng mái",
+                        Status = ActiveStatus.Active
+                    });
                 }
 
                 var pool = areas.FirstOrDefault(a => a.AreaCode == "POOL");
                 if (pool != null)
                 {
-                    areaObjects.Add(new CommonAreaObject { CommonAreaId = pool.CommonAreaId, Name = "Máy lọc nước hồ bơi", Description = "Hệ thống lọc tuần hoàn nước hồ bơi", Status = ActiveStatus.Active });
-                    areaObjects.Add(new CommonAreaObject { CommonAreaId = pool.CommonAreaId, Name = "Đèn hồ bơi", Description = "Chiếu sáng ban đêm quanh hồ bơi", Status = ActiveStatus.Active });
+                    areaObjects.Add(new CommonAreaObject
+                    {
+                        CommonAreaId = pool.CommonAreaId,
+                        CommonAreaObjectTypeId = GetTypeId("Máy lọc nước"),
+                        Name = "Máy lọc nước hồ bơi",
+                        Description = "Hệ thống lọc tuần hoàn nước hồ bơi",
+                        Status = ActiveStatus.Active
+                    });
+                    areaObjects.Add(new CommonAreaObject
+                    {
+                        CommonAreaId = pool.CommonAreaId,
+                        CommonAreaObjectTypeId = GetTypeId("Đèn chiếu sáng"),
+                        Name = "Đèn hồ bơi",
+                        Description = "Chiếu sáng ban đêm quanh hồ bơi",
+                        Status = ActiveStatus.Active
+                    });
                 }
 
                 context.CommonAreaObjects.AddRange(areaObjects);
@@ -570,6 +1055,7 @@ namespace AptCare.Repository.Seeds
                 await context.SaveChangesAsync();
             }
         }
+
         private static async Task SeedAccessories(AptCareSystemDBContext context)
         {
             if (!context.Accessories.Any())
@@ -736,6 +1222,7 @@ namespace AptCare.Repository.Seeds
                 await context.SaveChangesAsync();
             }
         }
+
         private static async Task SeedUserMedias(AptCareSystemDBContext context)
         {
             if (!context.Medias.Any(m => m.Entity == nameof(User)))
@@ -762,5 +1249,18 @@ namespace AptCare.Repository.Seeds
             }
         }
 
+        private static async Task SeedBudget(AptCareSystemDBContext context)
+        {
+            if (!context.Budgets.Any())
+            {
+                var budget = new Budget
+                {
+                    Amount = 100000000
+                };
+
+                context.Budgets.AddRange(budget);
+                await context.SaveChangesAsync();
+            }
+        }
     }
 }
