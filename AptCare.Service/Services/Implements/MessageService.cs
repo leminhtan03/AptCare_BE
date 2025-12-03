@@ -1,24 +1,25 @@
-﻿using AptCare.Repository.Entities;
+﻿using AptCare.Repository;
+using AptCare.Repository.Entities;
+using AptCare.Repository.Enum;
+using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
-using AptCare.Repository;
+using AptCare.Service.Constants;
 using AptCare.Service.Dtos.ChatDtos;
+using AptCare.Service.Dtos.NotificationDtos;
+using AptCare.Service.Exceptions;
+using AptCare.Service.Hub;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.VisualBasic;
-using AptCare.Repository.Enum;
-using AptCare.Repository.Paginate;
-using Microsoft.EntityFrameworkCore;
-using AptCare.Service.Exceptions;
-using AptCare.Service.Hub;
-using AptCare.Service.Dtos.NotificationDtos;
-using AptCare.Service.Constants;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -27,6 +28,7 @@ namespace AptCare.Service.Services.Implements
         private readonly IUserContext _userContext;
         private readonly INotificationService _notificationService;
         private readonly ICloudinaryService _cloudinaryService;
+        private readonly IRabbitMQService _rabbitMQService;
 
         public MessageService(
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
@@ -34,11 +36,13 @@ namespace AptCare.Service.Services.Implements
             IMapper mapper,
             IUserContext userContext,
             INotificationService notificationService,
-            ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
+            ICloudinaryService cloudinaryService,
+            IRabbitMQService rabbitMQService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _notificationService = notificationService;
-            _cloudinaryService = cloudinaryService;
+            _cloudinaryService = cloudinaryService; ;
+            _rabbitMQService = rabbitMQService;
         }
 
         public async Task<MessageDto> CreateTextMessageAsync(TextMessageCreateDto dto)
@@ -243,9 +247,17 @@ namespace AptCare.Service.Services.Implements
                     break;
             }
 
-            await _notificationService.PushNotificationAsync(new NotificationPushRequestDto
+            //await _notificationService.PushNotificationAsync(new NotificationPushRequestDto
+            //{
+            //    Title = title,
+            //    Description = descrption,
+            //    UserIds = receiverIds,
+            //    Image = image
+            //});
+            await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
             {
                 Title = title,
+                Type = NotificationType.Individual,
                 Description = descrption,
                 UserIds = receiverIds,
                 Image = image

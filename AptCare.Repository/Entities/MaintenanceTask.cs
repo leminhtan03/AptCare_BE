@@ -9,25 +9,32 @@ using System.Threading.Tasks;
 
 namespace AptCare.Repository.Entities
 {
-    public class CommonAreaObject
+    public class MaintenanceTask
     {
         [Key]
-        public int CommonAreaObjectId { get; set; }
-        [Required]
-        [ForeignKey("CommonArea")]
-        public int CommonAreaId { get; set; }
-        public CommonArea CommonArea { get; set; } = null!;
+        public int MaintenanceTaskId { get; set; }
+
         [Required]
         [ForeignKey("CommonAreaObjectType")]
         public int CommonAreaObjectTypeId { get; set; }
+
         public CommonAreaObjectType CommonAreaObjectType { get; set; } = null!;
+
         [Required]
         [MaxLength(256)]
-        public string Name { get; set; } = null!;
+        public string TaskName { get; set; } = null!;
+
         [MaxLength(1000)]
-        public string? Description { get; set; }
+        public string? TaskDescription { get; set; }
+
+        [MaxLength(500)]
+        public string? RequiredTools { get; set; }
+
+        public int DisplayOrder { get; set; } 
+
+        public double EstimatedDurationMinutes { get; set; }
+
         public ActiveStatus Status { get; set; }
-        public ICollection<Report>? Reports { get; set; }
-        public MaintenanceSchedule? MaintenanceSchedule { get; set; }
+        public ICollection<RepairRequestTask>? RepairRequestTasks { get; set; }
     }
 }

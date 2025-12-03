@@ -49,5 +49,6 @@ namespace AptCare.Repository.Entities
         public ICollection<Feedback>? Feedbacks { get; set; }
         public ICollection<Invoice>? Invoices { get; set; }
         public ICollection<Contract>? Contracts { get; set; }
+        public ICollection<RepairRequestTask>? RepairRequestTasks { get; set; }
     }
 }
