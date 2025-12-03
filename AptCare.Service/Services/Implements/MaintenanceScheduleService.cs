@@ -34,6 +34,7 @@ namespace AptCare.Service.Services.Implements
                     .SingleOrDefaultAsync(
                         predicate: x => x.CommonAreaObjectId == dto.CommonAreaObjectId,
                         include: i => i.Include(x => x.MaintenanceSchedule)
+                                       .Include(x => x.CommonAreaObjectType.MaintenanceTasks)
                     );
 
                 if (commonAreaObject == null)
@@ -60,8 +61,10 @@ namespace AptCare.Service.Services.Implements
                 if (dto.RequiredTechnicians <= 0)
                     throw new AppValidationException("Số lượng kỹ thuật viên yêu cầu phải lớn hơn 0.");
 
-                if (dto.EstimatedDuration <= 0)
-                    throw new AppValidationException("Thời gian dự kiến phải lớn hơn 0 giờ.");
+                if (commonAreaObject.CommonAreaObjectType.MaintenanceTasks.Count == 0)
+                {
+                    throw new AppValidationException("Chưa có công việc bảo trì cho loại đối tượng này.");
+                }
 
                 if (dto.NextScheduledDate < DateOnly.FromDateTime(DateTime.Now))
                     throw new AppValidationException("Ngày bảo trì tiếp theo không được trong quá khứ.");
@@ -69,6 +72,7 @@ namespace AptCare.Service.Services.Implements
                 var schedule = _mapper.Map<MaintenanceSchedule>(dto);
                 schedule.CreatedAt = DateTime.Now;
                 schedule.Status = ActiveStatus.Active;
+                schedule.EstimatedDuration = commonAreaObject.CommonAreaObjectType.MaintenanceTasks.Sum(mt => mt.EstimatedDurationMinutes) / 60;
 
                 await _unitOfWork.GetRepository<MaintenanceSchedule>().InsertAsync(schedule);
                 await _unitOfWork.CommitAsync();
@@ -194,24 +198,7 @@ namespace AptCare.Service.Services.Implements
                     });
                     schedule.RequiredTechnicians = dto.RequiredTechnicians.Value;
                 }
-
-                if (dto.EstimatedDuration.HasValue && dto.EstimatedDuration.Value != schedule.EstimatedDuration)
-                {
-                    if (dto.EstimatedDuration.Value <= 0)
-                        throw new AppValidationException("Thời gian dự kiến phải lớn hơn 0 giờ.");
-
-                    trackingHistories.Add(new MaintenanceTrackingHistory
-                    {
-                        MaintenanceScheduleId = id,
-                        UserId = userId,
-                        Field = nameof(schedule.EstimatedDuration),
-                        OldValue = schedule.EstimatedDuration.ToString(),
-                        NewValue = dto.EstimatedDuration.Value.ToString(),
-                        UpdatedAt = DateTime.Now
-                    });
-                    schedule.EstimatedDuration = dto.EstimatedDuration.Value;
-                }
-
+                
                 // Lưu các thay đổi
                 if (trackingHistories.Any())
                 {

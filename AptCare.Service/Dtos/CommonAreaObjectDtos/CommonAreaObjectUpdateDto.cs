@@ -13,6 +13,9 @@ namespace AptCare.Service.Dtos.CommonAreaObjectDtos
         [Required(ErrorMessage = "ID khu vực chung không được để trống.")]
         public int CommonAreaId { get; set; }
 
+        [Required(ErrorMessage = "ID loại đối tượng không được để trống.")]
+        public int CommonAreaObjectTypeId { get; set; }
+
         [Required(ErrorMessage = "Tên đối tượng không được để trống.")]
         [MaxLength(256, ErrorMessage = "Tên đối tượng không được vượt quá 256 ký tự.")]
         public string Name { get; set; } = null!;
