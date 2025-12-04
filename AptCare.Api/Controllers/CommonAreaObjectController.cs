@@ -94,6 +94,34 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
+        /// Lấy danh sách đối tượng theo ID loại đối tượng khu vực chung.
+        /// </summary>
+        /// <remarks>
+        /// <b>Chỉ role:</b> tất cả người dùng đã đăng nhập.<br/>
+        /// Dùng khi cần hiển thị các đối tượng thuộc một khu vực chung cụ thể.
+        /// </remarks>
+        /// <param name="typeId">ID của loại đối tượng khu vực chung cần lấy danh sách đối tượng.</param>
+        /// <returns>
+        /// <b>CommonAreaObjectBasicDto[]:</b>
+        /// <ul>
+        ///   <li><b>CommonAreaObjectId</b>: ID đối tượng khu vực chung.</li>
+        ///   <li><b>Name</b>: Tên đối tượng.</li>
+        ///   <li><b>Status</b>: Trạng thái đối tượng.</li>
+        /// </ul>
+        /// </returns>
+        /// <response code="200">Trả về danh sách đối tượng theo khu vực chung.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        [HttpGet("by-type/{typeId}")]
+        [Authorize]
+        [ProducesResponseType(typeof(IEnumerable<CommonAreaObjectBasicDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult> GetCommonAreaObjectsByType(int typeId)
+        {
+            var result = await _commonAreaObjectService.GetCommonAreaObjectsByTypeAsync(typeId);
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Lấy thông tin chi tiết của một đối tượng khu vực chung theo ID.
         /// </summary>
         /// <remarks>

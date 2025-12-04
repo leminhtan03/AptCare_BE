@@ -279,7 +279,7 @@ namespace AptCare.Service.Services.Implements
 
             var result = await _unitOfWork.GetRepository<CommonAreaObject>().GetListAsync(
                 selector: s => _mapper.Map<CommonAreaObjectBasicDto>(s),
-                predicate: p => p.CommonAreaId == commonAreaId
+                predicate: p => p.CommonAreaId == commonAreaId && p.Status == ActiveStatus.Active
             );
 
             // Cache for 1 hour
@@ -298,7 +298,6 @@ namespace AptCare.Service.Services.Implements
                 return cachedResult;
             }
 
-            // Verify that the type exists
             var typeExists = await _unitOfWork.GetRepository<CommonAreaObjectType>().AnyAsync(
                 predicate: x => x.CommonAreaObjectTypeId == typeId);
 
@@ -307,10 +306,9 @@ namespace AptCare.Service.Services.Implements
 
             var result = await _unitOfWork.GetRepository<CommonAreaObject>().GetListAsync(
                 selector: s => _mapper.Map<CommonAreaObjectBasicDto>(s),
-                predicate: p => p.CommonAreaObjectTypeId == typeId
+                predicate: p => p.CommonAreaObjectTypeId == typeId && p.Status == ActiveStatus.Active
             );
 
-            // Cache for 1 hour
             await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1));
 
             return result;
