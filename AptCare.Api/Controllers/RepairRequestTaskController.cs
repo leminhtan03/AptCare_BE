@@ -38,6 +38,7 @@ namespace AptCare.Api.Controllers
         /// <response code="200">Trả về danh sách nhiệm vụ sửa chữa.</response>
         /// <response code="404">Không tìm thấy yêu cầu sửa chữa.</response>
         /// <response code="401">Không có quyền truy cập.</response>
+        [HttpGet("by-repair-request")]
         [Authorize(Roles = $"{nameof(AccountRole.Technician)},{nameof(AccountRole.TechnicianLead)},{nameof(AccountRole.Manager)}")]
         [Authorize]
         [ProducesResponseType(typeof(IEnumerable<RepairRequestTaskDto>), StatusCodes.Status200OK)]
