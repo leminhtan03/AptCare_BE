@@ -2,6 +2,7 @@
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
+using AptCare.Repository.Enum.TransactionEnum;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.ApproveReportDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
@@ -126,6 +127,8 @@ namespace AptCare.Service.Services.Implements
         {
             var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
             var inspectionRepo = _unitOfWork.GetRepository<InspectionReport>();
+            var budgetRepo = _unitOfWork.GetRepository<Budget>();
+            var transactionRepo = _unitOfWork.GetRepository<Transaction>();
 
             var inspectionReport = await inspectionRepo.SingleOrDefaultAsync(
                 predicate: ir => ir.InspectionReportId == dto.ReportId,
@@ -135,7 +138,9 @@ namespace AptCare.Service.Services.Implements
 
             if (inspectionReport == null)
             {
-                throw new AppValidationException($"Không tìm thấy báo cáo kiểm tra. ReportId: {dto.ReportId}", StatusCodes.Status404NotFound);
+                throw new AppValidationException(
+                    $"Không tìm thấy báo cáo kiểm tra. ReportId: {dto.ReportId}",
+                    StatusCodes.Status404NotFound);
             }
 
             var currentApproval = inspectionReport.ReportApprovals?
@@ -162,86 +167,128 @@ namespace AptCare.Service.Services.Implements
                 reportApprovalRepo.UpdateAsync(currentApproval);
                 inspectionReport.Status = dto.Status;
 
-                var invoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                var mainInvoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
                     predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
                                     DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt) &&
-                                    x.CreatedAt < inspectionReport.CreatedAt,
+                                    x.CreatedAt < inspectionReport.CreatedAt &&
+                                    x.Type == InvoiceType.InternalRepair,
                     include: i => i.Include(x => x.InvoiceAccessories),
                     orderBy: o => o.OrderByDescending(x => x.CreatedAt)
-                    );
+                );
 
-                if (invoice != null)
+                if (mainInvoice != null)
                 {
                     if (dto.Status == ReportStatus.Approved)
                     {
-                        invoice.Status = InvoiceStatus.Approved;
-                    }
-                    else
-                    {
-                        invoice.Status = InvoiceStatus.Cancelled;
-                    }
-
-                    if (invoice.Type == InvoiceType.InternalRepair)
-                    {
-                        var oldInvoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
-                            predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
-                                            x.CreatedAt < inspectionReport.CreatedAt &&
-                                            x.InvoiceId != invoice.InvoiceId &&
-                                            x.Type == InvoiceType.InternalRepair &&
-                                            x.Status == InvoiceStatus.Approved,
-                            include: i => i.Include(x => x.InvoiceAccessories),
-                            orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                        mainInvoice.Status = InvoiceStatus.Approved;
+                        foreach (var invoiceAccessory in mainInvoice.InvoiceAccessories.Where(a => a.AccessoryId.HasValue))
+                        {
+                            var accessoryDb = await _unitOfWork.GetRepository<Accessory>().SingleOrDefaultAsync(
+                                predicate: p => p.AccessoryId == invoiceAccessory.AccessoryId.Value &&
+                                               p.Status == ActiveStatus.Active
                             );
 
-                        if (oldInvoice != null)
-                        {
-                            if (oldInvoice.InvoiceAccessories != null && oldInvoice.InvoiceAccessories.Count != 0)
+                            if (accessoryDb == null)
                             {
-                                foreach (var accessory in invoice.InvoiceAccessories)
-                                {
-                                    var accessoryDb = await _unitOfWork.GetRepository<Accessory>().SingleOrDefaultAsync(
-                                                predicate: p => p.AccessoryId == accessory.AccessoryId && p.Status == ActiveStatus.Active
-                                    );
-                                    if (accessoryDb == null)
-                                    {
-                                        throw new AppValidationException($"Phụ kiện không tồn tại.", StatusCodes.Status404NotFound);
-                                    }
-                                    if (accessoryDb.Quantity < accessory.Quantity)
-                                    {
-                                        throw new AppValidationException($"Phụ kiện trong kho không đủ số lượng.");
-                                    }
-
-                                    accessoryDb.Quantity += accessory.Quantity;
-                                    _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessoryDb);
-                                }
+                                throw new AppValidationException(
+                                    $"Phụ kiện '{invoiceAccessory.Name}' không tồn tại.",
+                                    StatusCodes.Status404NotFound);
                             }
+
+                            if (accessoryDb.Quantity < invoiceAccessory.Quantity)
+                            {
+                                throw new AppValidationException(
+                                    $"Phụ kiện '{invoiceAccessory.Name}' không đủ số lượng. " +
+                                    $"Còn: {accessoryDb.Quantity}, Cần: {invoiceAccessory.Quantity}",
+                                    StatusCodes.Status400BadRequest);
+                            }
+                            accessoryDb.Quantity -= invoiceAccessory.Quantity;
+                            _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessoryDb);
+                        }
+                        var purchaseInvoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                            predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
+                                            x.Type == InvoiceType.AccessoryPurchase &&
+                                            x.Status == InvoiceStatus.Draft &&
+                                            DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt),
+                            include: i => i.Include(x => x.InvoiceAccessories),
+                            orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                        );
+
+                        if (purchaseInvoice != null)
+                        {
+                            // Kiểm tra budget
+                            var budget = await budgetRepo.SingleOrDefaultAsync();
+                            if (budget == null)
+                            {
+                                throw new AppValidationException(
+                                    "Không tìm thấy thông tin ngân sách.",
+                                    StatusCodes.Status404NotFound);
+                            }
+
+                            if (budget.Amount < purchaseInvoice.TotalAmount)
+                            {
+                                throw new AppValidationException(
+                                    $"Ngân sách không đủ để mua phụ kiện.\n" +
+                                    $"Cần: {purchaseInvoice.TotalAmount:N0} VNĐ\n" +
+                                    $"Còn: {budget.Amount:N0} VNĐ\n" +
+                                    $"Thiếu: {(purchaseInvoice.TotalAmount - budget.Amount):N0} VNĐ",
+                                    StatusCodes.Status400BadRequest);
+                            }
+                            budget.Amount -= purchaseInvoice.TotalAmount;
+                            budgetRepo.UpdateAsync(budget);
+
+                            // ✅ TẠO TRANSACTION GHI NHẬN CHI TIÊU
+                            var purchaseDetails = string.Join(", ",
+                                purchaseInvoice.InvoiceAccessories.Select(a =>
+                                    $"{a.Name} x{a.Quantity} x {a.Price:N0}đ"));
+
+                            var transaction = new Transaction
+                            {
+                                UserId = userId,
+                                InvoiceId = purchaseInvoice.InvoiceId,
+                                TransactionType = TransactionType.Cash,
+                                Status = TransactionStatus.Success,
+                                Provider = PaymentProvider.Budget,
+                                Direction = TransactionDirection.Expense,
+                                Amount = purchaseInvoice.TotalAmount,
+                                Description = $"Mua phụ kiện để sửa chữa ngay cho yêu cầu #{inspectionReport.Appointment.RepairRequestId}.\n" +
+                                             $"Chi tiết: {purchaseDetails}.\n" +
+                                             $"Phụ kiện được sử dụng trực tiếp, không nhập kho.\n" +
+                                             $"Người phê duyệt: {role}",
+                                CreatedAt = DateTime.Now,
+                                PaidAt = DateTime.Now
+                            };
+
+                            await transactionRepo.InsertAsync(transaction);
+
+                            purchaseInvoice.Status = InvoiceStatus.Approved;
+                            _unitOfWork.GetRepository<Invoice>().UpdateAsync(purchaseInvoice);
                         }
 
-                        if (invoice.InvoiceAccessories != null && invoice.InvoiceAccessories.Count != 0)
-                        {
-                            foreach (var accessory in invoice.InvoiceAccessories)
-                            {
-                                var accessoryDb = await _unitOfWork.GetRepository<Accessory>().SingleOrDefaultAsync(
-                                            predicate: p => p.AccessoryId == accessory.AccessoryId && p.Status == ActiveStatus.Active
-                                );
-                                if (accessoryDb == null)
-                                {
-                                    throw new AppValidationException($"Phụ kiện không tồn tại.", StatusCodes.Status404NotFound);
-                                }
-                                if (accessoryDb.Quantity < accessory.Quantity)
-                                {
-                                    throw new AppValidationException($"Phụ kiện trong kho không đủ số lượng.");
-                                }
-
-                                accessoryDb.Quantity -= accessory.Quantity;
-                                _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessoryDb);
-                            }
-                        }
+                        _unitOfWork.GetRepository<Invoice>().UpdateAsync(mainInvoice);
                     }
+                    else if (dto.Status == ReportStatus.Rejected)
+                    {
+                        mainInvoice.Status = InvoiceStatus.Cancelled;
 
-                    _unitOfWork.GetRepository<Invoice>().UpdateAsync(invoice);
+                        // Hủy invoice mua phụ kiện (nếu có)
+                        var purchaseInvoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                            predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
+                                            x.Type == InvoiceType.AccessoryPurchase &&
+                                            x.Status == InvoiceStatus.Draft &&
+                                            DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt)
+                        );
+
+                        if (purchaseInvoice != null)
+                        {
+                            purchaseInvoice.Status = InvoiceStatus.Cancelled;
+                            _unitOfWork.GetRepository<Invoice>().UpdateAsync(purchaseInvoice);
+                        }
+
+                        _unitOfWork.GetRepository<Invoice>().UpdateAsync(mainInvoice);
+                    }
                 }
-            }                           
+            }
 
             inspectionRepo.UpdateAsync(inspectionReport);
         }

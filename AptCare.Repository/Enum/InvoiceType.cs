@@ -8,7 +8,8 @@ namespace AptCare.Repository.Enum
 {
     public enum InvoiceType
     {
-        InternalRepair = 1,   
-        ExternalContractor = 2 
+        InternalRepair = 1,
+        ExternalContractor = 2,
+        AccessoryPurchase = 3
     }
 }
