@@ -15,5 +15,7 @@ namespace AptCare.Repository.Enum
         AcceptancePendingVerify = 5, // Chờ nghiệm thu
         Completed = 6,            // Hoàn tất
         Cancelled = 7,        // Bị từ chối
+        WaitingManagerApproval = 8, // Chờ duyệt bởi Manager/TechLead
+        Rejected = 9               // Bị từ chối sau khi chờ duyệt
     }
 }

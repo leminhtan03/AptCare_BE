@@ -8,15 +8,12 @@ using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Exceptions;
-using AptCare.Service.Services.Implements.RabbitMQ;
 using AptCare.Service.Services.Interfaces;
 using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Asn1.Ocsp;
-using System;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 
@@ -29,14 +26,16 @@ namespace AptCare.Service.Services.Implements
         private readonly IAppointmentAssignService _appointmentAssignService;
         private readonly INotificationService _notificationService;
         private readonly IRabbitMQService _rabbitMQService;
+        private readonly IMailSenderService _mailSenderService;
 
-        public RepairRequestService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<RepairRequestService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService, IAppointmentAssignService appointmentAssignService, INotificationService notificationService, IRabbitMQService rabbitMQService) : base(unitOfWork, logger, mapper)
+        public RepairRequestService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<RepairRequestService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService, IAppointmentAssignService appointmentAssignService, INotificationService notificationService, IRabbitMQService rabbitMQService, IMailSenderService mailSenderService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _cloudinaryService = cloudinaryService;
             _appointmentAssignService = appointmentAssignService;
             _notificationService = notificationService;
             _rabbitMQService = rabbitMQService;
+            _mailSenderService = mailSenderService;
         }
 
         public async Task<string> CreateNormalRepairRequestAsync(RepairRequestNormalCreateDto dto)
@@ -608,6 +607,7 @@ namespace AptCare.Service.Services.Implements
                                        .ThenInclude(a => a.AppointmentAssigns)
                                    .Include(x => x.Appointments)
                                        .ThenInclude(a => a.AppointmentTrackings)
+                                   .Include(x => x.MaintenanceSchedule)
                 );
 
                 if (request == null)
@@ -623,6 +623,15 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Chuyển trạng thái không hợp lệ từ " +
                         $"{currentStatus} sang {dto.NewStatus}.", StatusCodes.Status400BadRequest);
                 }
+                var role = _userContext.Role;
+                if (request.MaintenanceSchedule != null)
+                {
+                    if (dto.NewStatus == RequestStatus.Approved && role == nameof(AccountRole.TechnicianLead))
+                    {
+                        dto.NewStatus = RequestStatus.WaitingManagerApproval;
+                    }
+                }
+
                 await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
                 {
                     RepairRequestId = dto.RepairRequestId,
@@ -638,7 +647,22 @@ namespace AptCare.Service.Services.Implements
                     await ToggleCancleRequestAsync(appointments, dto, userId);
                 }
                 await _unitOfWork.CommitAsync();
-                await SendNotificationForUserApartment(dto.RepairRequestId, dto.NewStatus);
+                if (request.MaintenanceSchedule != null)
+                {
+                    if (role == nameof(AccountRole.Manager))
+                    {
+                        await SendNotificationForMaintenanceRequest(dto.RepairRequestId, dto.NewStatus, AccountRole.TechnicianLead);
+                    }
+                    else if (role == nameof(AccountRole.TechnicianLead))
+                    {
+                        await SendNotificationForMaintenanceRequest(dto.RepairRequestId, dto.NewStatus, AccountRole.Manager);
+                    }
+                }
+                else
+                {
+                    // XỬ LÝ CHO REPAIR REQUEST THÔNG THƯỜNG CỦA CƯ DÂN
+                    await SendNotificationForUserApartment(dto.RepairRequestId, dto.NewStatus);
+                }
 
                 _logger.LogInformation(
                     "Successfully toggled repair request {RepairRequestId} status from {OldStatus} to {NewStatus}",
@@ -662,9 +686,11 @@ namespace AptCare.Service.Services.Implements
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
-                if (dto.NewStatus != RequestStatus.Approved && dto.NewStatus != RequestStatus.Cancelled && dto.NewStatus != RequestStatus.Scheduling)
+                var role = _userContext.Role;
+
+                if (dto.NewStatus != RequestStatus.Approved && dto.NewStatus != RequestStatus.Cancelled && dto.NewStatus != RequestStatus.Scheduling && dto.NewStatus != RequestStatus.Rejected)
                     throw new AppValidationException(
-                        "Trạng thái mới phải là Approved hoặc Cancelled.",
+                        "Trạng thái mới phải là Approved hoặc Cancelled hoặc Rejected.",
                         StatusCodes.Status400BadRequest
                     );
                 await ToggleRepairRequestStatusAsync(dto);
@@ -720,7 +746,6 @@ namespace AptCare.Service.Services.Implements
                 }
             }
         }
-
         private bool ValidateStatusTransition(RequestStatus? currentStatus, RequestStatus newStatus)
         {
             var validNextStatuses = currentStatus switch
@@ -728,7 +753,8 @@ namespace AptCare.Service.Services.Implements
                 RequestStatus.Pending => new[]
                 {
                     RequestStatus.Approved,
-                    RequestStatus.Scheduling
+                    RequestStatus.Scheduling,
+                    RequestStatus.WaitingManagerApproval
                 },
                 RequestStatus.Approved => new[]
                 {
@@ -745,11 +771,22 @@ namespace AptCare.Service.Services.Implements
                 RequestStatus.Scheduling => new[]
                 {
                     RequestStatus.InProgress,
-                    RequestStatus.Approved
+                    RequestStatus.Approved,
+                    RequestStatus.WaitingManagerApproval
                 },
                 RequestStatus.AcceptancePendingVerify => new[]
                 {
                     RequestStatus.Completed
+                },
+                RequestStatus.WaitingManagerApproval => new[]
+                {
+                    RequestStatus.Approved,
+                    RequestStatus.Rejected
+                },
+                RequestStatus.Rejected => new[]
+                {
+                    RequestStatus.WaitingManagerApproval,
+                    RequestStatus.Cancelled,
                 },
                 RequestStatus.Completed => Array.Empty<RequestStatus>(),
                 RequestStatus.Cancelled => Array.Empty<RequestStatus>(),
@@ -760,49 +797,95 @@ namespace AptCare.Service.Services.Implements
 
         private async Task SendNotificationForUserApartment(int repairRequestId, RequestStatus newStatus)
         {
-            var userIds = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
-                    selector: s => s.Apartment.UserApartments.Where(ua => ua.Status == ActiveStatus.Active)
-                                                             .Select(x => x.UserId),
-                    predicate: p => p.RepairRequestId == repairRequestId,
-                    include: i => i.Include(x => x.Apartment)
-                                        .ThenInclude(x => x.UserApartments)
-                    );
+            var requestData = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                selector: s => new
+                {
+                    UserApartments = s.Apartment.UserApartments.Where(ua => ua.Status == ActiveStatus.Active),
+                    s.RepairRequestId,
+                    s.Object,
+                    s.Apartment.Room,
+                    s.Description,
+                    Appointments = s.Appointments.OrderByDescending(a => a.CreatedAt).Take(1)
+                },
+                predicate: p => p.RepairRequestId == repairRequestId,
+                include: i => i.Include(x => x.Apartment)
+                                    .ThenInclude(x => x.UserApartments)
+                                        .ThenInclude(ua => ua.User)
+                                .Include(x => x.Appointments)
+                                    .ThenInclude(a => a.AppointmentAssigns)
+                                        .ThenInclude(aa => aa.Technician)
+            );
+
+            if (requestData?.UserApartments == null || !requestData.UserApartments.Any())
+            {
+                return;
+            }
 
             string description = string.Empty;
+            string statusMessage = string.Empty;
+            string statusClass = string.Empty;
+            string statusText = string.Empty;
 
             switch (newStatus)
             {
                 case RequestStatus.Pending:
                     description = "Yêu cầu sửa chữa của bạn đang chờ duyệt.";
+                    statusMessage = "Yêu cầu sửa chữa của bạn đã được tiếp nhận và đang chờ phê duyệt từ bộ phận kỹ thuật.";
+                    statusClass = "pending";
+                    statusText = "Chờ duyệt";
                     break;
 
                 case RequestStatus.Approved:
                     description = "Yêu cầu sửa chữa của bạn đã được duyệt và đang chờ bắt đầu.";
+                    statusMessage = "Yêu cầu sửa chữa của bạn đã được phê duyệt. Chúng tôi sẽ sớm liên hệ và sắp xếp lịch hẹn.";
+                    statusClass = "approved";
+                    statusText = "Đã duyệt";
                     break;
 
                 case RequestStatus.InProgress:
                     description = "Kỹ thuật viên đang tiến hành xử lý yêu cầu sửa chữa của bạn.";
+                    statusMessage = "Kỹ thuật viên đang tiến hành sửa chữa. Chúng tôi sẽ thông báo khi hoàn thành.";
+                    statusClass = "inprogress";
+                    statusText = "Đang xử lý";
                     break;
+
                 case RequestStatus.Scheduling:
                     description = "Yêu cầu sửa chữa của bạn đang trong quá trình thay đổi lịch trình.";
+                    statusMessage = "Lịch hẹn đang được điều chỉnh. Vui lòng chờ thông báo lịch mới.";
+                    statusClass = "scheduling";
+                    statusText = "Đang sắp xếp lịch";
                     break;
 
                 case RequestStatus.AcceptancePendingVerify:
                     description = "Yêu cầu sửa chữa của bạn đang chờ nghiệm thu.";
+                    statusMessage = "Công việc sửa chữa đã hoàn tất và đang chờ bạn xác nhận nghiệm thu.";
+                    statusClass = "pending";
+                    statusText = "Chờ nghiệm thu";
                     break;
 
                 case RequestStatus.Completed:
                     description = "Yêu cầu sửa chữa của bạn đã được hoàn tất.";
+                    statusMessage = "Yêu cầu sửa chữa đã được hoàn thành. Cảm ơn bạn đã sử dụng dịch vụ!";
+                    statusClass = "completed";
+                    statusText = "Hoàn thành";
                     break;
 
                 case RequestStatus.Cancelled:
                     description = "Yêu cầu sửa chữa của bạn đã bị hủy.";
+                    statusMessage = "Yêu cầu sửa chữa đã bị hủy. Nếu có thắc mắc, vui lòng liên hệ bộ phận hỗ trợ.";
+                    statusClass = "cancelled";
+                    statusText = "Đã hủy";
                     break;
 
                 default:
                     description = "Trạng thái yêu cầu sửa chữa không xác định.";
+                    statusMessage = "Có cập nhật mới về yêu cầu sửa chữa của bạn.";
+                    statusClass = "pending";
+                    statusText = "Cập nhật";
                     break;
             }
+
+            var userIds = requestData.UserApartments.Select(ua => ua.UserId).ToList();
 
             await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
             {
@@ -811,8 +894,318 @@ namespace AptCare.Service.Services.Implements
                 Description = description,
                 UserIds = userIds
             });
-        }
 
+            foreach (var userApartment in requestData.UserApartments)
+            {
+                var user = userApartment.User;
+                if (user == null || string.IsNullOrEmpty(user.Email))
+                    continue;
+
+                var latestAppointment = requestData.Appointments?.FirstOrDefault();
+                var technicianName = latestAppointment?.AppointmentAssigns?
+                    .Select(aa => $"{aa.Technician?.FirstName} {aa.Technician?.LastName}")
+                    .FirstOrDefault();
+
+                var replacements = new Dictionary<string, string>
+                {
+                    ["SystemName"] = "AptCare",
+                    ["ResidentName"] = $"{user.FirstName} {user.LastName}",
+                    ["StatusMessage"] = statusMessage,
+                    ["RequestId"] = repairRequestId.ToString(),
+                    ["ObjectName"] = requestData.Object ?? "N/A",
+                    ["ApartmentRoom"] = requestData.Room ?? "N/A",
+                    ["StatusClass"] = statusClass,
+                    ["StatusText"] = statusText,
+                    ["UpdatedAt"] = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
+                    ["Note"] = requestData.Description ?? "",
+                    ["AppointmentTime"] = latestAppointment?.StartTime.ToString("dd/MM/yyyy HH:mm") ?? "",
+                    ["TechnicianName"] = technicianName ?? "",
+                    ["RequestUrl"] = $"https://app.aptcare.vn/repair-requests/{repairRequestId}",
+                    ["SupportEmail"] = "support@aptcare.vn",
+                    ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
+                    ["Year"] = DateTime.Now.Year.ToString()
+                };
+
+                await _mailSenderService.SendEmailWithTemplateAsync(
+                    toEmail: user.Email,
+                    subject: $"[AptCare] Cập nhật yêu cầu sửa chữa #{repairRequestId}",
+                    templateName: "RepairRequestNotification",
+                    replacements: replacements
+                );
+
+                _logger.LogInformation("Sent repair request notification email to {Email} for request {RequestId}",
+                    user.Email,
+                    repairRequestId
+                );
+            }
+        }
+        private async Task SendNotificationForMaintenanceRequest(int repairRequestId, RequestStatus newStatus, AccountRole targetRole)
+        {
+            var requestData = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                selector: s => new
+                {
+                    s.RepairRequestId,
+                    s.Object,
+                    s.Description,
+                    MaintenanceSchedule = s.MaintenanceSchedule,
+                    CommonAreaName = s.MaintenanceSchedule.CommonAreaObject.CommonArea.Name,
+                    Appointments = s.Appointments.OrderByDescending(a => a.CreatedAt).Take(1)
+                },
+                predicate: p => p.RepairRequestId == repairRequestId,
+                include: i => i.Include(x => x.MaintenanceSchedule)
+                                    .ThenInclude(ms => ms.CommonAreaObject)
+                                        .ThenInclude(cao => cao.CommonArea)
+                                .Include(x => x.Appointments)
+                                    .ThenInclude(a => a.AppointmentAssigns)
+                                        .ThenInclude(aa => aa.Technician)
+            );
+
+            if (requestData == null)
+            {
+                _logger.LogWarning("Cannot find repair request {RequestId} for maintenance notification", repairRequestId);
+                return;
+            }
+
+            IEnumerable<int> userIds = Enumerable.Empty<int>();
+            IEnumerable<User> users = Enumerable.Empty<User>();
+
+            if (targetRole == AccountRole.TechnicianLead)
+            {
+                var trackings = await _unitOfWork.GetRepository<RepairRequest>().GetListAsync(
+                    selector: s => s.RequestTrackings
+                        .Where(ua => ua.Status == RequestStatus.WaitingManagerApproval && ua.UpdatedBy != null)
+                        .Select(x => x.UpdatedBy.Value),
+                    predicate: p => p.RepairRequestId == repairRequestId,
+                    include: i => i.Include(x => x.RequestTrackings)
+                );
+                userIds = trackings.SelectMany(x => x);
+
+                users = await _unitOfWork.GetRepository<User>().GetListAsync(
+                    predicate: u => userIds.Contains(u.UserId),
+                    include: i => i.Include(u => u.Account)
+                );
+            }
+            else if (targetRole == AccountRole.Manager)
+            {
+                users = await _unitOfWork.GetRepository<User>().GetListAsync(
+                    predicate: u => u.Account.Role == AccountRole.Manager,
+                    include: i => i.Include(u => u.Account)
+                );
+                userIds = users.Select(u => u.UserId);
+            }
+
+            if (!userIds.Any())
+            {
+                return;
+            }
+
+            string notificationDescription = string.Empty;
+            string emailStatusMessage = string.Empty;
+            string statusClass = string.Empty;
+            string statusText = string.Empty;
+            string emailTitle = string.Empty;
+
+            switch (newStatus)
+            {
+                case RequestStatus.WaitingManagerApproval:
+                    notificationDescription = "Có yêu cầu bảo trì được tạo bởi kỹ thuật viên trưởng đang chờ duyệt.";
+                    emailStatusMessage = "Yêu cầu bảo trì định kỳ đang chờ phê duyệt từ quản lý.";
+                    statusClass = "pending";
+                    statusText = "Chờ duyệt";
+                    emailTitle = "Yêu cầu bảo trì chờ phê duyệt";
+                    break;
+
+                case RequestStatus.Approved:
+                    notificationDescription = "Yêu cầu bảo trì đã được duyệt.";
+                    emailStatusMessage = "Yêu cầu bảo trì định kỳ đã được phê duyệt và sẽ được thực hiện theo lịch.";
+                    statusClass = "approved";
+                    statusText = "Đã duyệt";
+                    emailTitle = "Yêu cầu bảo trì đã được phê duyệt";
+                    break;
+
+                case RequestStatus.Rejected:
+                    notificationDescription = "Yêu cầu duyệt bảo trì đã bị từ chối.";
+                    emailStatusMessage = "Yêu cầu bảo trì định kỳ đã bị từ chối. Vui lòng xem lý do và điều chỉnh lại.";
+                    statusClass = "cancelled";
+                    statusText = "Đã từ chối";
+                    emailTitle = "Yêu cầu bảo trì đã bị từ chối";
+                    break;
+
+                case RequestStatus.InProgress:
+                    notificationDescription = "Yêu cầu bảo trì đang được thực hiện.";
+                    emailStatusMessage = "Kỹ thuật viên đang tiến hành bảo trì định kỳ.";
+                    statusClass = "inprogress";
+                    statusText = "Đang thực hiện";
+                    emailTitle = "Yêu cầu bảo trì đang được thực hiện";
+                    break;
+
+                case RequestStatus.Completed:
+                    notificationDescription = "Yêu cầu bảo trì đã hoàn thành.";
+                    emailStatusMessage = "Công việc bảo trì định kỳ đã hoàn thành thành công.";
+                    statusClass = "completed";
+                    statusText = "Hoàn thành";
+                    emailTitle = "Yêu cầu bảo trì đã hoàn thành";
+                    break;
+
+                default:
+                    notificationDescription = "Có cập nhật mới về yêu cầu bảo trì.";
+                    emailStatusMessage = "Có cập nhật mới về yêu cầu bảo trì định kỳ.";
+                    statusClass = "pending";
+                    statusText = "Cập nhật";
+                    emailTitle = "Cập nhật yêu cầu bảo trì";
+                    break;
+            }
+
+            await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
+            {
+                Title = "Yêu cầu bảo trì",
+                Type = NotificationType.Individual,
+                Description = notificationDescription,
+                UserIds = userIds
+            });
+            if (newStatus == RequestStatus.Approved)
+            {
+                foreach (var user in users)
+                {
+                    if (string.IsNullOrEmpty(user.Email))
+                        continue;
+
+                    var latestAppointment = requestData.Appointments?.FirstOrDefault();
+                    var technicianNames = latestAppointment?.AppointmentAssigns?
+                        .Select(aa => $"{aa.Technician?.FirstName} {aa.Technician?.LastName}")
+                        .ToList();
+
+                    var technicianNamesStr = technicianNames != null && technicianNames.Any()
+                        ? string.Join(", ", technicianNames)
+                        : "";
+
+                    var replacements = new Dictionary<string, string>
+                    {
+                        ["SystemName"] = "AptCare",
+                        ["ResidentName"] = $"{user.FirstName} {user.LastName}",
+                        ["StatusMessage"] = emailStatusMessage,
+                        ["RequestId"] = repairRequestId.ToString(),
+                        ["ObjectName"] = requestData.Object ?? "N/A",
+                        ["ApartmentRoom"] = $"Khu vực chung: {requestData.CommonAreaName}",
+                        ["StatusClass"] = statusClass,
+                        ["StatusText"] = statusText,
+                        ["UpdatedAt"] = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
+                        ["Note"] = requestData.Description ?? "",
+                        ["AppointmentTime"] = latestAppointment?.StartTime.ToString("dd/MM/yyyy HH:mm") ?? "",
+                        ["TechnicianName"] = technicianNamesStr,
+                        ["RequestUrl"] = $"https://app.aptcare.vn/maintenance-requests/{repairRequestId}",
+                        ["SupportEmail"] = "support@aptcare.vn",
+                        ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
+                        ["Year"] = DateTime.Now.Year.ToString()
+                    };
+
+                    try
+                    {
+                        await _mailSenderService.SendEmailWithTemplateAsync(
+                            toEmail: user.Email,
+                            subject: $"[AptCare] {emailTitle} #{repairRequestId}",
+                            templateName: "RepairRequestNotification",
+                            replacements: replacements
+                        );
+
+                        _logger.LogInformation(
+                            "Sent maintenance request notification email to {Email} for request {RequestId}",
+                            user.Email,
+                            repairRequestId
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Failed to send email notification to {Email} for maintenance request {RequestId}",
+                            user.Email,
+                            repairRequestId
+                        );
+                    }
+                }
+
+                var allResidents = await _unitOfWork.GetRepository<User>().GetListAsync(
+                    predicate: u => u.Account.Role == AccountRole.Resident && u.Status == ActiveStatus.Active,
+                    include: i => i.Include(u => u.Account)
+                );
+
+                if (allResidents != null && allResidents.Any())
+                {
+                    var residentIds = allResidents.Select(r => r.UserId).ToList();
+                    await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
+                    {
+                        Title = "Thông báo bảo trì",
+                        Type = NotificationType.Individual,
+                        Description = $"Công việc bảo trì khu vực {requestData.CommonAreaName} đã được phê duyệt và sẽ được thực hiện vào {requestData.Appointments?.FirstOrDefault()?.StartTime:dd/MM/yyyy HH:mm}.",
+                        UserIds = residentIds
+                    });
+                    var latestAppointment = requestData.Appointments?.FirstOrDefault();
+                    var technicianNames = latestAppointment?.AppointmentAssigns?
+                        .Select(aa => $"{aa.Technician?.FirstName} {aa.Technician?.LastName}")
+                        .ToList();
+
+                    var technicianNamesStr = technicianNames != null && technicianNames.Any()
+                        ? string.Join(", ", technicianNames)
+                        : "";
+
+                    foreach (var resident in allResidents)
+                    {
+                        if (string.IsNullOrEmpty(resident.Email))
+                            continue;
+
+                        var residentReplacements = new Dictionary<string, string>
+                        {
+                            ["SystemName"] = "AptCare",
+                            ["ResidentName"] = $"{resident.FirstName} {resident.LastName}",
+                            ["StatusMessage"] = $"Chúng tôi xin thông báo về công việc bảo trì định kỳ tại {requestData.CommonAreaName}. Công việc sẽ được thực hiện vào thời gian dự kiến dưới đây.",
+                            ["RequestId"] = repairRequestId.ToString(),
+                            ["ObjectName"] = requestData.Object ?? "N/A",
+                            ["ApartmentRoom"] = $"Khu vực: {requestData.CommonAreaName}",
+                            ["StatusClass"] = statusClass,
+                            ["StatusText"] = statusText,
+                            ["UpdatedAt"] = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
+                            ["Note"] = requestData.Description ?? "",
+                            ["AppointmentTime"] = latestAppointment?.StartTime.ToString("dd/MM/yyyy HH:mm") ?? "",
+                            ["TechnicianName"] = technicianNamesStr,
+                            ["RequestUrl"] = $"https://app.aptcare.vn/maintenance-requests/{repairRequestId}",
+                            ["SupportEmail"] = "support@aptcare.vn",
+                            ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
+                            ["Year"] = DateTime.Now.Year.ToString()
+                        };
+
+                        try
+                        {
+                            await _mailSenderService.SendEmailWithTemplateAsync(
+                                toEmail: resident.Email,
+                                subject: $"[AptCare] Thông báo bảo trì - {requestData.CommonAreaName}",
+                                templateName: "RepairRequestNotification",
+                                replacements: residentReplacements
+                            );
+
+                            _logger.LogInformation(
+                                "Sent maintenance notification email to resident {Email} for request {RequestId}",
+                                resident.Email,
+                                repairRequestId
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex,
+                                "Failed to send email notification to resident {Email} for maintenance request {RequestId}",
+                                resident.Email,
+                                repairRequestId
+                            );
+                        }
+                    }
+
+                    _logger.LogInformation(
+                        "Sent maintenance approval notifications to {Count} residents for request {RequestId}",
+                        allResidents.Count(),
+                        repairRequestId
+                    );
+                }
+            }
+        }
         public async Task CheckAcceptanceTimeAsync(DateTime dateTime)
         {
             try

@@ -189,20 +189,13 @@ namespace AptCare.Api.Controllers
         /// <remarks>
         /// <b>Phân quyền &amp; hành vi tự động:</b>
         /// <list type="bullet">
-        ///   <item><b>Manager / TechnicianLead:</b> có thể phê duyệt, từ chối, hoặc thay đổi trạng thái yêu cầu.</item>
-        ///   <item><b>Technician:</b> có thể cập nhật trạng thái yêu cầu được phân công (InProgress, Diagnosed, CompletedPendingVerify).</item>
-        ///   <item><b>Receptionist:</b> có thể phê duyệt hoặc hủy yêu cầu.</item>
-        ///   <item><b>Resident:</b> có thể xác nhận hoàn tất hoặc hủy yêu cầu của mình.</item>
+        ///   <item><b>Manager / TechnicianLead:</b> có thể phê duyệt, từ chối, hoặc thay đổi trạng thái yêu cầu. </item>
+        ///   <item><b>Technician:</b> có thể cập nhật trạng thái yêu cầu được phân công (Rejected, Approved, Cancelled).</item>
         /// </list>
         /// <br/>
         /// <b>Các trạng thái có thể chuyển đổi (NewStatus):</b>
         /// <list type="bullet">
         ///   <item><b>Approved</b> → Phê duyệt yêu cầu và gán kỹ thuật viên.</item>
-        ///   <item><b>InProgress</b> → Bắt đầu quá trình sửa chữa.</item>
-        ///   <item><b>Diagnosed</b> → Hoàn tất chẩn đoán vấn đề.</item>
-        ///   <item><b>CompletedPendingVerify</b> → Hoàn tất sửa chữa, chờ xác nhận.</item>
-        ///   <item><b>AcceptancePendingVerify</b> → Nghiệm thu, chờ xác nhận.</item>
-        ///   <item><b>Completed</b> → Xác nhận hoàn tất.</item>
         ///   <item><b>Cancelled</b> → Hủy yêu cầu.</item>
         ///   <item><b>Rejected</b> → Từ chối yêu cầu.</item>
         /// </list>
