@@ -38,6 +38,20 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             }
         }
 
+        public async Task PushNotificationAsync<T>(T message) where T : class
+        {
+            try
+            {
+                var queueName = "notification_push";
+                await SendMessageAsync(queueName, message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi publish message vào RabbitMQ");
+                throw;
+            }
+        }
+
         private async Task SendMessageAsync<T>(string queueName, T message)
         {
             try

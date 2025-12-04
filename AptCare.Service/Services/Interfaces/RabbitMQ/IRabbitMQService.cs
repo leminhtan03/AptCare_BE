@@ -9,5 +9,6 @@ namespace AptCare.Service.Services.Interfaces.RabbitMQ
     public interface IRabbitMQService
     {
         Task PublishNotificationAsync<T>(T message) where T : class;
+        Task PushNotificationAsync<T>(T message) where T : class;
     }
 }

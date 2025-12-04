@@ -67,7 +67,8 @@ namespace AptCare.Api.Extensions
             service.AddScoped<IMaintenanceScheduleService, MaintenanceScheduleService>();
             service.AddScoped<ICommonAreaObjectTypeService, CommonAreaObjectTypeService>();
             service.AddScoped<IMaintenanceTaskService, MaintenanceTaskService>();
-            service.AddScoped<IBudgetService, BudgetService>();
+            service.AddScoped<IBudgetService, BudgetService>(); 
+            service.AddScoped<IRepairRequestTaskService, RepairRequestTaskService>();
 
             service.AddHostedService<NotificationBackgroundService>();
             service.AddHostedService<NotificationConsumerService>();

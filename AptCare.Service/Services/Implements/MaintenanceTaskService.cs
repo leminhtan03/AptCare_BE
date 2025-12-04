@@ -51,6 +51,14 @@ namespace AptCare.Service.Services.Implements
                 if (isDuplicate)
                     throw new AppValidationException("Tên nhiệm vụ đã tồn tại cho loại đối tượng này.", StatusCodes.Status409Conflict);
 
+                var isDuplicateDisplayOrder = await _unitOfWork.GetRepository<MaintenanceTask>().AnyAsync(
+                    predicate: x => x.CommonAreaObjectTypeId == dto.CommonAreaObjectTypeId &&
+                                  x.DisplayOrder == dto.DisplayOrder
+                );
+
+                if (isDuplicateDisplayOrder)
+                    throw new AppValidationException("Thứ tự hiển thị đã tồn tại cho loại đối tượng này.", StatusCodes.Status409Conflict);
+
                 var maintenanceTask = _mapper.Map<MaintenanceTask>(dto);
                 maintenanceTask.Status = ActiveStatus.Active;
 
@@ -101,6 +109,15 @@ namespace AptCare.Service.Services.Implements
 
                 if (isDuplicate)
                     throw new AppValidationException("Tên nhiệm vụ đã tồn tại cho loại đối tượng này.", StatusCodes.Status409Conflict);
+
+                var isDuplicateDisplayOrder = await _unitOfWork.GetRepository<MaintenanceTask>().AnyAsync(
+                    predicate: x => x.MaintenanceTaskId != id &&
+                                  x.CommonAreaObjectTypeId == dto.CommonAreaObjectTypeId &&
+                                  x.DisplayOrder == dto.DisplayOrder
+                );
+
+                if (isDuplicateDisplayOrder)
+                    throw new AppValidationException("Thứ tự hiển thị đã tồn tại cho loại đối tượng này.", StatusCodes.Status409Conflict);
 
                 _mapper.Map(dto, maintenanceTask);
                 _unitOfWork.GetRepository<MaintenanceTask>().UpdateAsync(maintenanceTask);
