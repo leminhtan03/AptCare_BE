@@ -618,11 +618,7 @@ namespace AptCare.Service.Services.Implements
                     .OrderByDescending(x => x.UpdatedAt)
                     .FirstOrDefault()?.Status;
 
-                if (!ValidateStatusTransition(currentStatus, dto.NewStatus))
-                {
-                    throw new AppValidationException("Chuyển trạng thái không hợp lệ từ " +
-                        $"{currentStatus} sang {dto.NewStatus}.", StatusCodes.Status400BadRequest);
-                }
+
                 var role = _userContext.Role;
                 if (request.MaintenanceSchedule != null)
                 {
@@ -631,7 +627,11 @@ namespace AptCare.Service.Services.Implements
                         dto.NewStatus = RequestStatus.WaitingManagerApproval;
                     }
                 }
-
+                if (!ValidateStatusTransition(currentStatus, dto.NewStatus))
+                {
+                    throw new AppValidationException("Chuyển trạng thái không hợp lệ từ " +
+                        $"{currentStatus} sang {dto.NewStatus}.", StatusCodes.Status400BadRequest);
+                }
                 await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
                 {
                     RepairRequestId = dto.RepairRequestId,
