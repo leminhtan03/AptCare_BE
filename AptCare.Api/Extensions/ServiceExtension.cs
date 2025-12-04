@@ -72,6 +72,7 @@ namespace AptCare.Api.Extensions
 
             service.AddHostedService<NotificationBackgroundService>();
             service.AddHostedService<NotificationConsumerService>();
+            service.AddHostedService<PushNotificationConsumerService>();
 
 
             return service;
