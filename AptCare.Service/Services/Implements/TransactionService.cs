@@ -57,6 +57,7 @@ namespace AptCare.Service.Services.Implements
                                         .ThenInclude(r => r.RequestTrackings)
                                    .Include(x => x.InvoiceServices)
                                    .Include(x => x.InvoiceAccessories)
+                                        .ThenInclude(ia => ia.Accessory)
                 );
 
                 if (invoice == null)
@@ -142,14 +143,17 @@ namespace AptCare.Service.Services.Implements
                 {
                     foreach (var accessoryEntry in invoice.InvoiceAccessories)
                     {
-                        paymentData.Items.Add(new PaymentLinkItem
+                        var accessory = accessoryEntry.Accessory;
+                        if (accessory != null)
                         {
-                            Name = accessoryEntry.Name,
-                            Quantity = accessoryEntry.Quantity,
-                            Price = (int)Math.Round(accessoryEntry.Price),
-                            Unit = "pcs"
-                        });
-
+                            paymentData.Items.Add(new PaymentLinkItem
+                            {
+                                Name = accessory.Name,
+                                Quantity = accessoryEntry.Quantity,
+                                Price = (int)Math.Round(accessory.Price),
+                                Unit = "pcs"
+                            });
+                        }
                     }
                 }
 

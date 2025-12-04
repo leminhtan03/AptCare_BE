@@ -22,6 +22,37 @@ namespace AptCare.Repository.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("AptCare.Repository.Entities.Accessory", b =>
+                {
+                    b.Property<int>("AccessoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AccessoryId"));
+
+                    b.Property<string>("Descrption")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("AccessoryId");
+
+                    b.ToTable("Accessories");
+                });
+
             modelBuilder.Entity("AptCare.Repository.Entities.Account", b =>
                 {
                     b.Property<int>("AccountId")
@@ -617,6 +648,9 @@ namespace AptCare.Repository.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("InvoiceAccessoryId"));
 
+                    b.Property<int?>("AccessoryId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("InvoiceId")
                         .HasColumnType("integer");
 
@@ -632,6 +666,8 @@ namespace AptCare.Repository.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("InvoiceAccessoryId");
+
+                    b.HasIndex("AccessoryId");
 
                     b.HasIndex("InvoiceId");
 
@@ -1697,11 +1733,17 @@ namespace AptCare.Repository.Migrations
 
             modelBuilder.Entity("AptCare.Repository.Entities.InvoiceAccessory", b =>
                 {
+                    b.HasOne("AptCare.Repository.Entities.Accessory", "Accessory")
+                        .WithMany("InvoiceAccessories")
+                        .HasForeignKey("AccessoryId");
+
                     b.HasOne("AptCare.Repository.Entities.Invoice", "Invoice")
                         .WithMany("InvoiceAccessories")
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Accessory");
 
                     b.Navigation("Invoice");
                 });
@@ -2055,6 +2097,11 @@ namespace AptCare.Repository.Migrations
                         .IsRequired();
 
                     b.Navigation("WorkSlot");
+                });
+
+            modelBuilder.Entity("AptCare.Repository.Entities.Accessory", b =>
+                {
+                    b.Navigation("InvoiceAccessories");
                 });
 
             modelBuilder.Entity("AptCare.Repository.Entities.Account", b =>

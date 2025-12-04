@@ -1,9 +1,11 @@
-﻿using AptCare.Repository.Entities;
+﻿using Amazon.S3.Model;
+using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.Apartment;
 using AptCare.Repository.Enum.TransactionEnum;
 using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.AccessoryDto;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos.ApproveReportDtos;
@@ -198,7 +200,7 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status.ToString()))
                 .ForMember(d => d.CommonArea, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.CommonAreaObject.CommonArea))
                 .ForMember(d => d.TechniqueId, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.RequiredTechniqueId))
-                .ForMember(d => d.RequiredTechnician, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : (int?)s.MaintenanceSchedule.RequiredTechnicians))
+                .ForMember(d => d.RequiredTechnician, o => o.MapFrom(s =>  s.MaintenanceSchedule == null ? null : (int?) s.MaintenanceSchedule.RequiredTechnicians))
                 .ForMember(d => d.EstimatedDuration, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : (double?)s.MaintenanceSchedule.EstimatedDuration));
             CreateMap<RepairRequest, RepairRequestDetailDto>()
                 .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null))
@@ -364,6 +366,14 @@ namespace AptCare.Api.MapperProfile
                             : "N/A"))
                 .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals));
 
+            //ACCESSORY
+            CreateMap<Accessory, AccessoryDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+
+            CreateMap<AccessoryCreateDto, Accessory>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
+            CreateMap<AccessoryUpdateDto, Accessory>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             // CONTRACT
             CreateMap<Contract, ContractDto>();
