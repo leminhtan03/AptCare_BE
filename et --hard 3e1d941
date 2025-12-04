@@ -1,0 +1,68 @@
+[33mc589b5d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat_maintance_schedule[m[33m)[m HEAD@{0}: commit: Refactor invoice and repair request services
+[33m9ced7ab[m[33m ([m[1;31morigin/feat_maintance_schedule[m[33m)[m HEAD@{1}: reset: moving to 9ced7ab
+[33m3e1d941[m HEAD@{2}: commit: feat: implement maintenance request handling and notification system
+[33m9ced7ab[m[33m ([m[1;31morigin/feat_maintance_schedule[m[33m)[m HEAD@{3}: commit: feat: enhance invoice creation process to support accessory purchases and budget transactions
+[33mc953e06[m HEAD@{4}: commit: Revert "Refactor: Remove Accessory entity and related services"
+[33m2c130ff[m HEAD@{5}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_maintance_schedule
+[33m3f6de63[m HEAD@{6}: commit: Refactor: Remove Accessory entity and related services
+[33m94d6c6b[m HEAD@{7}: commit: feat: Allow InvoiceId to be nullable in Transactions and update related migrations
+[33m734b93f[m HEAD@{8}: pull origin main: Fast-forward
+[33mfe95792[m HEAD@{9}: pull origin main: Fast-forward
+[33mf27b161[m HEAD@{10}: commit: fix: correct webhook signature validation and improve error handling
+[33m3bd27d0[m HEAD@{11}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_maintance_schedule
+[33mbc57064[m HEAD@{12}: commit: Refactor InspectionReportController documentation for clarity and structure; enhance parameter descriptions and return types.
+[33m674dab9[m HEAD@{13}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_maintance_schedule
+[33mf4ebad3[m HEAD@{14}: commit: feat: Update technique DTOs and mappings for technician response
+[33mc7de958[m[33m ([m[1;32mfeat_resident_feedback[m[33m)[m HEAD@{15}: checkout: moving from feat_resident_feedback to feat_maintance_schedule
+[33mc7de958[m[33m ([m[1;32mfeat_resident_feedback[m[33m)[m HEAD@{16}: commit: feat: MaintenanceSchedule Manage
+[33mea76e26[m HEAD@{17}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_resident_feedback
+[33m7a208b9[m HEAD@{18}: commit: Remove TechniqueId from CommonAreaObjects table and update related migration files
+[33mc4df949[m HEAD@{19}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_resident_feedback
+[33m2222d17[m HEAD@{20}: commit: feat: update authorization roles to include TechnicianLead for inspection report access
+[33mfd30a86[m HEAD@{21}: commit: feat: update authorization roles for external invoice creation and set transaction amount from invoice total
+[33m92ad1f3[m HEAD@{22}: commit: feat(migrations): Add RequiredTechniqueId to MaintenanceSchedules and update PaidAt column type
+[33mdeb65ad[m HEAD@{23}: pull origin main: Fast-forward
+[33m4008f83[m HEAD@{24}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_resident_feedback
+[33ma082961[m HEAD@{25}: commit: fix: add missing timestamp annotation for PaidAt property in Transaction entity
+[33m3bb19a5[m HEAD@{26}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_resident_feedback
+[33m803880b[m HEAD@{27}: commit: feat: Refactor Maintenance Schedule and PayOS Webhook Services
+[33m5294a1d[m[33m ([m[1;32mfeat_contractc_transaction[m[33m)[m HEAD@{28}: checkout: moving from feat_contractc_transaction to feat_resident_feedback
+[33m5294a1d[m[33m ([m[1;32mfeat_contractc_transaction[m[33m)[m HEAD@{29}: commit: feat: implement feedback system with CRUD operations and mapping
+[33maec1fc2[m[33m ([m[1;31morigin/feat_contractc_transaction[m[33m)[m HEAD@{30}: pull origin main: Fast-forward
+[33m922955c[m HEAD@{31}: pull origin main: Fast-forward
+[33m205ef5c[m HEAD@{32}: commit: Refactor code structure for improved readability and maintainability
+[33mccd3d8c[m HEAD@{33}: commit: Refactor Inspection and Repair Report Services to use MaintenanceSchedule instead of MaintenanceRequest; update related methods and interfaces. Add UpdateTechniqueTechnican method in UserService for managing technician techniques. Enhance unit tests for NotificationService and RepairRequestService to include RabbitMQ service mock.
+[33mf87f599[m HEAD@{34}: pull origin main: Fast-forward
+[33ma2b24aa[m HEAD@{35}: commit: chore: update PayOSWebhookService for improved webhook handling
+[33m92b18cc[m HEAD@{36}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_contractc_transaction
+[33m1a0b22f[m HEAD@{37}: commit: feat: enable file upload support in Swagger configuration
+[33m10cf735[m HEAD@{38}: commit: feat: add handling for pending verification status in appointment creation
+[33mc9ad27b[m HEAD@{39}: commit: feat: add validation for incomplete repair requests before payment processing
+[33mdb37d6b[m HEAD@{40}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_contractc_transaction
+[33m9682620[m HEAD@{41}: commit: Refactor PayOS integration and remove unused interfaces
+[33me75722e[m HEAD@{42}: commit: feat(migrations): update AcceptanceTime column type to date in RepairRequests table
+[33m6282a17[m HEAD@{43}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_contractc_transaction
+[33m1c1981c[m HEAD@{44}: commit: feat(Contract): update contract mapping and validation logic for creation
+[33m25362d0[m HEAD@{45}: commit: feat(PayOSWebhook): enhance webhook processing with detailed logging and error handling
+[33mf3f1abf[m HEAD@{46}: commit: Implement Transaction and Contract Services
+[33m2d916cf[m[33m ([m[1;32mfeat_Report[m[33m)[m HEAD@{47}: checkout: moving from feat_Report to feat_contractc_transaction
+[33m2d916cf[m[33m ([m[1;32mfeat_Report[m[33m)[m HEAD@{48}: commit: feat(S3File): implement S3 file upload and retrieval service with AWS integration
+[33m4640791[m HEAD@{49}: commit: feat(Invoice): add endpoint to create payment link for invoices
+[33mcadd708[m[33m ([m[1;31morigin/feat_Report[m[33m)[m HEAD@{50}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_Report
+[33mf526401[m HEAD@{51}: commit: feat(PayOS): implement PayOS payment integration with webhook handling and options configuration
+[33me745611[m HEAD@{52}: commit: feat(migrations): add new columns to Transactions table for enhanced transaction tracking
+[33m19be61b[m HEAD@{53}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_Report
+[33m4f81a5a[m HEAD@{54}: commit: feat: update invoice and transaction models, add new enums for status and direction
+[33ma00b2cb[m HEAD@{55}: commit: fix: correct null check for existing report in InspectionReporService
+[33m0088c1b[m HEAD@{56}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_Report
+[33mfa176d8[m HEAD@{57}: commit: feat: enhance InspectionReport mapping and validation logic
+[33m9fa0d74[m HEAD@{58}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_Report
+[33me301a42[m HEAD@{59}: commit: fix: update status validation to include Scheduling in repair request processing
+[33m4e72405[m HEAD@{60}: commit: refactor: update API routes for inspection reports and enhance DTOs with report approvals
+[33m2582d16[m HEAD@{61}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_Report
+[33m67d0155[m HEAD@{62}: commit: fix: ensure transaction is committed after updating repair request status
+[33m3c7ed61[m HEAD@{63}: commit (merge): Merge branch 'main' of https://github.com/NguyenDucHuan/AptCare_BE into feat_Report
+[33mecfb847[m HEAD@{64}: commit: feat: enhance user and apartment DTOs with additional properties and update FloorService logic
+[33m886cdbf[m HEAD@{65}: commit: feat: implement user inactivation feature and update related DTOs and services
+[33mee4dafc[m HEAD@{66}: pull origin main: Fast-forward
+[33m9cf34cc[m HEAD@{
