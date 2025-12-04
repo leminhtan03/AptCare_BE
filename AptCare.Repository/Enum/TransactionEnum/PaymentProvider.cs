@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace AptCare.Repository.Enum
 {
@@ -12,6 +8,7 @@ namespace AptCare.Repository.Enum
         PayOS = 1,
         //VNPay = 2, 
         //MoMo = 3, 
-        //ZaloPay = 4 
+        //ZaloPay = 4,
+        Budget = 5
     }
 }

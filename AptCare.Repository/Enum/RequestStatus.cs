@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace AptCare.Repository.Enum
 {
     public enum RequestStatus
@@ -14,6 +9,7 @@ namespace AptCare.Repository.Enum
         Scheduling = 4,            // Đã chẩn đoán (IR đã được approve)
         AcceptancePendingVerify = 5, // Chờ nghiệm thu
         Completed = 6,            // Hoàn tất
-        Cancelled = 7,        // Bị từ chối
+        Cancelled = 7,
+        waitingManagerAprrove = 8
     }
 }

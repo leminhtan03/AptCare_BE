@@ -54,7 +54,6 @@ namespace AptCare.Api.Extensions
             service.AddTransient<INotificationService, NotificationService>();
             service.AddHttpClient<IFCMService, FCMService>();
             service.AddTransient<IRepairReportService, RepairReportService>();
-            service.AddTransient<IAccessoryService, AccessoryService>();
             service.AddSingleton<IS3FileService, S3FileService>();
             service.AddTransient<IPayOSWebhookService, PayOSWebhookService>();
             service.AddTransient<IContractService, ContractService>();

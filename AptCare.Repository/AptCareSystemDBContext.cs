@@ -29,7 +29,6 @@ namespace AptCare.Repository
         public DbSet<Issue> Issues { get; set; }
         public DbSet<InvoiceService> InvoiceServices { get; set; }
         public DbSet<CommonAreaObject> CommonAreaObjects { get; set; }
-        public DbSet<Accessory> Accessories { get; set; }
         public DbSet<RepairRequest> RepairRequests { get; set; }
         public DbSet<RepairReport> RepairReports { get; set; }
         public DbSet<InspectionReport> InspectionReports { get; set; }
@@ -369,16 +368,6 @@ namespace AptCare.Repository
             });
 
             // Invoice - InvoiceAccessory (1 - n)
-            // Accessory - InvoiceAccessory (1 - n)
-            modelBuilder.Entity<InvoiceAccessory>(entity =>
-            {
-                entity.HasOne(ia => ia.Invoice)
-                      .WithMany(i => i.InvoiceAccessories)
-                      .HasForeignKey(ia => ia.InvoiceId);
-                entity.HasOne(ia => ia.Accessory)
-                      .WithMany(a => a.InvoiceAccessories)
-                      .HasForeignKey(ia => ia.AccessoryId);
-            });
 
             // Invoice - InvoiceService (1 - n)
             modelBuilder.Entity<InvoiceService>(entity =>

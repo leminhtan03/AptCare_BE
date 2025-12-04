@@ -6,10 +6,13 @@ using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
-using MailKit.Search;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -21,6 +24,7 @@ namespace AptCare.Service.Services.Implements
         {
             _userContext = userContext;
         }
+
         public async Task<string> CreateInternalInvoiceAsync(InvoiceInternalCreateDto dto)
         {
             try
@@ -30,12 +34,11 @@ namespace AptCare.Service.Services.Implements
                 var repairRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
                     predicate: p => p.RepairRequestId == dto.RepairRequestId,
                     include: i => i.Include(x => x.RequestTrackings)
-                    );
+                );
                 if (repairRequest == null)
                 {
                     throw new AppValidationException($"Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
                 }
-
                 var lastStatusRequest = repairRequest.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status;
                 if (lastStatusRequest != RequestStatus.InProgress)
                 {
@@ -56,45 +59,17 @@ namespace AptCare.Service.Services.Implements
                 //    throw new AppValidationException($"Báo cáo kiểm tra chưa được chấp thuận.");
                 //}
 
-                var invoice = _mapper.Map<Invoice>(dto);               
+                // Tạo invoice chính
+                var mainInvoice = _mapper.Map<Invoice>(dto);
+                decimal mainInvoiceTotalAmount = 0;
 
-                decimal totalAmount = 0;
-
-                if (dto.Accessories != null && dto.Accessories.Count != 0)
-                {
-                    foreach (var accessory in dto.Accessories)
-                    {
-                        var accessoryDb = await _unitOfWork.GetRepository<Accessory>().SingleOrDefaultAsync(
-                                    predicate: p => p.AccessoryId == accessory.AccessoryId && p.Status == ActiveStatus.Active
-                        );
-                        if (accessoryDb == null)
-                        {
-                            throw new AppValidationException($"Phụ kiện không tồn tại.", StatusCodes.Status404NotFound);
-                        }
-                        if (accessoryDb.Quantity < accessory.Quantity)
-                        {
-                            throw new AppValidationException($"Phụ kiện trong kho không đủ số lượng.");
-                        }
-
-                        totalAmount += accessoryDb.Price * accessory.Quantity;
-
-                        invoice.InvoiceAccessories.Add(new InvoiceAccessory
-                        {
-                            AccessoryId = accessory.AccessoryId,
-                            Name = accessoryDb.Name,
-                            Quantity = accessory.Quantity,
-                            Price = accessoryDb.Price
-                        });
-                    }
-                }
-
-                if (dto.Services != null && dto.Services.Count != 0)
+                if (dto.Services != null && dto.Services.Count > 0)
                 {
                     foreach (var service in dto.Services)
                     {
-                        totalAmount += service.Price;
+                        mainInvoiceTotalAmount += service.Price;
 
-                        invoice.InvoiceServices.Add(new Repository.Entities.InvoiceService
+                        mainInvoice.InvoiceServices.Add(new Repository.Entities.InvoiceService
                         {
                             Name = service.Name,
                             Price = service.Price,
@@ -102,11 +77,46 @@ namespace AptCare.Service.Services.Implements
                     }
                 }
 
-                invoice.TotalAmount = totalAmount;
+                mainInvoice.TotalAmount = mainInvoiceTotalAmount;
+                await _unitOfWork.GetRepository<Invoice>().InsertAsync(mainInvoice);
 
-                await _unitOfWork.GetRepository<Invoice>().InsertAsync(invoice);
+                decimal purchaseAmount = 0;
+                Invoice? purchaseInvoice = null;
+
+                if (dto.AccessoriesToPurchase != null && dto.AccessoriesToPurchase.Count > 0)
+                {
+                    purchaseInvoice = new Invoice
+                    {
+                        RepairRequestId = dto.RepairRequestId,
+                        Type = InvoiceType.AccessoryPurchase,
+                        Status = InvoiceStatus.Draft,
+                        IsChargeable = false,
+                        InvoiceAccessories = new List<InvoiceAccessory>(),
+                        InvoiceServices = new List<Repository.Entities.InvoiceService>()
+                    };
+                    purchaseInvoice.TotalAmount = purchaseAmount;
+                    await _unitOfWork.GetRepository<Invoice>().InsertAsync(purchaseInvoice);
+                }
+
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
+                //if (purchaseInvoice != null)
+                //{
+                //    var purchaseDetails = string.Join(", ", dto.AccessoriesToPurchase!.Select(a =>
+                //        $"{a.Name} ({a.Quantity} x {a.PurchasePrice:N0}đ = {a.Quantity * a.PurchasePrice:N0}đ)"));
+
+                //    return $"Tạo biên lai sửa chữa thành công.\n\n" +
+                //           $"Biên lai chính:\n" +
+                //           $"   - Phụ kiện từ kho: {dto.AvailableAccessories?.Count ?? 0} loại\n" +
+                //           $"   - Dịch vụ: {dto.Services?.Count ?? 0} loại\n" +
+                //           $"   - Tổng: {mainInvoiceTotalAmount:N0}đ\n\n" +
+                //           $"Biên lai mua phụ kiện:\n" +
+                //           $"   - {purchaseDetails}\n" +
+                //           $"   - Tổng chi phí mua: {purchaseAmount:N0}đ\n" +
+                //           $"   - Trạng thái: Chờ phê duyệt\n\n" +
+                //           $"Biên lai mua phụ kiện sẽ được xử lý khi Manager/TechLead phê duyệt InspectionReport.";
+                //}
 
                 return "Tạo biên lai sửa chữa thành công.";
             }
@@ -116,6 +126,7 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
+
         public async Task<string> CreateExternalInvoiceAsync(InvoiceExternalCreateDto dto)
         {
             try
@@ -125,7 +136,8 @@ namespace AptCare.Service.Services.Implements
                 var repairRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
                     predicate: p => p.RepairRequestId == dto.RepairRequestId,
                     include: i => i.Include(x => x.RequestTrackings)
-                    );
+                );
+
                 if (repairRequest == null)
                 {
                     throw new AppValidationException($"Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
@@ -156,7 +168,6 @@ namespace AptCare.Service.Services.Implements
                 //}
 
                 var invoice = _mapper.Map<Invoice>(dto);
-
                 decimal totalAmount = 0;
 
                 if (dto.Accessories != null && dto.Accessories.Count != 0)
@@ -201,11 +212,13 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
+
         public async Task<IEnumerable<InvoiceDto>> GetInvoicesAsync(int repairRequestId)
         {
             var isExistingRepairRequest = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
-                        predicate: x => x.RepairRequestId == repairRequestId
-                        );
+                predicate: x => x.RepairRequestId == repairRequestId
+            );
+
             if (!isExistingRepairRequest)
             {
                 throw new AppValidationException("Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
@@ -213,10 +226,12 @@ namespace AptCare.Service.Services.Implements
 
             var invoices = await _unitOfWork.GetRepository<Invoice>().ProjectToListAsync<InvoiceDto>(
                 configuration: _mapper.ConfigurationProvider,
-                predicate: x => x.RepairRequestId == repairRequestId && x.Status != InvoiceStatus.Draft && x.Status != InvoiceStatus.Cancelled,
+                predicate: x => x.RepairRequestId == repairRequestId &&
+                               x.Status != InvoiceStatus.Draft &&
+                               x.Status != InvoiceStatus.Cancelled,
                 include: i => i.Include(x => x.InvoiceAccessories)
                                .Include(x => x.InvoiceServices)
-                );
+            );
 
             return invoices;
         }
