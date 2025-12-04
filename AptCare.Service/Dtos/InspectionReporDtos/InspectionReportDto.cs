@@ -4,6 +4,7 @@ using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos.ApproveReportDtos;
 using AptCare.Service.Dtos.InvoiceDtos;
+using AptCare.Service.Dtos.RepairRequestTaskDtos;
 using AptCare.Service.Dtos.UserDtos;
 using System;
 using System.Collections.Generic;
@@ -50,5 +51,6 @@ namespace AptCare.Service.Dtos.InspectionReporDtos
         public List<ApprovelReportDto>? ReportApprovals { get; set; }
         public AppointmentDto? Appointment { get; set; }
         public InvoiceDto? Invoice { get; set; }
+        public List<RepairRequestTaskDto>? RepairRequestTasks { get; set; }
     }
 }

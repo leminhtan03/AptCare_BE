@@ -9,9 +9,7 @@ namespace AptCare.Repository.Enum
     public enum TaskCompletionStatus
     {
         Pending = 1,      // Chưa thực hiện
-        InProgress = 2,   // Đang thực hiện
-        Completed = 3,    // Đã hoàn thành
-        Skipped = 4,      // Bỏ qua (với lý do)
-        Failed = 5        // Thất bại (cần xử lý thêm)
+        Completed = 2,    // Đã hoàn thành
+        Failed = 3        // Thất bại (cần xử lý thêm)
     }
 }

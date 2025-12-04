@@ -23,6 +23,7 @@ using AptCare.Service.Dtos.MaintenanceTaskDtos;
 using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairReportDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
+using AptCare.Service.Dtos.RepairRequestTaskDtos;
 using AptCare.Service.Dtos.ReportDtos;
 using AptCare.Service.Dtos.SlotDtos;
 using AptCare.Service.Dtos.TechniqueDto;
@@ -315,7 +316,8 @@ namespace AptCare.Api.MapperProfile
                        : string.Empty))
                .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals))
                .ForMember(d => d.Solution, o => o.MapFrom(s => s.Solution))
-               .ForMember(d => d.Description, o => o.MapFrom(s => s.Description));
+               .ForMember(d => d.Description, o => o.MapFrom(s => s.Description))
+               .ForMember(d => d.RepairRequestTasks, o => o.MapFrom(s => s.Appointment.RepairRequest.RepairRequestTasks));
 
             CreateMap<ReportApproval, ApprovelReportDto>()
                 .ForMember(dest => dest.ReportId, opt => opt.MapFrom(src =>
@@ -327,6 +329,10 @@ namespace AptCare.Api.MapperProfile
 
             CreateMap<CreateInspectionReporDto, InspectionReport>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => ReportStatus.Pending))
+                .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
+            CreateMap<InspectionMaintenanceReporCreateDto, InspectionReport>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => ReportStatus.Pending))
+                .ForMember(d => d.FaultOwner, o => o.MapFrom(s => FaultType.BuildingFault))
                 .ForMember(d => d.CreatedAt, o => o.MapFrom(s => DateTime.Now));
 
             CreateMap<UpdateInspectionReporDto, InspectionReport>()
@@ -455,6 +461,12 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
             CreateMap<MaintenanceTaskUpdateDto, MaintenanceTask>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            // REPAIRREQUESTTASK
+            CreateMap<RepairRequestTask, RepairRequestTaskDto>()
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
+            CreateMap<RepairRequestTaskStatusUpdateDto, RepairRequestTask>()
+                .ForMember(d => d.CompletedAt, o => o.MapFrom(s => DateTime.Now));
         }
     }
 }

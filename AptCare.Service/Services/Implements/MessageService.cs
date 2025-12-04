@@ -254,10 +254,9 @@ namespace AptCare.Service.Services.Implements
             //    UserIds = receiverIds,
             //    Image = image
             //});
-            await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
+            await _rabbitMQService.PushNotificationAsync(new NotificationPushRequestDto
             {
                 Title = title,
-                Type = NotificationType.Individual,
                 Description = descrption,
                 UserIds = receiverIds,
                 Image = image
