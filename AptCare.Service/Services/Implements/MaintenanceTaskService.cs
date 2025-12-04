@@ -32,6 +32,8 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync(); 
+
                 var objectType = await _unitOfWork.GetRepository<CommonAreaObjectType>()
                     .SingleOrDefaultAsync(predicate: x => x.CommonAreaObjectTypeId == dto.CommonAreaObjectTypeId);
 
@@ -55,12 +57,17 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.GetRepository<MaintenanceTask>().InsertAsync(maintenanceTask);
                 await _unitOfWork.CommitAsync();
 
+                await UpdateEstimatedDurationMaintenanceScheduleAsync(dto.CommonAreaObjectTypeId);
+
                 await _cacheService.RemoveByPrefixAsync("maintenance_task");
+
+                await _unitOfWork.CommitTransactionAsync();
 
                 return "Tạo nhiệm vụ bảo trì mới thành công";
             }
             catch (Exception e)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
@@ -69,6 +76,8 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var maintenanceTask = await _unitOfWork.GetRepository<MaintenanceTask>()
                     .SingleOrDefaultAsync(predicate: x => x.MaintenanceTaskId == id);
 
@@ -97,14 +106,19 @@ namespace AptCare.Service.Services.Implements
                 _unitOfWork.GetRepository<MaintenanceTask>().UpdateAsync(maintenanceTask);
                 await _unitOfWork.CommitAsync();
 
+                await UpdateEstimatedDurationMaintenanceScheduleAsync(dto.CommonAreaObjectTypeId);
+
                 await _cacheService.RemoveAsync($"maintenance_task:{id}");
                 await _cacheService.RemoveByPrefixAsync("maintenance_task:list");
                 await _cacheService.RemoveByPrefixAsync("maintenance_task:paginate");
+
+                await _unitOfWork.CommitTransactionAsync();
 
                 return "Cập nhật nhiệm vụ bảo trì thành công";
             }
             catch (Exception e)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
@@ -113,6 +127,8 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var maintenanceTask = await _unitOfWork.GetRepository<MaintenanceTask>()
                     .SingleOrDefaultAsync(
                         predicate: x => x.MaintenanceTaskId == id,
@@ -128,12 +144,18 @@ namespace AptCare.Service.Services.Implements
                 _unitOfWork.GetRepository<MaintenanceTask>().DeleteAsync(maintenanceTask);
                 await _unitOfWork.CommitAsync();
 
+
+                await UpdateEstimatedDurationMaintenanceScheduleAsync(maintenanceTask.CommonAreaObjectTypeId);
+
+                await _unitOfWork.CommitTransactionAsync();
+
                 await _cacheService.RemoveByPrefixAsync("maintenance_task");
 
                 return "Xóa nhiệm vụ bảo trì thành công";
             }
             catch (Exception e)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
@@ -142,6 +164,8 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var maintenanceTask = await _unitOfWork.GetRepository<MaintenanceTask>()
                     .SingleOrDefaultAsync(
                         predicate: x => x.MaintenanceTaskId == id,
@@ -161,14 +185,19 @@ namespace AptCare.Service.Services.Implements
                 _unitOfWork.GetRepository<MaintenanceTask>().UpdateAsync(maintenanceTask);
                 await _unitOfWork.CommitAsync();
 
+                await UpdateEstimatedDurationMaintenanceScheduleAsync(maintenanceTask.CommonAreaObjectTypeId);
+
                 await _cacheService.RemoveAsync($"maintenance_task:{id}");
                 await _cacheService.RemoveByPrefixAsync("maintenance_task:list");
                 await _cacheService.RemoveByPrefixAsync("maintenance_task:paginate");
+
+                await _unitOfWork.CommitTransactionAsync();
 
                 return "Kích hoạt nhiệm vụ bảo trì thành công";
             }
             catch (Exception e)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
@@ -177,8 +206,13 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var maintenanceTask = await _unitOfWork.GetRepository<MaintenanceTask>()
-                    .SingleOrDefaultAsync(predicate: x => x.MaintenanceTaskId == id);
+                    .SingleOrDefaultAsync(
+                        predicate: x => x.MaintenanceTaskId == id,
+                        include: i => i.Include(x => x.CommonAreaObjectType)
+                    );
 
                 if (maintenanceTask is null)
                     throw new AppValidationException("Nhiệm vụ bảo trì không tồn tại.", StatusCodes.Status404NotFound);
@@ -190,14 +224,19 @@ namespace AptCare.Service.Services.Implements
                 _unitOfWork.GetRepository<MaintenanceTask>().UpdateAsync(maintenanceTask);
                 await _unitOfWork.CommitAsync();
 
+                await UpdateEstimatedDurationMaintenanceScheduleAsync(maintenanceTask.CommonAreaObjectTypeId);
+
                 await _cacheService.RemoveAsync($"maintenance_task:{id}");
                 await _cacheService.RemoveByPrefixAsync("maintenance_task:list");
                 await _cacheService.RemoveByPrefixAsync("maintenance_task:paginate");
+
+                await _unitOfWork.CommitTransactionAsync();
 
                 return "Vô hiệu hóa nhiệm vụ bảo trì thành công";
             }
             catch (Exception e)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
@@ -251,6 +290,32 @@ namespace AptCare.Service.Services.Implements
             await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1));
 
             return result;
-        }       
+        }
+
+        private async Task UpdateEstimatedDurationMaintenanceScheduleAsync(int commonAreaObjectTypeId)
+        {
+            var maintenanceTasks = await _unitOfWork.GetRepository<MaintenanceTask>().GetListAsync(
+                predicate: mt => mt.CommonAreaObjectTypeId == commonAreaObjectTypeId &&
+                                 mt.Status == ActiveStatus.Active
+            );
+
+            var totalEstimatedDurationHours = maintenanceTasks.Sum(mt => mt.EstimatedDurationMinutes) / 60;
+
+            var commonAreaObjects = await _unitOfWork.GetRepository<CommonAreaObject>().GetListAsync(
+                predicate: cao => cao.CommonAreaObjectTypeId == commonAreaObjectTypeId,
+                include: i => i.Include(x => x.MaintenanceSchedule)
+            );
+
+            foreach (var commonAreaObject in commonAreaObjects)
+            {
+                if (commonAreaObject.MaintenanceSchedule != null)
+                {
+                    commonAreaObject.MaintenanceSchedule.EstimatedDuration = totalEstimatedDurationHours;
+                    _unitOfWork.GetRepository<MaintenanceSchedule>().UpdateAsync(commonAreaObject.MaintenanceSchedule);
+                }
+            }
+
+            await _unitOfWork.CommitAsync();
+        }
     }
 }

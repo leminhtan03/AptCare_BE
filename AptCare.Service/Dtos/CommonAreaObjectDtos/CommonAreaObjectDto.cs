@@ -1,5 +1,6 @@
 ﻿using AptCare.Repository.Enum;
 using AptCare.Service.Dtos.BuildingDtos;
+using AptCare.Service.Dtos.CommonAreaObjectTypeDtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +15,7 @@ namespace AptCare.Service.Dtos.CommonAreaObjectDtos
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
         public ActiveStatus Status { get; set; }
-        public CommonAreaDto CommonArea { get; set; } = null!;
+        public CommonAreaDto CommonArea { get; set; } = null!; 
+        public CommonAreaObjectTypeDto CommonAreaObjectType { get; set; } = null!;
     }
 }

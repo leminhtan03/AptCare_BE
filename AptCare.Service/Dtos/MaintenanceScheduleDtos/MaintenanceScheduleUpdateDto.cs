@@ -9,6 +9,5 @@ namespace AptCare.Service.Dtos.MaintenanceScheduleDtos
         public TimeSpan? TimePreference { get; set; }
         public int? RequiredTechniqueId { get; set; }
         public int? RequiredTechnicians { get; set; }
-        public double? EstimatedDuration { get; set; }
     }
 }

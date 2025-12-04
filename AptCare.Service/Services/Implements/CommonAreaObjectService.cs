@@ -39,6 +39,15 @@ namespace AptCare.Service.Services.Implements
             if (commonArea.Status == ActiveStatus.Inactive)
                 throw new AppValidationException("Khu vực chung đã ngưng hoạt động.");
 
+            var type = await _unitOfWork.GetRepository<CommonAreaObjectType>()
+                .SingleOrDefaultAsync(predicate: x => x.CommonAreaObjectTypeId == dto.CommonAreaObjectTypeId);
+
+            if (type is null)
+                throw new AppValidationException("Loại đối tượng không tồn tại.", StatusCodes.Status404NotFound);
+
+            if (type.Status == ActiveStatus.Inactive)
+                throw new AppValidationException("Loại đối tượng đã ngưng hoạt động.");
+
             var isDup = await _unitOfWork.GetRepository<CommonAreaObject>().AnyAsync(
                 x => x.CommonAreaId == dto.CommonAreaId && x.Name == dto.Name);
 
@@ -72,6 +81,15 @@ namespace AptCare.Service.Services.Implements
 
             if (commonArea.Status == ActiveStatus.Inactive)
                 throw new AppValidationException("Khu vực chung đã ngưng hoạt động.");
+
+            var type = await _unitOfWork.GetRepository<CommonAreaObjectType>()
+                .SingleOrDefaultAsync(predicate: x => x.CommonAreaObjectTypeId == dto.CommonAreaObjectTypeId);
+
+            if (type is null)
+                throw new AppValidationException("Loại đối tượng không tồn tại.", StatusCodes.Status404NotFound);
+
+            if (type.Status == ActiveStatus.Inactive)
+                throw new AppValidationException("Loại đối tượng đã ngưng hoạt động.");
 
             var isDup = await _unitOfWork.GetRepository<CommonAreaObject>().AnyAsync(
                 x => x.CommonAreaObjectId != id &&
@@ -141,7 +159,10 @@ namespace AptCare.Service.Services.Implements
         public async Task<string> DeactivateCommonAreaObjectAsync(int id)
         {
             var commonAreaObject = await _unitOfWork.GetRepository<CommonAreaObject>()
-                .SingleOrDefaultAsync(predicate: x => x.CommonAreaObjectId == id);
+                .SingleOrDefaultAsync(
+                predicate: x => x.CommonAreaObjectId == id,
+                include: i => i.Include(x => x.MaintenanceSchedule)
+                );
 
             if (commonAreaObject is null)
                 throw new AppValidationException("Đối tượng khu vực chung không tồn tại.", StatusCodes.Status404NotFound);
@@ -151,6 +172,12 @@ namespace AptCare.Service.Services.Implements
 
             commonAreaObject.Status = ActiveStatus.Inactive;
             _unitOfWork.GetRepository<CommonAreaObject>().UpdateAsync(commonAreaObject);
+
+            if (commonAreaObject.MaintenanceSchedule != null && commonAreaObject.MaintenanceSchedule.Status == ActiveStatus.Active)
+            {
+                commonAreaObject.MaintenanceSchedule.Status = ActiveStatus.Inactive;
+                _unitOfWork.GetRepository<CommonAreaObject>().UpdateAsync(commonAreaObject);
+            }
             await _unitOfWork.CommitAsync();
 
             // Clear cache after deactivate
@@ -252,10 +279,36 @@ namespace AptCare.Service.Services.Implements
 
             var result = await _unitOfWork.GetRepository<CommonAreaObject>().GetListAsync(
                 selector: s => _mapper.Map<CommonAreaObjectBasicDto>(s),
-                predicate: p => p.CommonAreaId == commonAreaId
+                predicate: p => p.CommonAreaId == commonAreaId && p.Status == ActiveStatus.Active
             );
 
             // Cache for 1 hour
+            await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1));
+
+            return result;
+        }
+
+        public async Task<IEnumerable<CommonAreaObjectBasicDto>> GetCommonAreaObjectsByTypeAsync(int typeId)
+        {
+            var cacheKey = $"common_area_object:list:by_type:{typeId}";
+
+            var cachedResult = await _cacheService.GetAsync<IEnumerable<CommonAreaObjectBasicDto>>(cacheKey);
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
+
+            var typeExists = await _unitOfWork.GetRepository<CommonAreaObjectType>().AnyAsync(
+                predicate: x => x.CommonAreaObjectTypeId == typeId);
+
+            if (!typeExists)
+                throw new AppValidationException("Loại đối tượng khu vực chung không tồn tại.", StatusCodes.Status404NotFound);
+
+            var result = await _unitOfWork.GetRepository<CommonAreaObject>().GetListAsync(
+                selector: s => _mapper.Map<CommonAreaObjectBasicDto>(s),
+                predicate: p => p.CommonAreaObjectTypeId == typeId && p.Status == ActiveStatus.Active
+            );
+
             await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1));
 
             return result;

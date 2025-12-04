@@ -318,10 +318,10 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.BeginTransactionAsync();
                 var timeNow = DateTime.Now;
                 var appointmentStartTime = appointment.StartTime;
-                if (timeNow < appointmentStartTime.AddMinutes(-30))
-                {
-                    throw new AppValidationException("Chưa đến thời gian check-in cho lịch hẹn này.");
-                }
+                //if (timeNow < appointmentStartTime.AddMinutes(-30))
+                //{
+                //    throw new AppValidationException("Chưa đến thời gian check-in cho lịch hẹn này.");
+                //}
 
                 var latestRequestStaus = await _unitOfWork.GetRepository<RequestTracking>().SingleOrDefaultAsync(
                     selector: s => s.Status,

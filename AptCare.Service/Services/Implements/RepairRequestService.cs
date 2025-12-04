@@ -932,6 +932,43 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(requestTracking);
 
+                var maintenanceTasks = await _unitOfWork.GetRepository<MaintenanceTask>().GetListAsync(
+                    predicate: mt => mt.CommonAreaObjectTypeId == schedule.CommonAreaObject.CommonAreaObjectTypeId &&
+                                     mt.Status == ActiveStatus.Active
+                );
+
+                if (maintenanceTasks != null && maintenanceTasks.Any())
+                {
+                    foreach (var task in maintenanceTasks)
+                    {
+                        var repairRequestTask = new RepairRequestTask
+                        {
+                            RepairRequestId = repairRequest.RepairRequestId,
+                            MaintenanceTaskTemplateId = task.MaintenanceTaskId,
+                            TaskName = task.TaskName,
+                            TaskDescription = task.TaskDescription,
+                            Status = TaskCompletionStatus.Pending
+                        };
+
+                        await _unitOfWork.GetRepository<RepairRequestTask>().InsertAsync(repairRequestTask);
+                    }
+
+                    _logger.LogInformation(
+                        "Đã tạo {TaskCount} RepairRequestTask cho RepairRequest ID {RequestId}",
+                        maintenanceTasks.Count(),
+                        repairRequest.RepairRequestId
+                    );
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "Không tìm thấy MaintenanceTask template cho CommonAreaObjectType ID {TypeId}",
+                        schedule.CommonAreaObject.CommonAreaObjectTypeId
+                    );
+                }
+
+                await _unitOfWork.CommitAsync();
+
                 var startTime = schedule.NextScheduledDate.ToDateTime(TimeOnly.FromTimeSpan(schedule.TimePreference));
                 var endTime = startTime.AddHours(schedule.EstimatedDuration);
 
