@@ -21,13 +21,22 @@ namespace AptCare.Api.Controllers
         /// <remarks>
         /// **Role:** 🧑‍🔧 Technician  
         /// 
-        /// - Biên lai nội bộ lấy phụ kiện từ kho trong hệ thống.  
-        /// - Giảm số lượng phụ kiện trong kho tương ứng.  
-        /// - Chỉ áp dụng cho các yêu cầu sửa chữa nội bộ.  
+        /// - Biên lai nội bộ hỗ trợ 2 loại phụ kiện:
+        ///   1. **AvailableAccessories**: Phụ kiện có sẵn trong kho
+        ///   2. **AccessoriesToPurchase**: Phụ kiện cần mua từ bên ngoài
         /// 
-        /// **Lưu ý:**  
-        /// - Mỗi phụ kiện phải tồn tại và còn đủ số lượng trong kho.  
-        /// - Nếu không, hệ thống sẽ trả về lỗi 400 hoặc 404.
+        /// **Quy trình:**
+        /// 1. Tạo invoice chính với phụ kiện có sẵn và dịch vụ
+        /// 2. Tự động tạo invoice phụ (AccessoryPurchase) cho phụ kiện cần mua
+        /// 3. Khi Manager/TechLead approve InspectionReport:
+        ///    - Trừ quantity phụ kiện có sẵn từ kho
+        ///    - Trừ budget cho việc mua phụ kiện
+        ///    - Tạo transaction ghi nhận chi tiêu
+        /// 
+        /// **Lưu ý:**
+        /// - Phụ kiện trong `AvailableAccessories` phải đủ số lượng trong kho
+        /// - Phụ kiện trong `AccessoriesToPurchase` phải cung cấp giá mua dự kiến
+        /// - Chỉ tạo invoice phụ khi có `AccessoriesToPurchase`
         /// </remarks>
         /// <param name="dto">Thông tin tạo biên lai nội bộ.</param>
         /// <response code="200">Tạo biên lai thành công.</response>

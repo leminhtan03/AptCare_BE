@@ -13,5 +13,6 @@ namespace AptCare.Repository.Enum
         //VNPay = 2, 
         //MoMo = 3, 
         //ZaloPay = 4 
+        Budget = 5
     }
 }
