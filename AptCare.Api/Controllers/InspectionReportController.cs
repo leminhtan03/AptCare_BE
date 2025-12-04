@@ -95,6 +95,115 @@ namespace AptCare.Api.Controllers
             var result = await _inspectionReporService.CreateInspectionReportAsync(dto);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Tạo báo cáo kiểm tra bảo trì cho một lịch hẹn với checklist nhiệm vụ.
+        /// </summary>
+        /// <remarks>
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Tạo báo cáo kiểm tra cho yêu cầu bảo trì định kỳ.</li>
+        ///   <li>Cập nhật trạng thái hoàn thành cho tất cả nhiệm vụ trong checklist.</li>
+        ///   <li>Ghi nhận giải pháp xử lý (sửa chữa, thay thế, thuê ngoài).</li>
+        ///   <li>Lưu mô tả chi tiết và kết quả kiểm tra cho từng nhiệm vụ.</li>
+        ///   <li>Tự động cập nhật trạng thái cuộc hẹn sang "Chờ duyệt báo cáo".</li>
+        /// </ul>
+        /// <b>Ràng buộc:</b>
+        /// <ul>
+        ///   <li><b>UpdatedTasks</b>: Bắt buộc phải có và không được rỗng.</li>
+        ///   <li>Tất cả nhiệm vụ của yêu cầu sửa chữa phải được cập nhật.</li>
+        ///   <li>Tất cả nhiệm vụ phải ở trạng thái <c>Completed</c>.</li>
+        ///   <li>Mỗi nhiệm vụ phải có <c>InspectionResult</c> (bắt buộc).</li>
+        ///   <li><b>SolutionType</b>: Chỉ chấp nhận giá trị enum <c>SolutionType</c>:
+        ///     <ul>
+        ///       <li>1 = Repair (Sửa chữa)</li>
+        ///       <li>2 = Replacement (Thay thế)</li>
+        ///       <li>3 = Outsource (Thuê ngoài)</li>
+        ///     </ul>
+        ///   </li>
+        /// </ul>
+        /// <b>Tham số (<c>InspectionMaintenanceReporCreateDto</c>):</b>
+        /// <ul>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn liên kết (bắt buộc).</li>
+        ///   <li><b>SolutionType</b>: Loại giải pháp (enum, bắt buộc).</li>
+        ///   <li><b>Description</b>: Mô tả chi tiết kết quả kiểm tra.</li>
+        ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
+        ///   <li><b>Files</b>: Danh sách file đính kèm (hình ảnh/video, tùy chọn).</li>
+        ///   <li><b>UpdatedTasks</b>: Danh sách nhiệm vụ đã hoàn thành (bắt buộc):
+        ///     <ul>
+        ///       <li><b>RepairRequestTaskId</b>: ID nhiệm vụ.</li>
+        ///       <li><b>Status</b>: Trạng thái (phải là Completed).</li>
+        ///       <li><b>TechnicianNote</b>: Ghi chú của kỹ thuật viên.</li>
+        ///       <li><b>InspectionResult</b>: Kết quả kiểm tra (bắt buộc, VD: "OK", "Need Repair", "Need Replacement").</li>
+        ///     </ul>
+        ///   </li>
+        /// </ul>
+        /// <b>Validation:</b>
+        /// <ul>
+        ///   <li>Kiểm tra UpdatedTasks không null và không rỗng.</li>
+        ///   <li>Kiểm tra tất cả nhiệm vụ của repair request đã được cập nhật.</li>
+        ///   <li>Kiểm tra không có nhiệm vụ không thuộc repair request này.</li>
+        ///   <li>Kiểm tra tất cả nhiệm vụ đã hoàn thành (Status = Completed).</li>
+        ///   <li>Nếu thiếu nhiệm vụ, trả về lỗi với danh sách tên nhiệm vụ còn thiếu.</li>
+        /// </ul>
+        /// </remarks>
+        /// <param name="dto">
+        /// <b>InspectionMaintenanceReporCreateDto:</b>
+        /// <ul>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn liên kết.</li>
+        ///   <li><b>SolutionType</b>: Loại giải pháp (enum).</li>
+        ///   <li><b>Description</b>: Mô tả chi tiết kết quả.</li>
+        ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
+        ///   <li><b>Files</b>: Danh sách file đính kèm.</li>
+        ///   <li><b>UpdatedTasks</b>: Danh sách nhiệm vụ hoàn thành.</li>
+        /// </ul>
+        /// </param>
+        /// <returns>
+        /// <b>InspectionReportDto:</b>
+        /// <ul>
+        ///   <li><b>InspectionReportId</b>: ID báo cáo kiểm tra.</li>
+        ///   <li><b>AppointmentId</b>: ID lịch hẹn liên kết.</li>
+        ///   <li><b>UserId</b>: ID kỹ thuật viên tạo báo cáo.</li>
+        ///   <li><b>SolutionType</b>: Loại giải pháp.</li>
+        ///   <li><b>Description</b>: Mô tả chi tiết kết quả.</li>
+        ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
+        ///   <li><b>Status</b>: Trạng thái báo cáo (Pending).</li>
+        ///   <li><b>CreatedAt</b>: Thời gian tạo báo cáo.</li>
+        ///   <li><b>Technican</b>: Thông tin kỹ thuật viên.</li>
+        ///   <li><b>Medias</b>: Danh sách media đính kèm.</li>
+        ///   <li><b>ReportApprovals</b>: Danh sách phê duyệt báo cáo.</li>
+        ///   <li><b>Appointment</b>: Thông tin lịch hẹn liên kết.</li>
+        /// </ul>
+        /// </returns>
+        /// <response code="200">Tạo báo cáo kiểm tra bảo trì thành công.</response>
+        /// <response code="400">
+        /// Dữ liệu không hợp lệ:
+        /// <ul>
+        ///   <li>Chưa có công việc nào được cập nhật.</li>
+        ///   <li>Chưa cập nhật đủ tất cả nhiệm vụ (hiển thị danh sách nhiệm vụ thiếu).</li>
+        ///   <li>Có nhiệm vụ không thuộc yêu cầu sửa chữa này.</li>
+        ///   <li>Có nhiệm vụ chưa hoàn thành (hiển thị danh sách nhiệm vụ chưa hoàn thành).</li>
+        ///   <li>Báo cáo đang chờ phê duyệt.</li>
+        /// </ul>
+        /// </response>
+        /// <response code="404">Không tìm thấy cuộc hẹn hoặc yêu cầu sửa chữa.</response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền truy cập (chỉ Technician).</response>
+        /// <response code="500">Lỗi hệ thống.</response>
+        [HttpPost("inspection-maintenance-report")]
+        [ProducesResponseType(typeof(InspectionReportDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [Authorize(Roles = nameof(AccountRole.Technician))]
+        public async Task<IActionResult> GenerateInspectionMaintenanceReportAsync([FromForm] InspectionMaintenanceReporCreateDto dto)
+        {
+            var result = await _inspectionReporService.CreateInspectionMaintenanceReportAsync(dto);
+            return Ok(result);
+        }
+
         /// <summary>
         /// Lấy thông tin chi tiết của báo cáo kiểm tra theo ID.
         /// </summary>
