@@ -17,8 +17,8 @@ namespace AptCare.Service.Dtos.InspectionReporDtos
         public SolutionType SolutionType { get; set; }
         public string Description { get; set; } = string.Empty;
         public string Solution { get; set; } = string.Empty;
-        public List<IFormFile>? Files { get; set; }
-        public List<RequestTaskStatusUpdateDto> UpdatedTasks { get; set; } = null!;
+        public List<IFormFile>? Files { get; set; } 
+        //public List<RequestTaskStatusUpdateDto> UpdatedTasks { get; set; }
     }
 
     public class RequestTaskStatusUpdateDto

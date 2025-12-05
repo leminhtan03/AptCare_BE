@@ -1,4 +1,5 @@
-﻿using AptCare.Service.Dtos.RepairRequestTaskDtos;
+﻿using AptCare.Service.Dtos.InspectionReporDtos;
+using AptCare.Service.Dtos.RepairRequestTaskDtos;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,5 +13,6 @@ namespace AptCare.Service.Services.Interfaces
         Task<string> UpdateRepairRequestTaskStatusAsync(int id, RepairRequestTaskStatusUpdateDto dto);
         Task<RepairRequestTaskDto> GetRepairRequestTaskByIdAsync(int id);
         Task<IEnumerable<RepairRequestTaskDto>> GetRepairRequestTasksByRepairRequestIdAsync(int repairRequestId);
+        Task<string> UpdateRepairRequestTasksStatusAsync(int repairRequestId, List<RequestTaskStatusUpdateDto> updatedTasks);
     }
 }

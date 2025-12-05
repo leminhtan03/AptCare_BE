@@ -110,9 +110,7 @@ namespace AptCare.Api.Controllers
         /// </ul>
         /// <b>Ràng buộc:</b>
         /// <ul>
-        ///   <li><b>UpdatedTasks</b>: Bắt buộc phải có và không được rỗng.</li>
         ///   <li>Tất cả nhiệm vụ của yêu cầu sửa chữa phải được cập nhật.</li>
-        ///   <li>Tất cả nhiệm vụ phải ở trạng thái <c>Completed</c>.</li>
         ///   <li>Mỗi nhiệm vụ phải có <c>InspectionResult</c> (bắt buộc).</li>
         ///   <li><b>SolutionType</b>: Chỉ chấp nhận giá trị enum <c>SolutionType</c>:
         ///     <ul>
@@ -129,21 +127,12 @@ namespace AptCare.Api.Controllers
         ///   <li><b>Description</b>: Mô tả chi tiết kết quả kiểm tra.</li>
         ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
         ///   <li><b>Files</b>: Danh sách file đính kèm (hình ảnh/video, tùy chọn).</li>
-        ///   <li><b>UpdatedTasks</b>: Danh sách nhiệm vụ đã hoàn thành (bắt buộc):
-        ///     <ul>
-        ///       <li><b>RepairRequestTaskId</b>: ID nhiệm vụ.</li>
-        ///       <li><b>Status</b>: Trạng thái (phải là Completed).</li>
-        ///       <li><b>TechnicianNote</b>: Ghi chú của kỹ thuật viên.</li>
-        ///       <li><b>InspectionResult</b>: Kết quả kiểm tra (bắt buộc, VD: "OK", "Need Repair", "Need Replacement").</li>
-        ///     </ul>
-        ///   </li>
+        ///  
         /// </ul>
         /// <b>Validation:</b>
         /// <ul>
-        ///   <li>Kiểm tra UpdatedTasks không null và không rỗng.</li>
         ///   <li>Kiểm tra tất cả nhiệm vụ của repair request đã được cập nhật.</li>
         ///   <li>Kiểm tra không có nhiệm vụ không thuộc repair request này.</li>
-        ///   <li>Kiểm tra tất cả nhiệm vụ đã hoàn thành (Status = Completed).</li>
         ///   <li>Nếu thiếu nhiệm vụ, trả về lỗi với danh sách tên nhiệm vụ còn thiếu.</li>
         /// </ul>
         /// </remarks>
@@ -155,7 +144,6 @@ namespace AptCare.Api.Controllers
         ///   <li><b>Description</b>: Mô tả chi tiết kết quả.</li>
         ///   <li><b>Solution</b>: Giải pháp đề xuất.</li>
         ///   <li><b>Files</b>: Danh sách file đính kèm.</li>
-        ///   <li><b>UpdatedTasks</b>: Danh sách nhiệm vụ hoàn thành.</li>
         /// </ul>
         /// </param>
         /// <returns>
