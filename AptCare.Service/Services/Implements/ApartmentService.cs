@@ -270,10 +270,10 @@ namespace AptCare.Service.Services.Implements
 
                 return updatedApartmentDto;
             }
-            catch (AppValidationException)
+            catch (AppValidationException e)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                throw;
+                throw new AppValidationException(e.Message, e.StatusCode);
             }
             catch (Exception ex)
             {

@@ -9,6 +9,7 @@ using AptCare.Service.Dtos.AccessoryDto;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.AppointmentDtos;
 using AptCare.Service.Dtos.ApproveReportDtos;
+using AptCare.Service.Dtos.BudgetDtos;
 using AptCare.Service.Dtos.BuildingDtos;
 using AptCare.Service.Dtos.ChatDtos;
 using AptCare.Service.Dtos.CommonAreaObjectDtos;
@@ -201,7 +202,7 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status.ToString()))
                 .ForMember(d => d.CommonArea, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.CommonAreaObject.CommonArea))
                 .ForMember(d => d.TechniqueId, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : s.MaintenanceSchedule.RequiredTechniqueId))
-                .ForMember(d => d.RequiredTechnician, o => o.MapFrom(s =>  s.MaintenanceSchedule == null ? null : (int?) s.MaintenanceSchedule.RequiredTechnicians))
+                .ForMember(d => d.RequiredTechnician, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : (int?)s.MaintenanceSchedule.RequiredTechnicians))
                 .ForMember(d => d.EstimatedDuration, o => o.MapFrom(s => s.MaintenanceSchedule == null ? null : (double?)s.MaintenanceSchedule.EstimatedDuration));
             CreateMap<RepairRequest, RepairRequestDetailDto>()
                 .ForMember(d => d.ChildRequestIds, o => o.MapFrom(s => s.ChildRequests != null ? s.ChildRequests.Select(x => x.RepairRequestId) : null))
@@ -467,6 +468,7 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
             CreateMap<RepairRequestTaskStatusUpdateDto, RepairRequestTask>()
                 .ForMember(d => d.CompletedAt, o => o.MapFrom(s => DateTime.Now));
+            CreateMap<Budget, BudgetDto>();
         }
     }
 }

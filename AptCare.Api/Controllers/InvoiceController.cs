@@ -118,8 +118,6 @@ namespace AptCare.Api.Controllers
             var invoices = await _invoiceService.GetInvoicesAsync(repairRequestId);
             return Ok(invoices);
         }
-
-
     }
 
 }

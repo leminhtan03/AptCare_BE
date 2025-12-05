@@ -3,7 +3,9 @@ using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.TransactionEnum;
 using AptCare.Repository.UnitOfWork;
+using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -91,6 +93,7 @@ namespace AptCare.Service.Services.Implements.PayOSService
         {
             var txRepo = _uow.GetRepository<Transaction>();
             var invoiceRepo = _uow.GetRepository<Invoice>();
+            var budgetRepo = _uow.GetRepository<Budget>();
 
             switch (webhookData.Code)
             {
@@ -100,6 +103,12 @@ namespace AptCare.Service.Services.Implements.PayOSService
                     tx.PayOSTransactionId = webhookData.Data.PaymentLinkId;
                     tx.PaidAt = DateTime.Now;
                     txRepo.UpdateAsync(tx);
+                    var budget = await budgetRepo.SingleOrDefaultAsync();
+                    if (budget == null)
+                        throw new AppValidationException("Không tìm thấy ngân sách.", StatusCodes.Status404NotFound);
+
+                    budget.Amount += tx.Amount;
+                    budgetRepo.UpdateAsync(budget);
 
                     tx.Invoice.Status = InvoiceStatus.Paid;
                     invoiceRepo.UpdateAsync(tx.Invoice);

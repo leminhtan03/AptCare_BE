@@ -96,7 +96,7 @@ namespace AptCare.Api
                         if (retryCount >= maxRetries)
                         {
                             logger.LogError(ex, "Không thể áp dụng migrations sau {MaxRetries} lần thử.", maxRetries);
-                            throw;
+                            throw new Exception(ex.Message);
                         }
 
                         await Task.Delay(5000);
