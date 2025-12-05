@@ -16,10 +16,10 @@ public class ChatHub: Microsoft.AspNetCore.SignalR.Hub
             Console.WriteLine("User joined conversation:  "+ slug);
             //await Clients.OthersInGroup(slug).SendAsync("UserJoined", new { User = Context.UserIdentifier, Slug = slug });
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine(e);
-            throw;
+            Console.WriteLine(ex);
+            throw new Exception(ex.Message);
         }
             
     }
@@ -31,10 +31,10 @@ public class ChatHub: Microsoft.AspNetCore.SignalR.Hub
             //await Clients.All.SendAsync("User left conversation: "+ slugConversation);
             Console.WriteLine("User left conversation: "+ slugConversation);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine(e);
-            throw;
+            Console.WriteLine(ex);
+            throw new Exception(ex.Message);
         }           
     }
 

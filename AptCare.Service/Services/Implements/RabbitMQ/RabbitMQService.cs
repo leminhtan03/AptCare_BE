@@ -34,7 +34,7 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi publish message vào RabbitMQ");
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 
@@ -48,7 +48,7 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi publish message vào RabbitMQ");
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 

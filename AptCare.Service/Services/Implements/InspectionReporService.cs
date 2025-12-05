@@ -132,7 +132,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error creating inspection report for AppointmentId: {AppointmentId}", dto.AppointmentId);
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 
@@ -312,7 +312,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error creating inspection maintenance report for AppointmentId: {AppointmentId}", dto.AppointmentId);
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 

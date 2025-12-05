@@ -202,10 +202,10 @@ namespace AptCare.Service.Services.Implements
                     "Lỗi xác thực PayOS. Vui lòng liên hệ quản trị viên." + ex.Message,
                     StatusCodes.Status503ServiceUnavailable);
             }
-            catch (AppValidationException)
+            catch (AppValidationException ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                throw;
+                throw new Exception(ex.Message);
             }
             catch (Exception ex)
             {
@@ -292,6 +292,12 @@ namespace AptCare.Service.Services.Implements
 
                 invoice.Status = InvoiceStatus.Paid;
                 invoiceRepo.UpdateAsync(invoice);
+                var budget = await _unitOfWork.GetRepository<Budget>().SingleOrDefaultAsync();
+                if (budget == null)
+                    throw new AppValidationException("Không tìm thấy ngân sách.", StatusCodes.Status404NotFound);
+
+                budget.Amount += transaction.Amount;
+                _unitOfWork.GetRepository<Budget>().UpdateAsync(budget);
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
@@ -309,7 +315,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error creating cash income transaction for invoice {InvoiceId}", dto.InvoiceId);
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 
@@ -350,7 +356,7 @@ namespace AptCare.Service.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting transactions by invoice {InvoiceId}", invoiceId);
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 
@@ -449,7 +455,7 @@ namespace AptCare.Service.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting paginate transactions");
-                throw;
+                throw new Exception(ex.Message);
             }
         }
         private long GenerateOrderCode(int invoiceId)

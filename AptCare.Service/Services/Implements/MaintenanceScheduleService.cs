@@ -84,7 +84,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error creating maintenance schedule");
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 
@@ -220,7 +220,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error updating maintenance schedule {Id}", id);
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 

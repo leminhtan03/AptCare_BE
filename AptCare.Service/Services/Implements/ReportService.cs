@@ -117,7 +117,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Lỗi khi tạo Report");
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 
