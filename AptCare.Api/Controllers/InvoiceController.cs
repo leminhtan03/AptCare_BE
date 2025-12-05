@@ -118,6 +118,33 @@ namespace AptCare.Api.Controllers
             var invoices = await _invoiceService.GetInvoicesAsync(repairRequestId);
             return Ok(invoices);
         }
+
+        /// <summary>
+        /// Xác nhận đã thanh toán cho nhà thầu bên ngoài (dành cho Manager).
+        /// </summary>
+        /// <remarks>
+        /// **Role:**Manager  
+        /// 
+        /// - Xác nhận đã thanh toán thực tế cho nhà thầu sau khi hoàn thành công việc.
+        /// - Cập nhật Transaction từ Pending → Success.
+        /// - Không trừ budget (đã trừ lúc approve InspectionReport).
+        /// 
+        /// **Lưu ý:**
+        /// - Chỉ dành cho invoice thuê ngoài (IsChargeable = false).
+        /// - Transaction phải ở trạng thái Pending.
+        /// - Cần upload chứng từ thanh toán (hóa đơn từ nhà thầu).
+        /// </remarks>
+        [HttpPost("confirm-external-payment")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ConfirmExternalContractorPayment([FromForm] ExternalContractorPaymentConfirmDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _invoiceService.ConfirmExternalContractorPaymentAsync(dto);
+            return Ok(result);
+        }
     }
 
 }

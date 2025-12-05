@@ -5,6 +5,7 @@ using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.IS3File;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +15,14 @@ namespace AptCare.Service.Services.Implements
     public class InvoiceService : BaseService<InvoiceService>, IInvoiceService
     {
         private readonly IUserContext _userContext;
+        private readonly IS3FileService _s3FileService;
+        private readonly ICloudinaryService _cloudinaryService;
 
-        public InvoiceService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InvoiceService> logger, IMapper mapper, IUserContext userContext) : base(unitOfWork, logger, mapper)
+        public InvoiceService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InvoiceService> logger, IMapper mapper, IUserContext userContext, IS3FileService s3FileService, ICloudinaryService cloudinaryService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
+            _s3FileService = s3FileService;
+            _cloudinaryService = cloudinaryService;
         }
 
         public async Task<string> CreateInternalInvoiceAsync(InvoiceInternalCreateDto dto)
@@ -268,6 +273,92 @@ namespace AptCare.Service.Services.Implements
             );
 
             return invoices;
+        }
+
+        public async Task<string> ConfirmExternalContractorPaymentAsync(ExternalContractorPaymentConfirmDto dto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var invoiceRepo = _unitOfWork.GetRepository<Invoice>();
+                var transactionRepo = _unitOfWork.GetRepository<Transaction>();
+                var mediaRepo = _unitOfWork.GetRepository<Media>();
+
+                var invoice = await invoiceRepo.SingleOrDefaultAsync(
+                    predicate: x => x.InvoiceId == dto.InvoiceId &&
+                                    x.Type == InvoiceType.ExternalContractor &&
+                                    x.Status == InvoiceStatus.Approved,
+                    include: i => i.Include(x => x.InvoiceAccessories)
+                                   .Include(x => x.InvoiceServices)
+                );
+
+                if (invoice == null)
+                    throw new AppValidationException("Không tìm thấy invoice thuê ngoài hoặc invoice chưa được phê duyệt.", StatusCodes.Status404NotFound);
+
+                if (invoice.IsChargeable)
+                    throw new AppValidationException("Invoice này do cư dân trả, không cần xác nhận thanh toán cho nhà thầu.", StatusCodes.Status400BadRequest);
+
+                var transaction = await transactionRepo.SingleOrDefaultAsync(
+                    predicate: t => t.InvoiceId == invoice.InvoiceId &&
+                                    t.Status == TransactionStatus.Pending &&
+                                    t.Direction == TransactionDirection.Expense
+                );
+
+                if (transaction == null)
+                    throw new AppValidationException("Không tìm thấy transaction pending cho invoice này.", StatusCodes.Status404NotFound);
+
+                transaction.Status = TransactionStatus.Success;
+                transaction.PaidAt = DateTime.Now;
+                transaction.Description += $"\nĐã thanh toán thực tế lúc {DateTime.Now:dd/MM/yyyy HH:mm}.\nGhi chú: {dto.Note}";
+                transactionRepo.UpdateAsync(transaction);
+
+                if (dto.PaymentReceipt != null && dto.PaymentReceipt.Length > 0)
+                {
+                    string? fileKey = null;
+
+                    if (dto.PaymentReceipt.ContentType.ToLower().Contains("application/pdf"))
+                    {
+                        fileKey = await _s3FileService.UploadFileAsync(
+                            dto.PaymentReceipt,
+                            $"transactions/external-payments/{invoice.InvoiceId}/");
+                    }
+                    else if (new[] { "image/jpeg", "image/png", "image/jpg" }
+                        .Contains(dto.PaymentReceipt.ContentType.ToLower()))
+                    {
+                        fileKey = await _cloudinaryService.UploadImageAsync(dto.PaymentReceipt);
+                    }
+
+                    if (!string.IsNullOrEmpty(fileKey))
+                    {
+                        var media = new Media
+                        {
+                            EntityId = transaction.TransactionId,
+                            Entity = nameof(Transaction),
+                            FileName = dto.PaymentReceipt.FileName,
+                            FilePath = fileKey,
+                            ContentType = dto.PaymentReceipt.ContentType,
+                            Status = ActiveStatus.Active,
+                            CreatedAt = DateTime.Now
+                        };
+                        await mediaRepo.InsertAsync(media);
+                    }
+                }
+
+                invoice.Status = InvoiceStatus.Paid;
+                invoiceRepo.UpdateAsync(invoice);
+
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return $"Xác nhận đã thanh toán cho nhà thầu thành công.\n";
+            }
+            catch (Exception e)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(e, "Error confirming external contractor payment for invoice {InvoiceId}", dto.InvoiceId);
+                throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
+            }
         }
     }
 }
