@@ -147,6 +147,7 @@ namespace AptCare.Service.Services.Implements
                     include: i => i.Include(o => o.AppointmentTrackings));
                 if (appointmentExists == null)
                     throw new AppValidationException("Cuộc hẹn không tồn tại hoặc đang trong quá trình phân công nhân lực");
+                
                 var repairRequest = await repairRequestRepo.SingleOrDefaultAsync(
                     predicate: e => e.Appointments.Any(a => a.AppointmentId == dto.AppointmentId),
                     include: e => e.Include(e => e.Appointments)
@@ -155,11 +156,9 @@ namespace AptCare.Service.Services.Implements
                 if (repairRequest == null)
                     throw new AppValidationException("Không tìm thấy yêu cầu sửa chữa liên quan");
 
-                // Validate UpdatedTasks
-                if (dto.UpdatedTasks == null || !dto.UpdatedTasks.Any())
-                    throw new AppValidationException("Chưa có công việc nào được cập nhật.", StatusCodes.Status400BadRequest);
-
                 var allRepairRequestTasks = repairRequest.RepairRequestTasks?.ToList() ?? new List<RepairRequestTask>();
+                var incompleteTasks = allRepairRequestTasks.Where(t => t.Status != TaskCompletionStatus.Pending).ToList();
+                
 
                 if (!allRepairRequestTasks.Any())
                     throw new AppValidationException("Yêu cầu sửa chữa không có nhiệm vụ nào.", StatusCodes.Status400BadRequest);
@@ -197,11 +196,7 @@ namespace AptCare.Service.Services.Implements
 
                 if (incompleteTasks.Any())
                 {
-                    var incompleteTaskNames = allRepairRequestTasks
-                        .Where(t => incompleteTasks.Select(it => it.RepairRequestTaskId).Contains(t.RepairRequestTaskId))
-                        .Select(t => t.TaskName)
-                        .ToList();
-
+                    var incompleteTaskNames = incompleteTasks.Select(t => t.TaskName).ToList();
                     throw new AppValidationException(
                         $"Tất cả nhiệm vụ phải được hoàn thành trước khi tạo báo cáo. Nhiệm vụ chưa hoàn thành: {string.Join(", ", incompleteTaskNames)}",
                         StatusCodes.Status400BadRequest);
@@ -236,27 +231,10 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.BeginTransactionAsync();
 
-                // Update RepairRequestTasks
-                var repairRequestTaskRepo = _unitOfWork.GetRepository<RepairRequestTask>();
-                foreach (var updatedTask in dto.UpdatedTasks)
-                {
-                    var task = allRepairRequestTasks.FirstOrDefault(t => t.RepairRequestTaskId == updatedTask.RepairRequestTaskId);
-                    if (task != null)
-                    {
-                        task.Status = updatedTask.Status;
-                        task.TechnicianNote = updatedTask.TechnicianNote;
-                        task.InspectionResult = updatedTask.InspectionResult;
-                        task.CompletedAt = DateTime.Now;
-                        task.CompletedByUserId = _userContext.CurrentUserId;
-
-                        repairRequestTaskRepo.UpdateAsync(task);
-                    }
-                }
-                await _unitOfWork.CommitAsync();
-
                 var InspecRepo = _unitOfWork.GetRepository<InspectionReport>();
                 var newInsReport = _mapper.Map<InspectionReport>(dto);
                 newInsReport.UserId = _userContext.CurrentUserId;
+                newInsReport.Status = ReportStatus.Pending;
 
                 await InspecRepo.InsertAsync(newInsReport);
                 await _unitOfWork.CommitAsync();
@@ -303,8 +281,8 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.CommitTransactionAsync();
 
                 var result = _mapper.Map<InspectionReportDto>(newInsReport);
-                _logger.LogInformation("Created inspection maintenance report {ReportId} for appointment {AppointmentId} with {TaskCount} tasks updated",
-                    newInsReport.InspectionReportId, dto.AppointmentId, dto.UpdatedTasks.Count);
+                _logger.LogInformation("Created inspection maintenance report {ReportId} for appointment {AppointmentId}",
+                    newInsReport.InspectionReportId, dto.AppointmentId);
 
                 return result;
             }
