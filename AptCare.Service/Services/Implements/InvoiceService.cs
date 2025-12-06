@@ -109,8 +109,7 @@ namespace AptCare.Service.Services.Implements
                     }
                 }
 
-                mainInvoice.TotalAmount = mainInvoiceTotalAmount;
-                await _unitOfWork.GetRepository<Invoice>().InsertAsync(mainInvoice);
+
 
                 decimal purchaseAmount = 0;
                 Invoice? purchaseInvoice = null;
@@ -124,7 +123,8 @@ namespace AptCare.Service.Services.Implements
                         Status = InvoiceStatus.Draft,
                         IsChargeable = false,
                         InvoiceAccessories = new List<InvoiceAccessory>(),
-                        InvoiceServices = new List<Repository.Entities.InvoiceService>()
+                        InvoiceServices = new List<Repository.Entities.InvoiceService>(),
+                        CreatedAt = DateTime.Now
                     };
 
                     foreach (var accessory in dto.AccessoriesToPurchase)
@@ -141,8 +141,15 @@ namespace AptCare.Service.Services.Implements
                         }
 
                         purchaseAmount += accessory.PurchasePrice * accessory.Quantity;
-
+                        mainInvoiceTotalAmount += accessory.PurchasePrice * accessory.Quantity;
                         purchaseInvoice.InvoiceAccessories.Add(new InvoiceAccessory
+                        {
+                            AccessoryId = accessory.AccessoryId,
+                            Name = accessory.Name,
+                            Quantity = accessory.Quantity,
+                            Price = accessory.PurchasePrice
+                        });
+                        mainInvoice.InvoiceAccessories.Add(new InvoiceAccessory
                         {
                             AccessoryId = accessory.AccessoryId,
                             Name = accessory.Name,
@@ -154,6 +161,8 @@ namespace AptCare.Service.Services.Implements
                     purchaseInvoice.TotalAmount = purchaseAmount;
                     await _unitOfWork.GetRepository<Invoice>().InsertAsync(purchaseInvoice);
                 }
+                mainInvoice.TotalAmount = mainInvoiceTotalAmount;
+                await _unitOfWork.GetRepository<Invoice>().InsertAsync(mainInvoice);
 
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();

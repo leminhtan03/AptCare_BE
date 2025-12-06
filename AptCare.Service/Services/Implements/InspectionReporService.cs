@@ -147,7 +147,7 @@ namespace AptCare.Service.Services.Implements
                     include: i => i.Include(o => o.AppointmentTrackings));
                 if (appointmentExists == null)
                     throw new AppValidationException("Cuộc hẹn không tồn tại hoặc đang trong quá trình phân công nhân lực");
-                
+
                 var repairRequest = await repairRequestRepo.SingleOrDefaultAsync(
                     predicate: e => e.Appointments.Any(a => a.AppointmentId == dto.AppointmentId),
                     include: e => e.Include(e => e.Appointments)
@@ -158,12 +158,12 @@ namespace AptCare.Service.Services.Implements
 
                 var allRepairRequestTasks = repairRequest.RepairRequestTasks?.ToList() ?? new List<RepairRequestTask>();
                 var incompleteTasks = allRepairRequestTasks.Where(t => t.Status != TaskCompletionStatus.Pending).ToList();
-                
+
                 if (incompleteTasks.Any())
                 {
                     var incompleteTaskNames = incompleteTasks.Select(t => t.TaskName).ToList();
                     throw new AppValidationException(
-                        $"Tất cả nhiệm vụ phải được hoàn thành trước khi tạo báo cáo. Nhiệm vụ chưa hoàn thành: {string.Join(", ", incompleteTaskNames)}", 
+                        $"Tất cả nhiệm vụ phải được hoàn thành trước khi tạo báo cáo. Nhiệm vụ chưa hoàn thành: {string.Join(", ", incompleteTaskNames)}",
                         StatusCodes.Status400BadRequest);
                 }
 
@@ -177,7 +177,7 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Báo cáo kiểm tra cho cuộc hẹn này đang chờ phê duyệt. Vui lòng không tạo báo cáo mới.", StatusCodes.Status400BadRequest);
                 if (existingReport != null && existingReport.ReportApprovals.Any(s => s.Status != ReportStatus.Rejected))
                     throw new AppValidationException("Đã tồn tại báo cáo kiểm tra được thông qua vui lòng kiểm tra lại phản hồi.", StatusCodes.Status400BadRequest);
-                
+
                 List<string> uploadedFilePaths = new List<string>();
                 if (dto.Files != null && dto.Files.Any())
                 {
@@ -203,13 +203,13 @@ namespace AptCare.Service.Services.Implements
 
                 await InspecRepo.InsertAsync(newInsReport);
                 await _unitOfWork.CommitAsync();
-                
+
                 if (existingReport == null)
                 {
                     if (!await _appointmentService.ToogleAppoimnentStatus(dto.AppointmentId, "Hoàn thành kiểm tra - chờ duyệt báo cáo kiểm tra", AppointmentStatus.AwaitingIRApproval))
                         throw new AppValidationException("Có lỗi xảy ra khi cập nhật trạng thái cuộc hẹn.", StatusCodes.Status500InternalServerError);
                 }
-                
+
                 if (!await _reportApprovalService.CreateApproveReportAsync(new ApproveReportCreateDto
                 {
                     ReportId = newInsReport.InspectionReportId,
@@ -219,7 +219,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     throw new AppValidationException("Lỗi không tạo được approval pending");
                 }
-                
+
                 if (uploadedFilePaths.Any())
                 {
                     var mediaRepo = _unitOfWork.GetRepository<Media>();
@@ -242,9 +242,9 @@ namespace AptCare.Service.Services.Implements
                     await mediaRepo.InsertRangeAsync(mediaEntities);
                     await _unitOfWork.CommitAsync();
                 }
-                
+
                 await _unitOfWork.CommitTransactionAsync();
-                
+
                 var result = _mapper.Map<InspectionReportDto>(newInsReport);
                 _logger.LogInformation("Created inspection maintenance report {ReportId} for appointment {AppointmentId}",
                     newInsReport.InspectionReportId, dto.AppointmentId);
@@ -258,6 +258,7 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception(ex.Message);
             }
         }
+
 
         public async Task<ICollection<InspectionReportDto>> GetInspectionReportByAppointmentIdAsync(int id)
         {
@@ -344,9 +345,9 @@ namespace AptCare.Service.Services.Implements
                     result.Medias = medias.ToList();
                 }
 
-                var invoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                var invoice = await _unitOfWork.GetRepository<Invoice>().GetListAsync(
                     selector: s => _mapper.Map<InvoiceDto>(s),
-                    predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId && 
+                    predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
                                     DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt) &&
                                     x.CreatedAt < inspectionReport.CreatedAt,
                     include: i => i.Include(x => x.InvoiceAccessories)
@@ -443,7 +444,7 @@ namespace AptCare.Service.Services.Implements
                     );
                     item.Medias = medias.ToList();
 
-                    var invoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                    var invoice = await _unitOfWork.GetRepository<Invoice>().GetListAsync(
                     selector: s => _mapper.Map<InvoiceDto>(s),
                     predicate: x => x.RepairRequestId == item.Appointment.RepairRequest.RepairRequestId &&
                                     DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(item.CreatedAt) &&

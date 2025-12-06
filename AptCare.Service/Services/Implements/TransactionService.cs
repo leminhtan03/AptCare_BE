@@ -34,8 +34,6 @@ namespace AptCare.Service.Services.Implements
             _s3FileService = s3FileService;
             _cloudinaryService = cloudinaryService;
             _payOSOptions = payOSOptions.Value;
-
-            // Khởi tạo PayOS client với version 2.0.1
             _payOS = new PayOSClient(
                 _payOSOptions.ClientId,
                 _payOSOptions.ApiKey,
