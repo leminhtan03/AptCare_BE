@@ -50,7 +50,7 @@ namespace AptCare.Service.Dtos.InspectionReporDtos
         public List<MediaDto>? Medias { get; set; }
         public List<ApprovelReportDto>? ReportApprovals { get; set; }
         public AppointmentDto? Appointment { get; set; }
-        public InvoiceDto? Invoice { get; set; }
+        public ICollection<InvoiceDto>? Invoice { get; set; }
         public List<RepairRequestTaskDto>? RepairRequestTasks { get; set; }
     }
 }

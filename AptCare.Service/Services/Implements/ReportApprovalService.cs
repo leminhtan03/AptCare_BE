@@ -52,7 +52,6 @@ namespace AptCare.Service.Services.Implements
                     case REPAIR_REPORT_TYPE:
                         await CreateRepairReportApprovalAsync(dto, approverId, approverRole);
                         break;
-
                     default:
                         throw new AppValidationException(
                             $"Loại báo cáo không hợp lệ: {dto.ReportType}",
@@ -183,9 +182,26 @@ namespace AptCare.Service.Services.Implements
                     {
                         mainInvoice.Status = InvoiceStatus.Approved;
 
-                        // Trừ quantity phụ kiện có sẵn
+                        var purchaseInvoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
+                            predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
+                                            x.Type == InvoiceType.AccessoryPurchase &&
+                                            x.Status == InvoiceStatus.Draft &&
+                                            DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt),
+                            include: i => i.Include(x => x.InvoiceAccessories),
+                            orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                        );
+
+                        var purchasedAccessoryIds = purchaseInvoice?.InvoiceAccessories
+                            .Where(a => a.AccessoryId.HasValue)
+                            .Select(a => a.AccessoryId.Value)
+                            .ToHashSet() ?? new HashSet<int>();
+
                         foreach (var invoiceAccessory in mainInvoice.InvoiceAccessories.Where(a => a.AccessoryId.HasValue))
                         {
+                            if (purchasedAccessoryIds.Contains(invoiceAccessory.AccessoryId.Value))
+                            {
+                                continue;
+                            }
                             var accessoryDb = await _unitOfWork.GetRepository<Accessory>().SingleOrDefaultAsync(
                                 predicate: p => p.AccessoryId == invoiceAccessory.AccessoryId.Value &&
                                                p.Status == ActiveStatus.Active
@@ -209,24 +225,12 @@ namespace AptCare.Service.Services.Implements
                             accessoryDb.Quantity -= invoiceAccessory.Quantity;
                             _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessoryDb);
                         }
-
-                        // Xử lý invoice mua phụ kiện
-                        var purchaseInvoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
-                            predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
-                                            x.Type == InvoiceType.AccessoryPurchase &&
-                                            x.Status == InvoiceStatus.Draft &&
-                                            DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt),
-                            include: i => i.Include(x => x.InvoiceAccessories),
-                            orderBy: o => o.OrderByDescending(x => x.CreatedAt)
-                        );
-
                         if (purchaseInvoice != null && !mainInvoice.IsChargeable)
                         {
                             var budget = await budgetRepo.SingleOrDefaultAsync();
                             if (budget == null)
                             {
-                                throw new AppValidationException(
-                                    "Không tìm thấy thông tin ngân sách.",
+                                throw new AppValidationException("Không tìm thấy thông tin ngân sách.",
                                     StatusCodes.Status404NotFound);
                             }
 
