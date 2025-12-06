@@ -147,7 +147,7 @@ namespace AptCare.Service.Services.Implements
                     include: i => i.Include(o => o.AppointmentTrackings));
                 if (appointmentExists == null)
                     throw new AppValidationException("Cuộc hẹn không tồn tại hoặc đang trong quá trình phân công nhân lực");
-                
+
                 var repairRequest = await repairRequestRepo.SingleOrDefaultAsync(
                     predicate: e => e.Appointments.Any(a => a.AppointmentId == dto.AppointmentId),
                     include: e => e.Include(e => e.Appointments)
@@ -158,41 +158,6 @@ namespace AptCare.Service.Services.Implements
 
                 var allRepairRequestTasks = repairRequest.RepairRequestTasks?.ToList() ?? new List<RepairRequestTask>();
                 var incompleteTasks = allRepairRequestTasks.Where(t => t.Status != TaskCompletionStatus.Pending).ToList();
-                
-
-                if (!allRepairRequestTasks.Any())
-                    throw new AppValidationException("Yêu cầu sửa chữa không có nhiệm vụ nào.", StatusCodes.Status400BadRequest);
-
-                // Check if all tasks are updated
-                var updatedTaskIds = dto.UpdatedTasks.Select(t => t.RepairRequestTaskId).ToHashSet();
-                var allTaskIds = allRepairRequestTasks.Select(t => t.RepairRequestTaskId).ToHashSet();
-
-                var missingTaskIds = allTaskIds.Except(updatedTaskIds).ToList();
-                if (missingTaskIds.Any())
-                {
-                    var missingTaskNames = allRepairRequestTasks
-                        .Where(t => missingTaskIds.Contains(t.RepairRequestTaskId))
-                        .Select(t => t.TaskName)
-                        .ToList();
-
-                    throw new AppValidationException(
-                        $"Chưa cập nhật đủ tất cả nhiệm vụ. Còn thiếu: {string.Join(", ", missingTaskNames)}",
-                        StatusCodes.Status400BadRequest);
-                }
-
-                // Validate that provided task IDs exist in repair request
-                var invalidTaskIds = updatedTaskIds.Except(allTaskIds).ToList();
-                if (invalidTaskIds.Any())
-                {
-                    throw new AppValidationException(
-                        $"Có nhiệm vụ không thuộc yêu cầu sửa chữa này. Task IDs: {string.Join(", ", invalidTaskIds)}",
-                        StatusCodes.Status400BadRequest);
-                }
-
-                // Validate that all tasks are completed
-                var incompleteTasks = dto.UpdatedTasks
-                    .Where(t => t.Status != TaskCompletionStatus.Completed)
-                    .ToList();
 
                 if (incompleteTasks.Any())
                 {
@@ -293,6 +258,7 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception(ex.Message);
             }
         }
+
 
         public async Task<ICollection<InspectionReportDto>> GetInspectionReportByAppointmentIdAsync(int id)
         {
