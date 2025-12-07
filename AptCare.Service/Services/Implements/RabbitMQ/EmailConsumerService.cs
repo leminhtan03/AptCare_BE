@@ -18,6 +18,9 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
         private IConnection _connection;
         private readonly IServiceProvider _serviceProvider;
         private const string QueueName = "email_notification";
+        private const string DLQName = "email_notification.dlq";
+        private const string DLXName = "email_notification.dlx";
+        private const int MaxRetryCount = 3;
 
         public EmailConsumerService(
             ILogger<EmailConsumerService> logger,
@@ -35,14 +38,41 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
 
             _connection = await _factory.CreateConnectionAsync();
             _channel = await _connection.CreateChannelAsync();
-            
+
+            // Declare Dead Letter Exchange
+            await _channel.ExchangeDeclareAsync(
+                exchange: DLXName,
+                type: ExchangeType.Direct,
+                durable: true,
+                autoDelete: false);
+
+            // Declare Dead Letter Queue
+            await _channel.QueueDeclareAsync(
+                queue: DLQName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            // Bind DLQ to DLX
+            await _channel.QueueBindAsync(
+                queue: DLQName,
+                exchange: DLXName,
+                routingKey: QueueName);
+
+            // Declare main queue with DLX configuration
+            var queueArgs = new Dictionary<string, object>
+            {
+                { "x-dead-letter-exchange", DLXName },
+                { "x-dead-letter-routing-key", QueueName }
+            };
+
             await _channel.QueueDeclareAsync(
                 queue: QueueName,
                 durable: true,
                 exclusive: false,
                 autoDelete: false,
-                arguments: null
-            );
+                arguments: queueArgs);
 
             await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 5, global: false);
 
@@ -74,8 +104,23 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Error sending email: {message}");
-                    await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
+                    _logger.LogError(ex, $"Lỗi khi xử lý send email: {message}");
+
+                    var retryCount = GetRetryCount(ea.BasicProperties);
+
+                    if (retryCount < MaxRetryCount)
+                    {
+                        _logger.LogWarning($"Retry lần {retryCount + 1}/{MaxRetryCount} cho message");
+
+                        await RequeueMessageWithDelay(message, retryCount + 1, ea.BasicProperties);
+                        await _channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
+                    }
+                    else
+                    {
+                        _logger.LogError($"Message đã vượt quá số lần retry ({MaxRetryCount}), chuyển vào DLQ");
+
+                        await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
+                    }
                 }
             };
 
@@ -86,6 +131,47 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             );
 
             _logger.LogInformation("EmailConsumerService started listening to queue.");
+        }
+
+        private int GetRetryCount(IReadOnlyBasicProperties properties)
+        {
+            if (properties?.Headers != null && properties.Headers.TryGetValue("x-retry-count", out var retryCountObj))
+            {
+                return Convert.ToInt32(retryCountObj);
+            }
+            return 0;
+        }
+
+        private async Task RequeueMessageWithDelay(string message, int retryCount, IReadOnlyBasicProperties originalProperties)
+        {
+            var properties = new BasicProperties
+            {
+                Persistent = true,
+                Headers = new Dictionary<string, object>
+                {
+                    { "x-retry-count", retryCount }
+                }
+            };
+
+            if (originalProperties?.Headers != null)
+            {
+                foreach (var header in originalProperties.Headers)
+                {
+                    if (header.Key != "x-retry-count")
+                    {
+                        properties.Headers[header.Key] = header.Value;
+                    }
+                }
+            }
+
+            var body = Encoding.UTF8.GetBytes(message);
+
+            await _channel.BasicPublishAsync(
+                exchange: string.Empty,
+                routingKey: QueueName,
+                mandatory: false,
+                basicProperties: properties,
+                body: body);
         }
 
         public override async Task StopAsync(CancellationToken cancellationToken)
