@@ -147,7 +147,7 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 var incompleteTasks = updatedTasks
-                    .Where(t => t.Status != TaskCompletionStatus.Completed)
+                    .Where(t => t.Status == TaskCompletionStatus.Pending)
                     .ToList();
 
                 if (incompleteTasks.Any())
