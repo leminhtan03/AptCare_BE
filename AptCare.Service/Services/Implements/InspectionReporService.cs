@@ -157,7 +157,7 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Không tìm thấy yêu cầu sửa chữa liên quan");
 
                 var allRepairRequestTasks = repairRequest.RepairRequestTasks?.ToList() ?? new List<RepairRequestTask>();
-                var incompleteTasks = allRepairRequestTasks.Where(t => t.Status != TaskCompletionStatus.Pending).ToList();
+                var incompleteTasks = allRepairRequestTasks.Where(t => t.Status == TaskCompletionStatus.Pending).ToList();
 
                 if (incompleteTasks.Any())
                 {
