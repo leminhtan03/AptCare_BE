@@ -26,6 +26,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update=".env">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 		<None Update="MailTemplate\AccountCredentials.html">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
@@ -37,6 +40,9 @@
 		</None>
 		<None Update="MailTemplate\PasswordResetOtp.html">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</None>
+		<None Update="MailTemplate\RepairRequestNotification.html">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="MailTemplate\SecurityNotice.html">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

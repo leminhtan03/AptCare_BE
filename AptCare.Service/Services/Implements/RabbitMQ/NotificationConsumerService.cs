@@ -73,7 +73,7 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Lỗi khi xử lý notification: {message}");
+                    //_logger.LogError(ex, $"Lỗi khi xử lý notification: {message}");
                     await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
                 }
             };

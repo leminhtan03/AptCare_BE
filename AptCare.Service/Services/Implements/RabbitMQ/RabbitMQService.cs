@@ -52,6 +52,20 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             }
         }
 
+        public async Task PublishEmailAsync<T>(T message) where T : class
+        {
+            try
+            {
+                var queueName = "email_notification";
+                await SendMessageAsync(queueName, message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi publish email message vào RabbitMQ");
+                throw new Exception(ex.Message);
+            }
+        }
+
         private async Task SendMessageAsync<T>(string queueName, T message)
         {
             try

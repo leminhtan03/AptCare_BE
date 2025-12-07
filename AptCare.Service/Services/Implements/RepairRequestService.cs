@@ -5,6 +5,7 @@ using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
+using AptCare.Service.Dtos.EmailDtos;
 using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Exceptions;
@@ -1056,6 +1057,7 @@ namespace AptCare.Service.Services.Implements
                     break;
             }
 
+            // Send in-app notification (fast)
             await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
             {
                 Title = "Yêu cầu bảo trì",
@@ -1063,104 +1065,36 @@ namespace AptCare.Service.Services.Implements
                 Description = notificationDescription,
                 UserIds = userIds
             });
+
+            // ✅ OPTIMIZATION: Only send emails for Approved status
             if (newStatus == RequestStatus.Approved)
             {
+                var latestAppointment = requestData.Appointments?.FirstOrDefault();
+                var technicianNames = latestAppointment?.AppointmentAssigns?
+                    .Select(aa => $"{aa.Technician?.FirstName} {aa.Technician?.LastName}")
+                    .ToList();
+                var technicianNamesStr = technicianNames != null && technicianNames.Any()
+                    ? string.Join(", ", technicianNames)
+                    : "";
+
+                // ✅ Send emails to TechLead/Manager via queue (non-blocking)
                 foreach (var user in users)
                 {
-                    if (string.IsNullOrEmpty(user.Email))
-                        continue;
+                    if (string.IsNullOrEmpty(user.Email)) continue;
 
-                    var latestAppointment = requestData.Appointments?.FirstOrDefault();
-                    var technicianNames = latestAppointment?.AppointmentAssigns?
-                        .Select(aa => $"{aa.Technician?.FirstName} {aa.Technician?.LastName}")
-                        .ToList();
-
-                    var technicianNamesStr = technicianNames != null && technicianNames.Any()
-                        ? string.Join(", ", technicianNames)
-                        : "";
-
-                    var replacements = new Dictionary<string, string>
+                    var emailRequest = new EmailRequestDto
                     {
-                        ["SystemName"] = "AptCare",
-                        ["ResidentName"] = $"{user.FirstName} {user.LastName}",
-                        ["StatusMessage"] = emailStatusMessage,
-                        ["RequestId"] = repairRequestId.ToString(),
-                        ["ObjectName"] = requestData.Object ?? "N/A",
-                        ["ApartmentRoom"] = $"Khu vực chung: {requestData.CommonAreaName}",
-                        ["StatusClass"] = statusClass,
-                        ["StatusText"] = statusText,
-                        ["UpdatedAt"] = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
-                        ["Note"] = requestData.Description ?? "",
-                        ["AppointmentTime"] = latestAppointment?.StartTime.ToString("dd/MM/yyyy HH:mm") ?? "",
-                        ["TechnicianName"] = technicianNamesStr,
-                        ["RequestUrl"] = $"https://app.aptcare.vn/maintenance-requests/{repairRequestId}",
-                        ["SupportEmail"] = "support@aptcare.vn",
-                        ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                        ["Year"] = DateTime.Now.Year.ToString()
-                    };
-
-                    try
-                    {
-                        await _mailSenderService.SendEmailWithTemplateAsync(
-                            toEmail: user.Email,
-                            subject: $"[AptCare] {emailTitle} #{repairRequestId}",
-                            templateName: "RepairRequestNotification",
-                            replacements: replacements
-                        );
-
-                        _logger.LogInformation(
-                            "Sent maintenance request notification email to {Email} for request {RequestId}",
-                            user.Email,
-                            repairRequestId
-                        );
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex,
-                            "Failed to send email notification to {Email} for maintenance request {RequestId}",
-                            user.Email,
-                            repairRequestId
-                        );
-                    }
-                }
-
-                var allResidents = await _unitOfWork.GetRepository<User>().GetListAsync(
-                    predicate: u => u.Account.Role == AccountRole.Resident && u.Status == ActiveStatus.Active,
-                    include: i => i.Include(u => u.Account)
-                );
-
-                if (allResidents != null && allResidents.Any())
-                {
-                    var residentIds = allResidents.Select(r => r.UserId).ToList();
-                    await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
-                    {
-                        Title = "Thông báo bảo trì",
-                        Type = NotificationType.Individual,
-                        Description = $"Công việc bảo trì khu vực {requestData.CommonAreaName} đã được phê duyệt và sẽ được thực hiện vào {requestData.Appointments?.FirstOrDefault()?.StartTime:dd/MM/yyyy HH:mm}.",
-                        UserIds = residentIds
-                    });
-                    var latestAppointment = requestData.Appointments?.FirstOrDefault();
-                    var technicianNames = latestAppointment?.AppointmentAssigns?
-                        .Select(aa => $"{aa.Technician?.FirstName} {aa.Technician?.LastName}")
-                        .ToList();
-
-                    var technicianNamesStr = technicianNames != null && technicianNames.Any()
-                        ? string.Join(", ", technicianNames)
-                        : "";
-
-                    foreach (var resident in allResidents)
-                    {
-                        if (string.IsNullOrEmpty(resident.Email))
-                            continue;
-
-                        var residentReplacements = new Dictionary<string, string>
+                        ToEmail = user.Email,
+                        Subject = $"[AptCare] {emailTitle} #{repairRequestId}",
+                        TemplateName = "RepairRequestNotification",
+                        Replacements = new Dictionary<string, string>
                         {
                             ["SystemName"] = "AptCare",
-                            ["ResidentName"] = $"{resident.FirstName} {resident.LastName}",
-                            ["StatusMessage"] = $"Chúng tôi xin thông báo về công việc bảo trì định kỳ tại {requestData.CommonAreaName}. Công việc sẽ được thực hiện vào thời gian dự kiến dưới đây.",
+                            ["ResidentName"] = $"{user.FirstName} {user.LastName}",
+                            ["StatusMessage"] = emailStatusMessage,
                             ["RequestId"] = repairRequestId.ToString(),
                             ["ObjectName"] = requestData.Object ?? "N/A",
-                            ["ApartmentRoom"] = $"Khu vực: {requestData.CommonAreaName}",
+                            ["ApartmentRoom"] = $"Khu vực chung: {requestData.CommonAreaName}",
                             ["StatusClass"] = statusClass,
                             ["StatusText"] = statusText,
                             ["UpdatedAt"] = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
@@ -1171,35 +1105,62 @@ namespace AptCare.Service.Services.Implements
                             ["SupportEmail"] = "support@aptcare.vn",
                             ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
                             ["Year"] = DateTime.Now.Year.ToString()
+                        }
+                    };
+
+                    // ✅ Queue email instead of sending synchronously
+                    await _rabbitMQService.PublishEmailAsync(emailRequest);
+                }
+                var allResidents = await _unitOfWork.GetRepository<User>().GetListAsync(
+                    predicate: u => u.Account.Role == AccountRole.Resident && u.Status == ActiveStatus.Active,
+                    include: i => i.Include(u => u.Account)
+                );
+
+                if (allResidents != null && allResidents.Any())
+                {
+                    var residentIds = allResidents.Select(r => r.UserId).ToList();
+
+                    await _rabbitMQService.PublishNotificationAsync(new NotificationPushRequestDto
+                    {
+                        Title = "Thông báo bảo trì",
+                        Type = NotificationType.Individual,
+                        Description = $"Công việc bảo trì khu vực {requestData.CommonAreaName} đã được phê duyệt và sẽ được thực hiện vào {requestData.Appointments?.FirstOrDefault()?.StartTime:dd/MM/yyyy HH:mm}.",
+                        UserIds = residentIds
+                    });
+                    foreach (var resident in allResidents)
+                    {
+                        if (string.IsNullOrEmpty(resident.Email)) continue;
+
+                        var residentEmailRequest = new EmailRequestDto
+                        {
+                            ToEmail = resident.Email,
+                            Subject = $"[AptCare] Thông báo bảo trì - {requestData.CommonAreaName}",
+                            TemplateName = "RepairRequestNotification",
+                            Replacements = new Dictionary<string, string>
+                            {
+                                ["SystemName"] = "AptCare",
+                                ["ResidentName"] = $"{resident.FirstName} {resident.LastName}",
+                                ["StatusMessage"] = $"Chúng tôi xin thông báo về công việc bảo trì định kỳ tại {requestData.CommonAreaName}. Công việc sẽ được thực hiện vào thời gian dự kiến dưới đây.",
+                                ["RequestId"] = repairRequestId.ToString(),
+                                ["ObjectName"] = requestData.Object ?? "N/A",
+                                ["ApartmentRoom"] = $"Khu vực: {requestData.CommonAreaName}",
+                                ["StatusClass"] = statusClass,
+                                ["StatusText"] = statusText,
+                                ["UpdatedAt"] = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
+                                ["Note"] = requestData.Description ?? "",
+                                ["AppointmentTime"] = latestAppointment?.StartTime.ToString("dd/MM/yyyy HH:mm") ?? "",
+                                ["TechnicianName"] = technicianNamesStr,
+                                ["RequestUrl"] = $"https://app.aptcare.vn/maintenance-requests/{repairRequestId}",
+                                ["SupportEmail"] = "support@aptcare.vn",
+                                ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
+                                ["Year"] = DateTime.Now.Year.ToString()
+                            }
                         };
-
-                        try
-                        {
-                            await _mailSenderService.SendEmailWithTemplateAsync(
-                                toEmail: resident.Email,
-                                subject: $"[AptCare] Thông báo bảo trì - {requestData.CommonAreaName}",
-                                templateName: "RepairRequestNotification",
-                                replacements: residentReplacements
-                            );
-
-                            _logger.LogInformation(
-                                "Sent maintenance notification email to resident {Email} for request {RequestId}",
-                                resident.Email,
-                                repairRequestId
-                            );
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex,
-                                "Failed to send email notification to resident {Email} for maintenance request {RequestId}",
-                                resident.Email,
-                                repairRequestId
-                            );
-                        }
+                        await _rabbitMQService.PublishEmailAsync(residentEmailRequest);
                     }
 
                     _logger.LogInformation(
-                        "Sent maintenance approval notifications to {Count} residents for request {RequestId}",
+                        "Queued {Count} maintenance approval emails for residents for request {RequestId}",
                         allResidents.Count(),
                         repairRequestId
                     );
