@@ -100,7 +100,7 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Lỗi khi xử lý send email: {message}");
+                    _logger.LogError(ex, $"Lỗi khi xử lý notification: {message}");
 
                     var retryCount = GetRetryCount(ea.BasicProperties);
 
