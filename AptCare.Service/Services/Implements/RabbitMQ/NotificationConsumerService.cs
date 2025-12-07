@@ -101,6 +101,22 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, $"Lỗi khi xử lý notification: {message}");
+
+                    var retryCount = GetRetryCount(ea.BasicProperties);
+
+                    if (retryCount < MaxRetryCount)
+                    {
+                        _logger.LogWarning($"Retry lần {retryCount + 1}/{MaxRetryCount} cho message");
+
+                        await RequeueMessageWithDelay(message, retryCount + 1, ea.BasicProperties);
+                        await _channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
+                    }
+                    else
+                    {
+                        _logger.LogError($"Message đã vượt quá số lần retry ({MaxRetryCount}), chuyển vào DLQ");
+
+                        await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
+                    }
                     await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
                 }
             };
