@@ -35,20 +35,15 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
 
             _connection = await _factory.CreateConnectionAsync();
             _channel = await _connection.CreateChannelAsync();
-            var arguments = new Dictionary<string, object>
-            {
-                { "x-max-priority", 10 } // Priority queue support
-            };
-
+            
             await _channel.QueueDeclareAsync(
                 queue: QueueName,
                 durable: true,
                 exclusive: false,
                 autoDelete: false,
-                arguments: arguments
+                arguments: null
             );
 
-            // Set prefetch count để limit số message xử lý đồng thời
             await _channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 5, global: false);
 
             var consumer = new AsyncEventingBasicConsumer(_channel);
@@ -80,20 +75,6 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, $"Error sending email: {message}");
-
-                    // Retry logic: requeue if delivery count < 3
-                    if (ea.BasicProperties?.Headers != null &&
-                        ea.BasicProperties.Headers.TryGetValue("x-retry-count", out var retryCountObj))
-                    {
-                        var retryCount = Convert.ToInt32(retryCountObj);
-                        if (retryCount >= 3)
-                        {
-                            // Dead letter queue or log failure
-                            await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
-                            _logger.LogError($"Email failed after 3 retries, discarding message");
-                            return;
-                        }
-                    }
                     await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
                 }
             };
