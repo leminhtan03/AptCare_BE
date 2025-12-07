@@ -24,7 +24,10 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
         private IChannel _channel;
         private IConnection _connection;
         private readonly IServiceProvider _serviceProvider;
-        private const string QueueName = "notification";
+        private const string QueueName = "notification_push";
+        private const string DLQName = "notification_push.dlq";
+        private const string DLXName = "notification_push.dlx";
+        private const int MaxRetryCount = 3;
 
         public PushNotificationConsumerService(
             ILogger<PushNotificationConsumerService> logger,
@@ -44,11 +47,40 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             _connection = await _factory.CreateConnectionAsync();
             _channel = await _connection.CreateChannelAsync();
 
-            await _channel.QueueDeclareAsync(queue: QueueName,
-                                 durable: true,
-                                 exclusive: false,
-                                 autoDelete: false,
-                                 arguments: null);
+            // Declare Dead Letter Exchange
+            await _channel.ExchangeDeclareAsync(
+                exchange: DLXName,
+                type: ExchangeType.Direct,
+                durable: true,
+                autoDelete: false);
+
+            // Declare Dead Letter Queue
+            await _channel.QueueDeclareAsync(
+                queue: DLQName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: null);
+
+            // Bind DLQ to DLX
+            await _channel.QueueBindAsync(
+                queue: DLQName,
+                exchange: DLXName,
+                routingKey: QueueName);
+
+            // Declare main queue with DLX configuration
+            var queueArgs = new Dictionary<string, object>
+            {
+                { "x-dead-letter-exchange", DLXName },
+                { "x-dead-letter-routing-key", QueueName }
+            };
+
+            await _channel.QueueDeclareAsync(
+                queue: QueueName,
+                durable: true,
+                exclusive: false,
+                autoDelete: false,
+                arguments: queueArgs);
 
 
             var consumer = new AsyncEventingBasicConsumer(_channel);
@@ -73,8 +105,23 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
                 }
                 catch (Exception ex)
                 {
-                    //_logger.LogError(ex, $"Lỗi khi xử lý push notification: {message}");
-                    await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
+                    _logger.LogError(ex, $"Lỗi khi xử lý push notification: {message}");
+                    
+                    var retryCount = GetRetryCount(ea.BasicProperties);
+                    
+                    if (retryCount < MaxRetryCount)
+                    {
+                        _logger.LogWarning($"Retry lần {retryCount + 1}/{MaxRetryCount} cho message");
+                        
+                        await RequeueMessageWithDelay(message, retryCount + 1, ea.BasicProperties);
+                        await _channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
+                    }
+                    else
+                    {
+                        _logger.LogError($"Message đã vượt quá số lần retry ({MaxRetryCount}), chuyển vào DLQ");
+                        
+                        await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
+                    }
                 }
             };
 
@@ -84,6 +131,47 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
                 consumer: consumer);
 
             _logger.LogInformation("PushNotificationConsumerService đã bắt đầu lắng nghe queue.");
+        }
+
+        private int GetRetryCount(IReadOnlyBasicProperties properties)
+        {
+            if (properties?.Headers != null && properties.Headers.TryGetValue("x-retry-count", out var retryCountObj))
+            {
+                return Convert.ToInt32(retryCountObj);
+            }
+            return 0;
+        }
+
+        private async Task RequeueMessageWithDelay(string message, int retryCount, IReadOnlyBasicProperties originalProperties)
+        {
+            var properties = new BasicProperties
+            {
+                Persistent = true,
+                Headers = new Dictionary<string, object>
+                {
+                    { "x-retry-count", retryCount }
+                }
+            };
+
+            if (originalProperties?.Headers != null)
+            {
+                foreach (var header in originalProperties.Headers)
+                {
+                    if (header.Key != "x-retry-count")
+                    {
+                        properties.Headers[header.Key] = header.Value;
+                    }
+                }
+            }
+
+            var body = Encoding.UTF8.GetBytes(message);
+            
+            await _channel.BasicPublishAsync(
+                exchange: string.Empty,
+                routingKey: QueueName,
+                mandatory: false,
+                basicProperties: properties,
+                body: body);
         }
 
         public override async Task StopAsync(CancellationToken cancellationToken)
