@@ -11,5 +11,6 @@ namespace AptCare.Service.Services.Interfaces.RabbitMQ
         Task PublishNotificationAsync<T>(T message) where T : class;
         Task PushNotificationAsync<T>(T message) where T : class;
         Task PublishEmailAsync<T>(T message) where T : class;
+        Task PublishBulkEmailAsync<T>(T message) where T : class; // ✅ Thêm method mới
     }
 }

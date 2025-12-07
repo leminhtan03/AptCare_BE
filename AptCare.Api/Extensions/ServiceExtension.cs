@@ -70,6 +70,7 @@ namespace AptCare.Api.Extensions
             service.AddScoped<IBudgetService, BudgetService>();
             service.AddScoped<IRepairRequestTaskService, RepairRequestTaskService>();
 
+            service.AddHostedService<BulkEmailConsumerService>();
             service.AddHostedService<NotificationBackgroundService>();
             service.AddHostedService<NotificationConsumerService>();
             service.AddHostedService<PushNotificationConsumerService>();

@@ -66,6 +66,20 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             }
         }
 
+        public async Task PublishBulkEmailAsync<T>(T message) where T : class
+        {
+            try
+            {
+                var queueName = "bulk_email";
+                await SendMessageAsync(queueName, message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi publish bulk email message vào RabbitMQ");
+                throw new Exception(ex.Message);
+            }
+        }
+
         private async Task SendMessageAsync<T>(string queueName, T message)
         {
             try

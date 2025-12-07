@@ -896,46 +896,55 @@ namespace AptCare.Service.Services.Implements
                 UserIds = userIds
             });
 
-            foreach (var userApartment in requestData.UserApartments)
-            {
-                var user = userApartment.User;
-                if (user == null || string.IsNullOrEmpty(user.Email))
-                    continue;
+            // ✅ CHỈ GỬI METADATA NHỎ GỌN - KHÔNG TẠO EmailRequestDto
+            var latestAppointment = requestData.Appointments?.FirstOrDefault();
+            var technicianName = latestAppointment?.AppointmentAssigns?
+                .Select(aa => $"{aa.Technician?.FirstName} {aa.Technician?.LastName}")
+                .FirstOrDefault();
 
-                var latestAppointment = requestData.Appointments?.FirstOrDefault();
-                var technicianName = latestAppointment?.AppointmentAssigns?
-                    .Select(aa => $"{aa.Technician?.FirstName} {aa.Technician?.LastName}")
-                    .FirstOrDefault();
-
-                var replacements = new Dictionary<string, string>
+            var recipients = requestData.UserApartments
+                .Where(ua => ua.User != null && !string.IsNullOrEmpty(ua.User.Email))
+                .Select(ua => new EmailRecipient
                 {
-                    ["SystemName"] = "AptCare",
-                    ["ResidentName"] = $"{user.FirstName} {user.LastName}",
-                    ["StatusMessage"] = statusMessage,
-                    ["RequestId"] = repairRequestId.ToString(),
-                    ["ObjectName"] = requestData.Object ?? "N/A",
-                    ["ApartmentRoom"] = requestData.Room ?? "N/A",
-                    ["StatusClass"] = statusClass,
-                    ["StatusText"] = statusText,
-                    ["UpdatedAt"] = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
-                    ["Note"] = requestData.Description ?? "",
-                    ["AppointmentTime"] = latestAppointment?.StartTime.ToString("dd/MM/yyyy HH:mm") ?? "",
-                    ["TechnicianName"] = technicianName ?? "",
-                    ["RequestUrl"] = $"https://app.aptcare.vn/repair-requests/{repairRequestId}",
-                    ["SupportEmail"] = "support@aptcare.vn",
-                    ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                    ["Year"] = DateTime.Now.Year.ToString()
+                    Email = ua.User.Email,
+                    FirstName = ua.User.FirstName,
+                    LastName = ua.User.LastName
+                })
+                .ToList();
+
+            if (recipients.Any())
+            {
+                var bulkMetadata = new BulkEmailMetadataDto
+                {
+                    Recipients = recipients,
+                    Subject = $"[AptCare] Cập nhật yêu cầu sửa chữa #{repairRequestId}",
+                    TemplateName = "RepairRequestNotification",
+                    CommonReplacements = new Dictionary<string, string>
+                    {
+                        ["SystemName"] = "AptCare",
+                        ["StatusMessage"] = statusMessage,
+                        ["RequestId"] = repairRequestId.ToString(),
+                        ["ObjectName"] = requestData.Object ?? "N/A",
+                        ["ApartmentRoom"] = requestData.Room ?? "N/A",
+                        ["StatusClass"] = statusClass,
+                        ["StatusText"] = statusText,
+                        ["UpdatedAt"] = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
+                        ["Note"] = requestData.Description ?? "",
+                        ["AppointmentTime"] = latestAppointment?.StartTime.ToString("dd/MM/yyyy HH:mm") ?? "",
+                        ["TechnicianName"] = technicianName ?? "",
+                        ["RequestUrl"] = $"https://app.aptcare.vn/repair-requests/{repairRequestId}",
+                        ["SupportEmail"] = "support@aptcare.vn",
+                        ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
+                        ["Year"] = DateTime.Now.Year.ToString()
+                    }
                 };
 
-                await _mailSenderService.SendEmailWithTemplateAsync(
-                    toEmail: user.Email,
-                    subject: $"[AptCare] Cập nhật yêu cầu sửa chữa #{repairRequestId}",
-                    templateName: "RepairRequestNotification",
-                    replacements: replacements
-                );
+                // ✅ CHỈ GỬI 1 MESSAGE DUY NHẤT
+                await _rabbitMQService.PublishBulkEmailAsync(bulkMetadata);
 
-                _logger.LogInformation("Sent repair request notification email to {Email} for request {RequestId}",
-                    user.Email,
+                _logger.LogInformation(
+                    "Queued bulk email metadata for {Count} recipients for request {RequestId}",
+                    recipients.Count,
                     repairRequestId
                 );
             }
@@ -1066,7 +1075,6 @@ namespace AptCare.Service.Services.Implements
                 UserIds = userIds
             });
 
-            // ✅ OPTIMIZATION: Only send emails for Approved status
             if (newStatus == RequestStatus.Approved)
             {
                 var latestAppointment = requestData.Appointments?.FirstOrDefault();
@@ -1077,20 +1085,27 @@ namespace AptCare.Service.Services.Implements
                     ? string.Join(", ", technicianNames)
                     : "";
 
-                // ✅ Send emails to TechLead/Manager via queue (non-blocking)
-                foreach (var user in users)
-                {
-                    if (string.IsNullOrEmpty(user.Email)) continue;
-
-                    var emailRequest = new EmailRequestDto
+                // ✅ GỬI BULK EMAIL CHO MANAGERS/TECHLEADS
+                var managerRecipients = users
+                    .Where(u => !string.IsNullOrEmpty(u.Email))
+                    .Select(u => new EmailRecipient
                     {
-                        ToEmail = user.Email,
+                        Email = u.Email,
+                        FirstName = u.FirstName,
+                        LastName = u.LastName
+                    })
+                    .ToList();
+
+                if (managerRecipients.Any())
+                {
+                    var managerBulkMetadata = new BulkEmailMetadataDto
+                    {
+                        Recipients = managerRecipients,
                         Subject = $"[AptCare] {emailTitle} #{repairRequestId}",
                         TemplateName = "RepairRequestNotification",
-                        Replacements = new Dictionary<string, string>
+                        CommonReplacements = new Dictionary<string, string>
                         {
                             ["SystemName"] = "AptCare",
-                            ["ResidentName"] = $"{user.FirstName} {user.LastName}",
                             ["StatusMessage"] = emailStatusMessage,
                             ["RequestId"] = repairRequestId.ToString(),
                             ["ObjectName"] = requestData.Object ?? "N/A",
@@ -1108,9 +1123,9 @@ namespace AptCare.Service.Services.Implements
                         }
                     };
 
-                    // ✅ Queue email instead of sending synchronously
-                    await _rabbitMQService.PublishEmailAsync(emailRequest);
+                    await _rabbitMQService.PublishBulkEmailAsync(managerBulkMetadata);
                 }
+
                 var allResidents = await _unitOfWork.GetRepository<User>().GetListAsync(
                     predicate: u => u.Account.Role == AccountRole.Resident && u.Status == ActiveStatus.Active,
                     include: i => i.Include(u => u.Account)
@@ -1127,19 +1142,27 @@ namespace AptCare.Service.Services.Implements
                         Description = $"Công việc bảo trì khu vực {requestData.CommonAreaName} đã được phê duyệt và sẽ được thực hiện vào {requestData.Appointments?.FirstOrDefault()?.StartTime:dd/MM/yyyy HH:mm}.",
                         UserIds = residentIds
                     });
-                    foreach (var resident in allResidents)
-                    {
-                        if (string.IsNullOrEmpty(resident.Email)) continue;
 
-                        var residentEmailRequest = new EmailRequestDto
+                    var residentRecipients = allResidents
+                        .Where(r => !string.IsNullOrEmpty(r.Email))
+                        .Select(r => new EmailRecipient
                         {
-                            ToEmail = resident.Email,
+                            Email = r.Email,
+                            FirstName = r.FirstName,
+                            LastName = r.LastName
+                        })
+                        .ToList();
+
+                    if (residentRecipients.Any())
+                    {
+                        var residentBulkMetadata = new BulkEmailMetadataDto
+                        {
+                            Recipients = residentRecipients,
                             Subject = $"[AptCare] Thông báo bảo trì - {requestData.CommonAreaName}",
                             TemplateName = "RepairRequestNotification",
-                            Replacements = new Dictionary<string, string>
+                            CommonReplacements = new Dictionary<string, string>
                             {
                                 ["SystemName"] = "AptCare",
-                                ["ResidentName"] = $"{resident.FirstName} {resident.LastName}",
                                 ["StatusMessage"] = $"Chúng tôi xin thông báo về công việc bảo trì định kỳ tại {requestData.CommonAreaName}. Công việc sẽ được thực hiện vào thời gian dự kiến dưới đây.",
                                 ["RequestId"] = repairRequestId.ToString(),
                                 ["ObjectName"] = requestData.Object ?? "N/A",
@@ -1156,14 +1179,15 @@ namespace AptCare.Service.Services.Implements
                                 ["Year"] = DateTime.Now.Year.ToString()
                             }
                         };
-                        await _rabbitMQService.PublishEmailAsync(residentEmailRequest);
-                    }
 
-                    _logger.LogInformation(
-                        "Queued {Count} maintenance approval emails for residents for request {RequestId}",
-                        allResidents.Count(),
-                        repairRequestId
-                    );
+                        await _rabbitMQService.PublishBulkEmailAsync(residentBulkMetadata);
+
+                        _logger.LogInformation(
+                            "Queued bulk email for {Count} residents for maintenance request {RequestId}",
+                            residentRecipients.Count,
+                            repairRequestId
+                        );
+                    }
                 }
             }
         }
