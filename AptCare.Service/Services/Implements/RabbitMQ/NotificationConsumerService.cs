@@ -117,7 +117,6 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
 
                         await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
                     }
-                    await _channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: true);
                 }
             };
 
