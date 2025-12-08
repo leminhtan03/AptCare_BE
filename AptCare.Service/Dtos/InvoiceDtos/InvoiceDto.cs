@@ -21,6 +21,7 @@ namespace AptCare.Service.Dtos.InvoiceDtos
         public string Status { get; set; } = null!;
         public List<InvoiceAccessoryDto>? Accessories { get; set; }
         public List<InvoiceServiceDto>? Services { get; set; }
+        public List<MediaDto>? Medias { get; set; }
     }
 
     public class InvoiceAccessoryDto

@@ -142,7 +142,7 @@ namespace AptCare.Service.Services.Implements
                     StatusCodes.Status404NotFound);
             }
 
-            var currentApproval = inspectionReport.ReportApprovals?
+            var currentApproval = (inspectionReport.ReportApprovals ?? Enumerable.Empty<ReportApproval>())
                 .FirstOrDefault(ra => ra.UserId == userId && ra.Status == ReportStatus.Pending);
 
             if (currentApproval == null)
@@ -172,7 +172,8 @@ namespace AptCare.Service.Services.Implements
                                     x.CreatedAt < inspectionReport.CreatedAt &&
                                     x.Status == InvoiceStatus.Draft &&
                                     x.Type != InvoiceType.AccessoryPurchase,
-                    include: i => i.Include(x => x.InvoiceAccessories),
+                    include: i => i.Include(x => x.InvoiceAccessories)
+                                   .Include(x => x.InvoiceServices),
                     orderBy: o => o.OrderByDescending(x => x.CreatedAt)
                 );
 
@@ -187,7 +188,8 @@ namespace AptCare.Service.Services.Implements
                                             x.Type == InvoiceType.AccessoryPurchase &&
                                             x.Status == InvoiceStatus.Draft &&
                                             DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt),
-                            include: i => i.Include(x => x.InvoiceAccessories),
+                            include: i => i.Include(x => x.InvoiceAccessories)
+                                           .Include(x => x.InvoiceServices),
                             orderBy: o => o.OrderByDescending(x => x.CreatedAt)
                         );
 
@@ -322,8 +324,8 @@ namespace AptCare.Service.Services.Implements
 
                             budget.Amount -= mainInvoice.TotalAmount;
                             budgetRepo.UpdateAsync(budget);
-                            var serviceDetails = string.Join(", ", mainInvoice.InvoiceServices.Select(s => s.Name));
-                            var accessoryDetails = string.Join(", ", mainInvoice.InvoiceAccessories.Select(a => $"{a.Name} x{a.Quantity}"));
+                            var serviceDetails = string.Join(", ", mainInvoice.InvoiceServices?.Select(s => s.Name) ?? Enumerable.Empty<string>());
+                            var accessoryDetails = string.Join(", ", mainInvoice.InvoiceAccessories?.Select(a => $"{a.Name} x{a.Quantity}") ?? Enumerable.Empty<string>());
 
                             var transaction = new Transaction
                             {
@@ -411,7 +413,7 @@ namespace AptCare.Service.Services.Implements
                     StatusCodes.Status404NotFound);
             }
 
-            var currentApproval = repairReport.ReportApprovals?
+            var currentApproval = (repairReport.ReportApprovals ?? Enumerable.Empty<ReportApproval>())
                 .FirstOrDefault(ra => ra.UserId == userId && ra.Status == ReportStatus.Pending);
 
             if (currentApproval == null)
