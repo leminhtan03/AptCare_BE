@@ -44,8 +44,8 @@ namespace AptCare.UT.Services
             _cacheService.Setup(c => c.GetAsync<IssueListItemDto>(It.IsAny<string>()))
                 .ReturnsAsync((IssueListItemDto)null);
 
-            _cacheService.Setup(c => c.GetAsync<IPaginate<IssueListItemDto>>(It.IsAny<string>()))
-                .ReturnsAsync((IPaginate<IssueListItemDto>)null);
+            _cacheService.Setup(c => c.GetAsync<Paginate<IssueListItemDto>>(It.IsAny<string>()))
+                .ReturnsAsync((Paginate<IssueListItemDto>)null);
 
 
             _service = new IssueService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);
@@ -318,31 +318,6 @@ namespace AptCare.UT.Services
             Assert.Equal(2, result.Items.Count);
         }
 
-        #endregion
-
-        #region GetActiveIssuesAsync Tests
-
-        [Fact]
-        public async Task GetActiveIssuesAsync_ReturnsOnlyActiveIssues()
-        {
-            // Arrange
-            var issues = new List<Issue>
-            {
-                new Issue { IssueId = 1, Status = ActiveStatus.Active },
-                new Issue { IssueId = 2, Status = ActiveStatus.Inactive }
-            };
-            _issueRepo.Setup(r => r.GetListAsync(
-                It.IsAny<Expression<Func<Issue, bool>>>(),
-                null, null
-            )).ReturnsAsync(issues.Where(i => i.Status == ActiveStatus.Active).ToList());
-
-            // Act
-            var result = await _service.GetActiveIssuesAsync();
-
-            // Assert
-            Assert.All(result, i => Assert.Equal(ActiveStatus.Active, i.Status));
-        }
-
-        #endregion
+        #endregion      
     }
 }

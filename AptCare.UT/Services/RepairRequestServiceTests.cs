@@ -38,6 +38,7 @@ namespace AptCare.UT.Services
         private readonly Mock<INotificationService> _notification = new();
         private readonly Mock<ILogger<RepairRequestService>> _logger = new();
         private readonly Mock<IRabbitMQService> _rabbitMQService = new();
+        private readonly Mock<IMailSenderService> _mailSenderService = new();
 
         private readonly RepairRequestService _service;
 
@@ -67,7 +68,8 @@ namespace AptCare.UT.Services
                 _cloudinary.Object,
                 _appointmentAssignService.Object,
                 _notification.Object,
-                _rabbitMQService.Object);
+                _rabbitMQService.Object,
+                _mailSenderService.Object);
         }
 
         #region CreateNormalRepairRequestAsync Tests

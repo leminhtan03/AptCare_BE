@@ -53,8 +53,8 @@ namespace AptCare.UT.Services
             _cacheService.Setup(c => c.GetAsync<IEnumerable<AccessoryDto>>(It.IsAny<string>()))
                 .ReturnsAsync((IEnumerable<AccessoryDto>)null);
 
-            _cacheService.Setup(c => c.GetAsync<IPaginate<AccessoryDto>>(It.IsAny<string>()))
-                .ReturnsAsync((IPaginate<AccessoryDto>)null);
+            _cacheService.Setup(c => c.GetAsync<Paginate<AccessoryDto>>(It.IsAny<string>()))
+                .ReturnsAsync((Paginate<AccessoryDto>)null);
 
             _service = new AccessoryService(_uow.Object, _logger.Object, _cloudinary.Object, _cacheService.Object, _mapper.Object);
         }

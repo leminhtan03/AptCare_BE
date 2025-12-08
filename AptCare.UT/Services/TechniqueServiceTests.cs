@@ -42,8 +42,8 @@ namespace AptCare.UT.Services
             _cacheService.Setup(c => c.GetAsync<TechniqueListItemDto>(It.IsAny<string>()))
                 .ReturnsAsync((TechniqueListItemDto)null);
 
-            _cacheService.Setup(c => c.GetAsync<IPaginate<TechniqueListItemDto>>(It.IsAny<string>()))
-                .ReturnsAsync((IPaginate<TechniqueListItemDto>)null);
+            _cacheService.Setup(c => c.GetAsync<Paginate<TechniqueListItemDto>>(It.IsAny<string>()))
+                .ReturnsAsync((Paginate<TechniqueListItemDto>)null);
 
             _service = new TechniqueService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);
         }

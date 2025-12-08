@@ -487,7 +487,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error during StartRepairAsync for Appointment ID {AppointmentId}", id);
-                throw new Exception(ex.Message);
+                throw new AppValidationException(ex.Message);
             }
         }
 
