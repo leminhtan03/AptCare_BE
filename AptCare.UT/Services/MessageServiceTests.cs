@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using AptCare.Repository;
+﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Paginate;
@@ -14,11 +9,17 @@ using AptCare.Service.Dtos.ChatDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace AptCare.UT.Services
@@ -36,6 +37,7 @@ namespace AptCare.UT.Services
         private readonly Mock<INotificationService> _notification = new();
         private readonly Mock<ICloudinaryService> _cloudinary = new();
         private readonly Mock<ILogger<MessageService>> _logger = new();
+        private readonly Mock<IRabbitMQService> _rabbitMQService = new();
 
         private readonly MessageService _service;
 
@@ -51,7 +53,7 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.CommitTransactionAsync()).Returns(Task.CompletedTask);
             _uow.Setup(u => u.RollbackTransactionAsync()).Returns(Task.CompletedTask);
 
-            _service = new MessageService(_uow.Object, _logger.Object, _mapper.Object, _userContext.Object, _notification.Object, _cloudinary.Object);
+            _service = new MessageService(_uow.Object, _logger.Object, _mapper.Object, _userContext.Object, _notification.Object, _cloudinary.Object, _rabbitMQService.Object);
         }
 
         #region CreateTextMessageAsync Tests

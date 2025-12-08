@@ -46,8 +46,8 @@ namespace AptCare.UT.Services
             _cacheService.Setup(c => c.GetAsync<IEnumerable<FloorBasicDto>>(It.IsAny<string>()))
                 .ReturnsAsync((IEnumerable<FloorBasicDto>)null);
 
-            _cacheService.Setup(c => c.GetAsync<IPaginate<FloorDto>>(It.IsAny<string>()))
-                .ReturnsAsync((IPaginate<FloorDto>)null);
+            _cacheService.Setup(c => c.GetAsync<Paginate<FloorDto>>(It.IsAny<string>()))
+                .ReturnsAsync((Paginate<FloorDto>)null);
 
             _service = new FloorService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);
         }

@@ -96,36 +96,15 @@ namespace AptCare.UT.Services
                 Title = dto.Title,
                 Description = dto.Description,
                 Type = dto.Type,
-                UserIds = userIds // ✅ Phải có UserIds
+                UserIds = userIds
             };
 
-            // ✅ Mock mapping từ NotificationCreateDto -> NotificationPushRequestDto
             _mockMapper.Setup(m => m.Map<NotificationPushRequestDto>(dto))
                 .Returns(pushDto);
 
-            _mockMapper.Setup(m => m.Map<Notification>(It.IsAny<NotificationPushRequestDto>()))
-                .Returns((NotificationPushRequestDto source) => new Notification
-                {
-                    Title = source.Title,
-                    Description = source.Description,
-                    Type = source.Type,
-                    IsRead = false,
-                    CreatedAt = DateTime.Now
-                    // ReceiverId sẽ được set trong service loop
-                });
-
-            _mockAccountTokenRepo.Setup(r => r.GetListAsync(
-                It.IsAny<System.Linq.Expressions.Expression<Func<AccountToken, string>>>(),
-                It.IsAny<System.Linq.Expressions.Expression<Func<AccountToken, bool>>>(),
-                null, null
-            )).ReturnsAsync(new List<string> { "token1", "token2" });
-
-            _mockFCMService.Setup(f => f.PushMulticastAsync(
-                It.IsAny<IEnumerable<string>>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()
-            )).ReturnsAsync(true);
+            // ✅ Setup RabbitMQ mock
+            _rabbitMQService.Setup(r => r.PublishNotificationAsync(It.IsAny<NotificationPushRequestDto>()))
+                .Returns(Task.CompletedTask);
 
             // Act
             var result = await _notificationService.BroadcastNotificationAsync(dto);
@@ -133,8 +112,18 @@ namespace AptCare.UT.Services
             // Assert
             Assert.NotNull(result);
             Assert.Contains("Gửi thông báo thành công", result);
-            _mockNotificationRepo.Verify(r => r.InsertRangeAsync(It.IsAny<IEnumerable<Notification>>()), Times.Once);
-            _mockUnitOfWork.Verify(u => u.CommitAsync(), Times.Once);
+            
+            // ✅ Verify RabbitMQ được gọi (thay vì InsertRangeAsync)
+            _rabbitMQService.Verify(r => r.PublishNotificationAsync(
+                It.Is<NotificationPushRequestDto>(p => 
+                    p.UserIds.Count() == 3 &&
+                    p.Title == dto.Title &&
+                    p.Type == NotificationType.General
+                )
+            ), Times.Once);
+            
+            // ❌ KHÔNG verify InsertRangeAsync vì method này không insert trực tiếp
+            // _mockNotificationRepo.Verify(r => r.InsertRangeAsync(...), Times.Never);
         }
 
         [Fact]
@@ -161,42 +150,29 @@ namespace AptCare.UT.Services
                 Title = dto.Title,
                 Description = dto.Description,
                 Type = dto.Type,
-                UserIds = userIds // ✅ Phải có UserIds
+                UserIds = userIds
             };
 
             _mockMapper.Setup(m => m.Map<NotificationPushRequestDto>(dto))
                 .Returns(pushDto);
 
-            _mockMapper.Setup(m => m.Map<Notification>(It.IsAny<NotificationPushRequestDto>()))
-               .Returns((NotificationPushRequestDto source) => new Notification
-               {
-                   Title = source.Title,
-                   Description = source.Description,
-                   Type = source.Type,
-                   IsRead = false,
-                   CreatedAt = DateTime.Now
-                   // ReceiverId sẽ được set trong service loop
-               });
-
-            _mockAccountTokenRepo.Setup(r => r.GetListAsync(
-                It.IsAny<Expression<Func<AccountToken, string>>>(),
-                It.IsAny<Expression<Func<AccountToken, bool>>>(),
-                null, null
-            )).ReturnsAsync(new List<string>());
-
-            _mockFCMService.Setup(f => f.PushMulticastAsync(
-                It.IsAny<IEnumerable<string>>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()
-            )).ReturnsAsync(true);
+            _rabbitMQService.Setup(r => r.PublishNotificationAsync(It.IsAny<NotificationPushRequestDto>()))
+                .Returns(Task.CompletedTask);
 
             // Act
             var result = await _notificationService.BroadcastNotificationAsync(dto);
 
             // Assert
             Assert.NotNull(result);
-            _mockNotificationRepo.Verify(r => r.InsertRangeAsync(It.IsAny<IEnumerable<Notification>>()), Times.Once);
+            Assert.Contains("Gửi thông báo thành công", result);
+            
+            // ✅ Verify RabbitMQ
+            _rabbitMQService.Verify(r => r.PublishNotificationAsync(
+                It.Is<NotificationPushRequestDto>(p => 
+                    p.UserIds.Count() == 2 &&
+                    p.Type == NotificationType.Internal
+                )
+            ), Times.Once);
         }
 
         #endregion

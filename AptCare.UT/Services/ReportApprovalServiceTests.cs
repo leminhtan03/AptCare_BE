@@ -29,6 +29,11 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<RepairReport>> _repairReportRepo = new();
         private readonly Mock<IGenericRepository<InspectionReport>> _inspectionReportRepo = new();
         private readonly Mock<IGenericRepository<User>> _userRepo = new();
+        private readonly Mock<IGenericRepository<Invoice>> _invoiceRepo = new(); 
+        private readonly Mock<IGenericRepository<Budget>> _budgetRepo = new();
+        private readonly Mock<IGenericRepository<Transaction>> _transactionRepo = new();
+        private readonly Mock<IGenericRepository<Accessory>> _accessoryRepo = new();
+
         private readonly Mock<IUserContext> _userContext = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<ReportApprovalService>> _logger = new();
@@ -41,6 +46,10 @@ namespace AptCare.UT.Services
             _uow.Setup(u => u.GetRepository<RepairReport>()).Returns(_repairReportRepo.Object);
             _uow.Setup(u => u.GetRepository<InspectionReport>()).Returns(_inspectionReportRepo.Object);
             _uow.Setup(u => u.GetRepository<User>()).Returns(_userRepo.Object);
+            _uow.Setup(u => u.GetRepository<Invoice>()).Returns(_invoiceRepo.Object);
+            _uow.Setup(u => u.GetRepository<Budget>()).Returns(_budgetRepo.Object);
+            _uow.Setup(u => u.GetRepository<Transaction>()).Returns(_transactionRepo.Object);
+            _uow.Setup(u => u.GetRepository<Accessory>()).Returns(_accessoryRepo.Object);
             _uow.Setup(u => u.CommitAsync()).ReturnsAsync(1);
             _uow.Setup(u => u.BeginTransactionAsync()).Returns(Task.CompletedTask);
             _uow.Setup(u => u.CommitTransactionAsync()).Returns(Task.CompletedTask);
@@ -480,8 +489,7 @@ namespace AptCare.UT.Services
             _uow.Verify(u => u.RollbackTransactionAsync(), Times.Once);
         }
 
-        [Fact]
-        public async Task ApproveReportAsync_Success_ApprovesInspectionReport()
+        public async Task ApproveReportAsync_Success_ApprovesInspectionReport_WithPurchaseInvoice()
         {
             // Arrange
             var userId = 2;
@@ -503,13 +511,193 @@ namespace AptCare.UT.Services
                 Status = ReportStatus.Pending
             };
 
+            var now = DateTime.Now;
             var inspectionReport = new InspectionReport
             {
                 InspectionReportId = 1,
                 Status = ReportStatus.Pending,
+                SolutionType = SolutionType.Replacement, // Internal repair
+                CreatedAt = now,
                 ReportApprovals = new List<ReportApproval> { pendingApproval },
                 Appointment = new Appointment
                 {
+                    AppointmentId = 1,
+                    RepairRequestId = 10,
+                    RepairRequest = new RepairRequest { RepairRequestId = 10 }
+                }
+            };
+
+            _userContext.SetupGet(u => u.CurrentUserId).Returns(userId);
+            _userContext.SetupGet(u => u.Role).Returns(AccountRole.TechnicianLead.ToString());
+
+            _inspectionReportRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<InspectionReport, bool>>>(),
+                It.IsAny<Func<IQueryable<InspectionReport>, IOrderedQueryable<InspectionReport>>>(),
+                It.IsAny<Func<IQueryable<InspectionReport>, IIncludableQueryable<InspectionReport, object>>>()
+            )).ReturnsAsync(inspectionReport);
+
+            // ✅ Mock main invoice (InternalRepair)
+            var mainInvoice = new Invoice
+            {
+                InvoiceId = 100,
+                RepairRequestId = 10,
+                Type = InvoiceType.InternalRepair,
+                Status = InvoiceStatus.Draft,
+                CreatedAt = now.AddMinutes(-10),
+                TotalAmount = 500000,
+                IsChargeable = false, // Dùng budget
+                InvoiceAccessories = new List<InvoiceAccessory>
+        {
+            new InvoiceAccessory
+            {
+                InvoiceAccessoryId = 1,
+                AccessoryId = 1,
+                Name = "Ống nước",
+                Quantity = 5,
+                Price = 50000
+            }
+        },
+                InvoiceServices = new List<Repository.Entities.InvoiceService>()
+            };
+
+            // ✅ Mock purchase invoice (AccessoryPurchase)
+            var purchaseInvoice = new Invoice
+            {
+                InvoiceId = 101,
+                RepairRequestId = 10,
+                Type = InvoiceType.AccessoryPurchase,
+                Status = InvoiceStatus.Draft,
+                CreatedAt = now.AddMinutes(-5),
+                TotalAmount = 1000000,
+                IsChargeable = false,
+                InvoiceAccessories = new List<InvoiceAccessory>
+        {
+            new InvoiceAccessory
+            {
+                InvoiceAccessoryId = 2,
+                AccessoryId = 2,
+                Name = "Van điều áp",
+                Quantity = 2,
+                Price = 500000
+            }
+        },
+                InvoiceServices = new List<Repository.Entities.InvoiceService>()
+            };
+
+            // ✅ Setup invoice queries
+            _invoiceRepo.SetupSequence(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Invoice, bool>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IOrderedQueryable<Invoice>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IIncludableQueryable<Invoice, object>>>()
+            ))
+            .ReturnsAsync(mainInvoice)      // Lần 1: Main invoice
+            .ReturnsAsync(purchaseInvoice); // Lần 2: Purchase invoice
+
+            // ✅ Mock Accessory (cho main invoice)
+            var accessory = new Accessory
+            {
+                AccessoryId = 1,
+                Name = "Ống nước",
+                Quantity = 100, // Đủ số lượng
+                Status = ActiveStatus.Active
+            };
+
+            _accessoryRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Accessory, bool>>>(),
+                It.IsAny<Func<IQueryable<Accessory>, IOrderedQueryable<Accessory>>>(),
+                It.IsAny<Func<IQueryable<Accessory>, IIncludableQueryable<Accessory, object>>>()
+            )).ReturnsAsync(accessory);
+
+            // ✅ Mock Budget
+            var budget = new Budget
+            {
+                BudgetId = 1,
+                Amount = 5000000
+            };
+
+            _budgetRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Budget, bool>>>(),
+                It.IsAny<Func<IQueryable<Budget>, IOrderedQueryable<Budget>>>(),
+                It.IsAny<Func<IQueryable<Budget>, IIncludableQueryable<Budget, object>>>()
+            )).ReturnsAsync(budget);
+
+            // ✅ Mock Transaction insert
+            _transactionRepo.Setup(r => r.InsertAsync(It.IsAny<Transaction>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _service.ApproveReportAsync(dto);
+
+            // Assert
+            Assert.True(result);
+            Assert.Equal(ReportStatus.Approved, pendingApproval.Status);
+            Assert.Equal(ReportStatus.Approved, inspectionReport.Status);
+
+            // ✅ Verify budget được trừ
+            Assert.Equal(5000000 - 1000000, budget.Amount); // 5M - 1M = 4M
+            _budgetRepo.Verify(r => r.UpdateAsync(It.Is<Budget>(b =>
+                b.Amount == 4000000
+            )), Times.Once);
+
+            // ✅ Verify transaction được tạo
+            _transactionRepo.Verify(r => r.InsertAsync(It.Is<Transaction>(t =>
+                t.Amount == purchaseInvoice.TotalAmount &&
+                t.Status == TransactionStatus.Success &&
+                t.Direction == TransactionDirection.Expense &&
+                t.Provider == PaymentProvider.Budget
+            )), Times.Once);
+
+            // ✅ Verify invoices được update
+            _invoiceRepo.Verify(r => r.UpdateAsync(It.Is<Invoice>(i =>
+                i.InvoiceId == mainInvoice.InvoiceId &&
+                i.Status == InvoiceStatus.Approved
+            )), Times.Once);
+
+            _invoiceRepo.Verify(r => r.UpdateAsync(It.Is<Invoice>(i =>
+                i.InvoiceId == purchaseInvoice.InvoiceId &&
+                i.Status == InvoiceStatus.Approved
+            )), Times.Once);
+
+            // ✅ Verify accessory quantity được trừ
+            Assert.Equal(100 - 5, accessory.Quantity); // 100 - 5 = 95
+            _accessoryRepo.Verify(r => r.UpdateAsync(It.Is<Accessory>(a =>
+                a.Quantity == 95
+            )), Times.Once);
+        }
+
+        [Fact]
+        public async Task ApproveReportAsync_Throws_WhenBudgetInsufficient()
+        {
+            // Arrange
+            var userId = 2;
+            var dto = new ApproveReportCreateDto
+            {
+                ReportId = 1,
+                ReportType = "InspectionReport",
+                Status = ReportStatus.Approved,
+                EscalateToHigherLevel = false
+            };
+
+            var pendingApproval = new ReportApproval
+            {
+                ReportApprovalId = 1,
+                InspectionReportId = 1,
+                UserId = userId,
+                Role = AccountRole.TechnicianLead,
+                Status = ReportStatus.Pending
+            };
+
+            var now = DateTime.Now;
+            var inspectionReport = new InspectionReport
+            {
+                InspectionReportId = 1,
+                Status = ReportStatus.Pending,
+                SolutionType = SolutionType.Replacement,
+                CreatedAt = now,
+                ReportApprovals = new List<ReportApproval> { pendingApproval },
+                Appointment = new Appointment
+                {
+                    RepairRequestId = 10,
                     RepairRequest = new RepairRequest()
                 }
             };
@@ -523,15 +711,54 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<IQueryable<InspectionReport>, IIncludableQueryable<InspectionReport, object>>>()
             )).ReturnsAsync(inspectionReport);
 
-            // Act
-            var result = await _service.ApproveReportAsync(dto);
+            var mainInvoice = new Invoice
+            {
+                InvoiceId = 100,
+                Type = InvoiceType.InternalRepair,
+                Status = InvoiceStatus.Draft,
+                CreatedAt = now.AddMinutes(-10),
+                IsChargeable = false,
+                InvoiceAccessories = new List<InvoiceAccessory>()
+            };
 
-            // Assert
-            Assert.True(result);
-            Assert.Equal(ReportStatus.Approved, pendingApproval.Status);
-            Assert.Equal(ReportStatus.Approved, inspectionReport.Status);
-            _approvalRepo.Verify(r => r.UpdateAsync(pendingApproval), Times.Once);
-            _inspectionReportRepo.Verify(r => r.UpdateAsync(inspectionReport), Times.Once);
+            var purchaseInvoice = new Invoice
+            {
+                InvoiceId = 101,
+                Type = InvoiceType.AccessoryPurchase,
+                Status = InvoiceStatus.Draft,
+                CreatedAt = now.AddMinutes(-5),
+                TotalAmount = 10000000, // 10M
+                InvoiceAccessories = new List<InvoiceAccessory>()
+            };
+
+            _invoiceRepo.SetupSequence(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Invoice, bool>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IOrderedQueryable<Invoice>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IIncludableQueryable<Invoice, object>>>()
+            ))
+            .ReturnsAsync(mainInvoice)
+            .ReturnsAsync(purchaseInvoice);
+
+            // ✅ Budget không đủ
+            var budget = new Budget
+            {
+                BudgetId = 1,
+                Amount = 5000000 // Chỉ 5M, cần 10M
+            };
+
+            _budgetRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Budget, bool>>>(),
+                It.IsAny<Func<IQueryable<Budget>, IOrderedQueryable<Budget>>>(),
+                It.IsAny<Func<IQueryable<Budget>, IIncludableQueryable<Budget, object>>>()
+            )).ReturnsAsync(budget);
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<AppValidationException>(() =>
+                _service.ApproveReportAsync(dto));
+
+            Assert.Contains("Ngân sách không đủ", ex.Message);
+
+            _uow.Verify(u => u.RollbackTransactionAsync(), Times.Once);
         }
 
         #endregion

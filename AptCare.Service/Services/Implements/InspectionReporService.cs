@@ -132,7 +132,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error creating inspection report for AppointmentId: {AppointmentId}", dto.AppointmentId);
-                throw new Exception(ex.Message);
+                throw new AppValidationException(ex.Message);
             }
         }
 

@@ -59,8 +59,8 @@ namespace AptCare.UT.Services
             _cacheService.Setup(c => c.GetAsync<IEnumerable<ContractDto>>(It.IsAny<string>()))
                 .ReturnsAsync((IEnumerable<ContractDto>)null);
 
-            _cacheService.Setup(c => c.GetAsync<IPaginate<ContractDto>>(It.IsAny<string>()))
-                .ReturnsAsync((IPaginate<ContractDto>)null);
+            _cacheService.Setup(c => c.GetAsync<Paginate<ContractDto>>(It.IsAny<string>()))
+                .ReturnsAsync((Paginate<ContractDto>)null);
 
             _service = new ContractService(
                 _uow.Object,
