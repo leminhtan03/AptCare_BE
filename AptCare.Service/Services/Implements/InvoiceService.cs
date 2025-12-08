@@ -2,6 +2,7 @@
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.UnitOfWork;
+using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.InvoiceDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
@@ -280,6 +281,15 @@ namespace AptCare.Service.Services.Implements
                 include: i => i.Include(x => x.InvoiceAccessories)
                                .Include(x => x.InvoiceServices)
             );
+            foreach (var invoice in invoices)
+            {
+                var medias = await _unitOfWork.GetRepository<Media>().ProjectToListAsync<MediaDto>(
+                    configuration: _mapper.ConfigurationProvider,
+                    predicate: m => m.EntityId == invoice.InvoiceId && m.Entity == nameof(Invoice)
+                );
+                invoice.Medias = (List<MediaDto>?)medias;
+            }
+
 
             return invoices;
         }
@@ -342,8 +352,8 @@ namespace AptCare.Service.Services.Implements
                     {
                         var media = new Media
                         {
-                            EntityId = transaction.TransactionId,
-                            Entity = nameof(Transaction),
+                            EntityId = dto.InvoiceId,
+                            Entity = nameof(Invoice),
                             FileName = dto.PaymentReceipt.FileName,
                             FilePath = fileKey,
                             ContentType = dto.PaymentReceipt.ContentType,

@@ -15,6 +15,7 @@ namespace AptCare.Repository.Enum
         AwaitingIRApproval = 5,// Chờ duyệt IR
         InRepair = 6,          // Đang thi công
         Completed = 7,        // Hoàn tất
-        Cancelled = 8    // Hủy
+        Cancelled = 8,   // Hủy
+
     }
 }

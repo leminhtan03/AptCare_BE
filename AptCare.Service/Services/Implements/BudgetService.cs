@@ -3,29 +3,20 @@ using AptCare.Service.Dtos.BudgetDtos;
 using AptCare.Service.Services.Interfaces;
 using AutoMapper;
 using Microsoft.Extensions.Logging;
-using Microsoft.EntityFrameworkCore;
+using AptCare.Repository.UnitOfWork;
+using AptCare.Repository.Entities;
 
 namespace AptCare.Service.Services.Implements
 {
-    public class BudgetService : IBudgetService
+    public class BudgetService : BaseService<BudgetService>, IBudgetService
     {
-        private readonly AptCareSystemDBContext _context;
-        private readonly IMapper _mapper;
-        private readonly ILogger<BudgetService> _logger;
-
-        public BudgetService(
-            AptCareSystemDBContext context,
-            IMapper mapper,
-            ILogger<BudgetService> logger)
+        public BudgetService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<BudgetService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
         {
-            _context = context;
-            _mapper = mapper;
-            _logger = logger;
         }
 
         public async Task<BudgetDto> GetBudgetAsync()
         {
-            var budget = await _context.Budgets.AsNoTracking().FirstOrDefaultAsync();
+            var budget = await _unitOfWork.GetRepository<Budget>().SingleOrDefaultAsync();
             if (budget == null)
             {
                 _logger.LogWarning("No budget found in the system.");
