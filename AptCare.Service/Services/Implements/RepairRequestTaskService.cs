@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace AptCare.Service.Services.Implements
 {
@@ -182,6 +183,13 @@ namespace AptCare.Service.Services.Implements
 
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
+                foreach (var updatedtaskTask in updatedTasks)
+                {
+                    await _cacheService.RemoveAsync($"repair_request_task:{updatedtaskTask.RepairRequestTaskId}");
+                }
+                await _cacheService.RemoveByPrefixAsync($"repair_request_task:list:repair_request:{repairRequestId}");
+
 
                 _logger.LogInformation("Updated {TaskCount} tasks for RepairRequest {RepairRequestId}",
                     updatedTasks.Count, repairRequestId);
