@@ -275,10 +275,10 @@ namespace AptCare.Service.Services.Implements
                 {
                     media = new Media
                     {
-                        EntityId = transaction.TransactionId,
+                        EntityId = invoice.InvoiceId,
                         CreatedAt = DateTime.Now,
                         FileName = dto.ReceiptFile.FileName,
-                        Entity = nameof(Transaction),
+                        Entity = nameof(invoice),
                         ContentType = dto.ReceiptFile.ContentType,
                         Status = ActiveStatus.Active,
                         FilePath = fileKey

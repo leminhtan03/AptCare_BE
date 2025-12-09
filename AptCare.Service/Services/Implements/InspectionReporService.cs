@@ -14,7 +14,6 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Asn1.Ocsp;
 using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements

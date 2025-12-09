@@ -6,7 +6,6 @@ using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.AppointmentDtos;
-using AptCare.Service.Dtos.NotificationDtos;
 using AptCare.Service.Dtos.RepairRequestDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
@@ -14,8 +13,6 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Org.BouncyCastle.Asn1.Ocsp;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace AptCare.Service.Services.Implements
@@ -318,7 +315,7 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.BeginTransactionAsync();
                 var timeNow = DateTime.Now;
                 var appointmentStartTime = appointment.StartTime;
-                
+
                 //var workSlot = await _unitOfWork.GetRepository<WorkSlot>().SingleOrDefaultAsync(
                 //    predicate: ws => ws.Date == DateOnly.FromDateTime(timeNow) &&
                 //                     ws.Slot.FromTime <= timeNow.TimeOfDay &&
@@ -427,8 +424,7 @@ namespace AptCare.Service.Services.Implements
 
                 if (!IsValidStatusTransition(latestTracking.Status, AppointmentStatus.InRepair))
                 {
-                    throw new AppValidationException(
-                        $"Không thể bắt đầu sửa chữa từ trạng thái '{latestTracking?.Status}'. Yêu cầu phải ở trạng thái InVisit hoặc AwaitingIRApproval.");
+                    throw new AppValidationException($"Không thể bắt đầu sửa chữa từ trạng thái '{latestTracking?.Status}'. Yêu cầu phải ở trạng thái InVisit hoặc AwaitingIRApproval.");
                 }
                 if (latestTracking.Status == AppointmentStatus.AwaitingIRApproval)
                 {
@@ -455,7 +451,8 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 var invoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
-                    predicate: x => x.RepairRequestId == appointment.RepairRequestId,
+                    predicate: x => x.RepairRequestId == appointment.RepairRequestId &&
+                                    x.Type != InvoiceType.AccessoryPurchase,
                     orderBy: o => o.OrderByDescending(x => x.CreatedAt)
                     );
                 if (invoice == null)
