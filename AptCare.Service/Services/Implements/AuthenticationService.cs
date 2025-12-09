@@ -6,15 +6,15 @@ using AptCare.Repository.Enum.TokenEnum;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos.Account;
 using AptCare.Service.Dtos.AuthenDto;
+using AptCare.Service.Dtos.EmailDtos;
 using AptCare.Service.Exceptions;
-using AptCare.Service.Extensions;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-
 
 namespace AptCare.Service.Services.Implements
 {
@@ -23,16 +23,18 @@ namespace AptCare.Service.Services.Implements
         private readonly IPasswordHasher<Account> _pwdHasher;
         private readonly IOtpService _otpService;
         private readonly ITokenService _tokenService;
-        private readonly IMailSenderService _mailSenderService;
+        private readonly IRabbitMQService _rabbitMQService;
         private readonly IUserContext _providerContext;
-        public AuthenticationService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IMailSenderService mailSenderService, IPasswordHasher<Account> pwdHasher, IOtpService otpService, IUserContext providerContext, ITokenService tokenService, ILogger<AuthenticationService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
+
+        public AuthenticationService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IRabbitMQService rabbitMQService, IPasswordHasher<Account> pwdHasher, IOtpService otpService, IUserContext providerContext, ITokenService tokenService, ILogger<AuthenticationService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
         {
             _pwdHasher = pwdHasher;
             _otpService = otpService;
             _tokenService = tokenService;
-            _mailSenderService = mailSenderService;
+            _rabbitMQService = rabbitMQService;
             _providerContext = providerContext;
         }
+
         public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto dto)
         {
             var accountRepo = _unitOfWork.GetRepository<Account>();
@@ -54,25 +56,30 @@ namespace AptCare.Service.Services.Implements
 
             await accountRepo.InsertAsync(account);
             await _unitOfWork.CommitAsync();
+
             var otp = await _otpService.CreateOtpAsync(account.AccountId,
                 OTPType.EmailVerification,
                 ttl: TimeSpan.FromMinutes(5),
                 digits: 6);
-            await _mailSenderService.SendEmailWithTemplateAsync(
-                toEmail: dto.Email,
-                subject: "[AptCare] Xác minh địa chỉ email",
-                templateName: "EmailVerification",
-                replacements: new Dictionary<string, string>
+
+            await _rabbitMQService.PublishEmailAsync(new EmailRequestDto
+            {
+                ToEmail = dto.Email,
+                Subject = "[AptCare] Xác minh địa chỉ email",
+                TemplateName = "EmailVerification",
+                Replacements = new Dictionary<string, string>
                 {
                     ["SystemName"] = "AptCare System",
                     ["FullName"] = existedEmail.FirstName + " " + existedEmail.LastName,
                     ["OtpCode"] = otp,
                     ["ExpiredMinutes"] = "5",
                     ["ExpireAt"] = DateTime.Now.AddMinutes(5).ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
-                    ["SupportEmail"] = "Subiheo9999@gmail.com",
+                    ["SupportEmail"] = "support@aptcare.vn",
                     ["VerifyUrl"] = "",
                     ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
-                });
+                    ["Year"] = DateTime.Now.Year.ToString()
+                }
+            });
 
             return new RegisterResponseDto
             {
@@ -88,11 +95,13 @@ namespace AptCare.Service.Services.Implements
                 ttl: TimeSpan.FromMinutes(5), digits: 6);
             var UserRepo = _unitOfWork.GetRepository<User>();
             var existedEmail = await UserRepo.SingleOrDefaultAsync(predicate: u => u.UserId == accountId, include: u => u.Include(i => i.Account));
-            await _mailSenderService.SendEmailWithTemplateAsync(
-                toEmail: existedEmail.Email,
-                subject: "[AptCare] Xác minh địa chỉ email",
-                templateName: "EmailVerification",
-                replacements: new Dictionary<string, string>
+
+            await _rabbitMQService.PublishEmailAsync(new EmailRequestDto
+            {
+                ToEmail = existedEmail.Email,
+                Subject = "[AptCare] Xác minh địa chỉ email",
+                TemplateName = "EmailVerification",
+                Replacements = new Dictionary<string, string>
                 {
                     ["FullName"] = existedEmail.FirstName + " " + existedEmail.LastName,
                     ["OtpCode"] = otp,
@@ -101,7 +110,8 @@ namespace AptCare.Service.Services.Implements
                     ["SupportEmail"] = "support@aptcare.vn",
                     ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
                     ["Year"] = DateTime.Now.Year.ToString()
-                });
+                }
+            });
         }
 
         public async Task<bool> VerifyEmailAsync(int accountId, string otp)
@@ -152,7 +162,6 @@ namespace AptCare.Service.Services.Implements
             if (pwdResult == PasswordVerificationResult.Failed)
                 throw new AppValidationException("Tài khoản hoặc mật khẩu không đúng.");
 
-
             if (pwdResult == PasswordVerificationResult.SuccessRehashNeeded)
             {
                 account.PasswordHash = _pwdHasher.HashPassword(account, dto.Password);
@@ -170,17 +179,18 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(dto.Email)) throw new AppValidationException("Email là bắt buộc !!"); ;
+                if (string.IsNullOrWhiteSpace(dto.Email)) throw new AppValidationException("Email là bắt buộc !!");
                 var userRepo = _unitOfWork.GetRepository<User>();
                 var user = await userRepo.SingleOrDefaultAsync(predicate: u => u.Email == dto.Email, include: q => q.Include(x => x.Account));
                 if (user == null || user.Account == null) throw new AppValidationException("Tài khoản không tồn tại.");
                 var otp = await _otpService.CreateOtpAsync(user.Account.AccountId, OTPType.PasswordReset, TimeSpan.FromMinutes(5), 6);
 
-                await _mailSenderService.SendEmailWithTemplateAsync(
-                    toEmail: user.Email,
-                    subject: "[AptCare] Mã OTP đặt lại mật khẩu",
-                    templateName: "PasswordResetOtp",
-                    replacements: new Dictionary<string, string>
+                await _rabbitMQService.PublishEmailAsync(new EmailRequestDto
+                {
+                    ToEmail = user.Email,
+                    Subject = "[AptCare] Mã OTP đặt lại mật khẩu",
+                    TemplateName = "PasswordResetOtp",
+                    Replacements = new Dictionary<string, string>
                     {
                         ["FullName"] = user.FirstName + " " + user.LastName,
                         ["OtpCode"] = otp,
@@ -189,7 +199,9 @@ namespace AptCare.Service.Services.Implements
                         ["SupportEmail"] = "support@aptcare.vn",
                         ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
                         ["Year"] = DateTime.Now.Year.ToString()
-                    });
+                    }
+                });
+
                 return new ResetPasswordResponseDto
                 {
                     Message = "Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư đến.",
@@ -201,7 +213,6 @@ namespace AptCare.Service.Services.Implements
                 _logger.LogError(ex, "Error in PasswordResetRequestAsync: {Message}", ex.Message);
                 throw new AppValidationException("Đã xảy ra lỗi khi xử lý yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.");
             }
-
         }
 
         public async Task<string> PasswordResetVerifyOtpAsync(PasswordResetVerifyOtpDto dto)
@@ -228,13 +239,15 @@ namespace AptCare.Service.Services.Implements
             accRepo.UpdateAsync(account);
             await _unitOfWork.CommitAsync();
             await _tokenService.RevokeAllRefreshTokensAsync(dto.AccountId);
+
             if (account.User?.Email != null)
             {
-                await _mailSenderService.SendEmailWithTemplateAsync(
-                    toEmail: account.User.Email,
-                    subject: "[AptCare] Mật khẩu của bạn đã được thay đổi",
-                    templateName: "SecurityNotice",
-                    replacements: new Dictionary<string, string>
+                await _rabbitMQService.PublishEmailAsync(new EmailRequestDto
+                {
+                    ToEmail = account.User.Email,
+                    Subject = "[AptCare] Mật khẩu của bạn đã được thay đổi",
+                    TemplateName = "SecurityNotice",
+                    Replacements = new Dictionary<string, string>
                     {
                         ["FullName"] = account.User.FirstName + " " + account.User.LastName,
                         ["ChangedAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
@@ -242,9 +255,11 @@ namespace AptCare.Service.Services.Implements
                         ["SupportEmail"] = "support@aptcare.vn",
                         ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
                         ["Year"] = DateTime.Now.Year.ToString()
-                    });
+                    }
+                });
             }
         }
+
         public async Task<GetOwnProfileDto> GetOwnProfile()
         {
             try
@@ -270,8 +285,8 @@ namespace AptCare.Service.Services.Implements
             {
                 throw new AppValidationException("Xảy ra lỗi ở GetOwnProfile :" + ex.Message);
             }
-
         }
+
         public async Task<TokenResponseDto> FirstLoginChangePasswordAsync(FirstLoginChangePasswordDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.NewPassword))
@@ -279,8 +294,7 @@ namespace AptCare.Service.Services.Implements
 
             var accRepo = _unitOfWork.GetRepository<Account>();
             var account = await accRepo.SingleOrDefaultAsync(
-                predicate:
-                a => a.AccountId == dto.AccountId,
+                predicate: a => a.AccountId == dto.AccountId,
                 include: q => q.Include(x => x.User));
 
             if (account == null)
@@ -293,13 +307,15 @@ namespace AptCare.Service.Services.Implements
             if (!account.EmailConfirmed) account.EmailConfirmed = true;
             accRepo.UpdateAsync(account);
             await _unitOfWork.CommitAsync();
+
             if (account.User?.Email != null)
             {
-                await _mailSenderService.SendEmailWithTemplateAsync(
-                    toEmail: account.User.Email,
-                    subject: "[AptCare] Mật khẩu của bạn đã được thay đổi",
-                    templateName: "SecurityNotice",
-                    replacements: new Dictionary<string, string>
+                await _rabbitMQService.PublishEmailAsync(new EmailRequestDto
+                {
+                    ToEmail = account.User.Email,
+                    Subject = "[AptCare] Mật khẩu của bạn đã được thay đổi",
+                    TemplateName = "SecurityNotice",
+                    Replacements = new Dictionary<string, string>
                     {
                         ["FullName"] = account.User.FirstName + " " + account.User.LastName,
                         ["ChangedAt"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
@@ -307,8 +323,10 @@ namespace AptCare.Service.Services.Implements
                         ["SupportEmail"] = "support@aptcare.vn",
                         ["SupportPhoneSuffix"] = " • Hotline: 1900-xxxx",
                         ["Year"] = DateTime.Now.Year.ToString()
-                    });
+                    }
+                });
             }
+
             var user = await _unitOfWork.GetRepository<User>()
                 .SingleOrDefaultAsync(predicate: u => u.UserId == account.AccountId, include: q => q.Include(x => x.Account));
             if (user == null) throw new AppValidationException("Không tìm thấy người dùng.");
@@ -326,7 +344,7 @@ namespace AptCare.Service.Services.Implements
         {
             var userId = _providerContext.CurrentUserId;
             var isExistingToken = await _unitOfWork.GetRepository<AccountToken>().AnyAsync(
-                predicate: u => u.TokenType == TokenType.FCMToken && u.Token == dto.FcmToken && u.Status == TokenStatus.Active 
+                predicate: u => u.TokenType == TokenType.FCMToken && u.Token == dto.FcmToken && u.Status == TokenStatus.Active
             );
             if (!isExistingToken)
             {
@@ -348,7 +366,7 @@ namespace AptCare.Service.Services.Implements
         public async Task<string> RefreshFCMTokenAsync(FCMRequestDto dto)
         {
             var userId = _providerContext.CurrentUserId;
-            
+
             var tokenExpired = await _unitOfWork.GetRepository<AccountToken>().SingleOrDefaultAsync(
                 predicate: u => u.TokenType == TokenType.FCMToken && u.DeviceInfo == dto.DeviceInfo && u.Status == TokenStatus.Active
             );
