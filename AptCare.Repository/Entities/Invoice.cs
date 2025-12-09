@@ -8,6 +8,7 @@ namespace AptCare.Repository.Entities
 {
     public class Invoice
     {
+
         [Key]
         public int InvoiceId { get; set; }
         [ForeignKey("RepairRequest")]

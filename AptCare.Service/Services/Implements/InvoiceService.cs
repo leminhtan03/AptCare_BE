@@ -136,9 +136,7 @@ namespace AptCare.Service.Services.Implements
 
                         if (accessoryDb == null)
                         {
-                            throw new AppValidationException(
-                                $"Phụ kiện với ID {accessory.AccessoryId} không tồn tại trong hệ thống.",
-                                StatusCodes.Status404NotFound);
+                            throw new AppValidationException($"Phụ kiện với ID {accessory.AccessoryId} không tồn tại trong hệ thống.", StatusCodes.Status404NotFound);
                         }
 
                         purchaseAmount += accessory.PurchasePrice * accessory.Quantity;
