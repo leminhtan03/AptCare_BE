@@ -26,6 +26,7 @@ namespace AptCare.Service.Services.Implements
         private readonly IRepairRequestService _repairRequestService;
         private readonly IAppointmentService _appointmentService;
         private readonly IReportApprovalService _reportApprovalService;
+        private const int TIME_TOLERANCE_SECONDS = 5;
 
         public InspectionReporService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InspectionReporService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService, IRepairRequestService repairRequestService, IAppointmentService appointmentService, IReportApprovalService reportApprovalService) : base(unitOfWork, logger, mapper)
         {
@@ -259,7 +260,6 @@ namespace AptCare.Service.Services.Implements
             }
         }
 
-
         public async Task<ICollection<InspectionReportDto>> GetInspectionReportByAppointmentIdAsync(int id)
         {
             try
@@ -345,10 +345,15 @@ namespace AptCare.Service.Services.Implements
                     result.Medias = medias.ToList();
                 }
 
+                var reportCreatedAt = inspectionReport.CreatedAt;
+                var minTime = reportCreatedAt.AddSeconds(-TIME_TOLERANCE_SECONDS);
+                var maxTime = reportCreatedAt.AddSeconds(TIME_TOLERANCE_SECONDS);
+
                 var invoice = await _unitOfWork.GetRepository<Invoice>().GetListAsync(
                     selector: s => _mapper.Map<InvoiceDto>(s),
                     predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
-                                    DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt) &&
+                                    x.CreatedAt >= minTime &&
+                                    x.CreatedAt <= maxTime &&
                                     x.CreatedAt < inspectionReport.CreatedAt,
                     include: i => i.Include(x => x.InvoiceAccessories)
                                    .Include(x => x.InvoiceServices),
@@ -444,15 +449,20 @@ namespace AptCare.Service.Services.Implements
                     );
                     item.Medias = medias.ToList();
 
+                    var reportCreatedAt = item.CreatedAt;
+                    var minTime = reportCreatedAt.AddSeconds(-TIME_TOLERANCE_SECONDS);
+                    var maxTime = reportCreatedAt.AddSeconds(TIME_TOLERANCE_SECONDS);
+
                     var invoice = await _unitOfWork.GetRepository<Invoice>().GetListAsync(
-                    selector: s => _mapper.Map<InvoiceDto>(s),
-                    predicate: x => x.RepairRequestId == item.Appointment.RepairRequest.RepairRequestId &&
-                                    DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(item.CreatedAt) &&
-                                    x.CreatedAt < item.CreatedAt,
-                    include: i => i.Include(x => x.InvoiceAccessories)
-                                   .Include(x => x.InvoiceServices),
-                    orderBy: o => o.OrderByDescending(x => x.CreatedAt)
-                    );
+                        selector: s => _mapper.Map<InvoiceDto>(s),
+                        predicate: x => x.RepairRequestId == item.Appointment.RepairRequest.RepairRequestId &&
+                                        x.CreatedAt >= minTime &&
+                                        x.CreatedAt <= maxTime &&
+                                        x.CreatedAt < item.CreatedAt,
+                        include: i => i.Include(x => x.InvoiceAccessories)
+                                       .Include(x => x.InvoiceServices),
+                        orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                        );
                     item.Invoice = invoice;
                 }
                 return paginateEntityResult;

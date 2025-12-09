@@ -232,50 +232,52 @@ namespace AptCare.Service.Services.Implements
                             accessoryDb.Quantity -= invoiceAccessory.Quantity;
                             _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessoryDb);
                         }
-                        if (purchaseInvoice != null && !mainInvoice.IsChargeable)
+                        if (purchaseInvoice != null)
                         {
-                            var budget = await budgetRepo.SingleOrDefaultAsync();
-                            if (budget == null)
-                            {
-                                throw new AppValidationException("Không tìm thấy thông tin ngân sách.",
-                                    StatusCodes.Status404NotFound);
+                            
+                            if (!mainInvoice.IsChargeable) {
+                                var budget = await budgetRepo.SingleOrDefaultAsync();
+                                if (budget == null)
+                                {
+                                    throw new AppValidationException("Không tìm thấy thông tin ngân sách.",
+                                        StatusCodes.Status404NotFound);
+                                }
+                                if (budget.Amount < purchaseInvoice.TotalAmount)
+                                {
+                                    throw new AppValidationException(
+                                        $"Ngân sách không đủ để mua phụ kiện.\n" +
+                                        $"Cần: {purchaseInvoice.TotalAmount:N0} VNĐ\n" +
+                                        $"Còn: {budget.Amount:N0} VNĐ\n" +
+                                        $"Thiếu: {(purchaseInvoice.TotalAmount - budget.Amount):N0} VNĐ",
+                                        StatusCodes.Status400BadRequest);
+                                }
+
+                                budget.Amount -= purchaseInvoice.TotalAmount;
+                                budgetRepo.UpdateAsync(budget);
+
+                                var purchaseDetails = string.Join(", ",
+                                    purchaseInvoice.InvoiceAccessories.Select(a =>
+                                        $"{a.Name} x{a.Quantity} x {a.Price:N0}đ"));
+
+                                var transaction = new Transaction
+                                {
+                                    UserId = userId,
+                                    InvoiceId = purchaseInvoice.InvoiceId,
+                                    TransactionType = TransactionType.Cash,
+                                    Status = TransactionStatus.Success,
+                                    Provider = PaymentProvider.Budget,
+                                    Direction = TransactionDirection.Expense,
+                                    Amount = purchaseInvoice.TotalAmount,
+                                    Description = $"Mua phụ kiện để sửa chữa ngay cho yêu cầu #{inspectionReport.Appointment.RepairRequestId}.\n" +
+                                                 $"Chi tiết: {purchaseDetails}.\n" +
+                                                 $"Phụ kiện được sử dụng trực tiếp, không nhập kho.\n" +
+                                                 $"Người phê duyệt: {role}",
+                                    CreatedAt = DateTime.Now,
+                                    PaidAt = DateTime.Now
+                                };
+
+                                await transactionRepo.InsertAsync(transaction);
                             }
-
-                            if (budget.Amount < purchaseInvoice.TotalAmount)
-                            {
-                                throw new AppValidationException(
-                                    $"Ngân sách không đủ để mua phụ kiện.\n" +
-                                    $"Cần: {purchaseInvoice.TotalAmount:N0} VNĐ\n" +
-                                    $"Còn: {budget.Amount:N0} VNĐ\n" +
-                                    $"Thiếu: {(purchaseInvoice.TotalAmount - budget.Amount):N0} VNĐ",
-                                    StatusCodes.Status400BadRequest);
-                            }
-
-                            budget.Amount -= purchaseInvoice.TotalAmount;
-                            budgetRepo.UpdateAsync(budget);
-
-                            var purchaseDetails = string.Join(", ",
-                                purchaseInvoice.InvoiceAccessories.Select(a =>
-                                    $"{a.Name} x{a.Quantity} x {a.Price:N0}đ"));
-
-                            var transaction = new Transaction
-                            {
-                                UserId = userId,
-                                InvoiceId = purchaseInvoice.InvoiceId,
-                                TransactionType = TransactionType.Cash,
-                                Status = TransactionStatus.Success,
-                                Provider = PaymentProvider.Budget,
-                                Direction = TransactionDirection.Expense,
-                                Amount = purchaseInvoice.TotalAmount,
-                                Description = $"Mua phụ kiện để sửa chữa ngay cho yêu cầu #{inspectionReport.Appointment.RepairRequestId}.\n" +
-                                             $"Chi tiết: {purchaseDetails}.\n" +
-                                             $"Phụ kiện được sử dụng trực tiếp, không nhập kho.\n" +
-                                             $"Người phê duyệt: {role}",
-                                CreatedAt = DateTime.Now,
-                                PaidAt = DateTime.Now
-                            };
-
-                            await transactionRepo.InsertAsync(transaction);
 
                             purchaseInvoice.Status = InvoiceStatus.Approved;
                             _unitOfWork.GetRepository<Invoice>().UpdateAsync(purchaseInvoice);
