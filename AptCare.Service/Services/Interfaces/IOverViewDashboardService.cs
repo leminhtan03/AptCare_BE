@@ -1,4 +1,5 @@
-﻿namespace AptCare.Service.Services.Interfaces
+﻿
+namespace AptCare.Service.Services.Interfaces
 {
     public interface IOverViewDashboardService
     {

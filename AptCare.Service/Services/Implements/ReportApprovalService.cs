@@ -147,9 +147,7 @@ namespace AptCare.Service.Services.Implements
 
             if (currentApproval == null)
             {
-                throw new AppValidationException(
-                    "Không tìm thấy approval pending của bạn cho báo cáo này.",
-                    StatusCodes.Status404NotFound);
+                throw new AppValidationException("Không tìm thấy approval pending của bạn cho báo cáo này.", StatusCodes.Status404NotFound);
             }
 
             if (dto.EscalateToHigherLevel)
@@ -166,9 +164,15 @@ namespace AptCare.Service.Services.Implements
                 reportApprovalRepo.UpdateAsync(currentApproval);
                 inspectionReport.Status = dto.Status;
 
+                var timeToleranceInSeconds = 5;
+                var reportCreatedAt = inspectionReport.CreatedAt;
+                var minTime = reportCreatedAt.AddSeconds(-timeToleranceInSeconds);
+                var maxTime = reportCreatedAt.AddSeconds(timeToleranceInSeconds);
+
                 var mainInvoice = await _unitOfWork.GetRepository<Invoice>().SingleOrDefaultAsync(
                     predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
-                                    DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt) &&
+                                    x.CreatedAt >= minTime &&
+                                    x.CreatedAt <= maxTime &&
                                     x.CreatedAt < inspectionReport.CreatedAt &&
                                     x.Status == InvoiceStatus.Draft &&
                                     x.Type != InvoiceType.AccessoryPurchase,
@@ -187,7 +191,8 @@ namespace AptCare.Service.Services.Implements
                             predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
                                             x.Type == InvoiceType.AccessoryPurchase &&
                                             x.Status == InvoiceStatus.Draft &&
-                                            DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt),
+                                            x.CreatedAt >= minTime &&
+                                            x.CreatedAt <= maxTime,
                             include: i => i.Include(x => x.InvoiceAccessories)
                                            .Include(x => x.InvoiceServices),
                             orderBy: o => o.OrderByDescending(x => x.CreatedAt)
@@ -286,7 +291,8 @@ namespace AptCare.Service.Services.Implements
                             predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
                                             x.Type == InvoiceType.AccessoryPurchase &&
                                             x.Status == InvoiceStatus.Draft &&
-                                            DateOnly.FromDateTime(x.CreatedAt) == DateOnly.FromDateTime(inspectionReport.CreatedAt)
+                                            x.CreatedAt >= minTime &&
+                                            x.CreatedAt <= maxTime
                         );
 
                         if (purchaseInvoice != null)

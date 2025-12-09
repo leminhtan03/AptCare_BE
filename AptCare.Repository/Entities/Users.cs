@@ -27,7 +27,6 @@ namespace AptCare.Repository.Entities
         [Required]
         [MaxLength(256)]
         [EmailAddress]
-        // [Index(IsUnique = true)]
         public string Email { get; set; } = null!;
 
         [MaxLength(50)]
