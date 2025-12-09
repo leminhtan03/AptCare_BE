@@ -316,6 +316,9 @@ namespace AptCare.Service.Services.Implements
                     if (AppoinmentTracking.LastOrDefault().Status == AppointmentStatus.Pending)
                         throw new AppValidationException("Lịch hẹn chưa được phân công kỹ thuật viên nhất định", StatusCodes.Status400BadRequest);
 
+                    if (!Appoiment.AppointmentAssigns.Any(aa => aa.Status != WorkOrderStatus.Cancel))
+                        throw new AppValidationException("Lịch hẹn chưa có kỹ thuật viên");
+
                     var n = new AppointmentTracking
                     {
                         AppointmentId = appointmentId,
