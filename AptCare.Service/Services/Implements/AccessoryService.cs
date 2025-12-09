@@ -40,7 +40,7 @@ namespace AptCare.Service.Services.Implements
                     predicate: x => x.Name == dto.Name
                 );
                 if (isDup)
-                    throw new AppValidationException("Phụ kiện đã tồn tại.");
+                    throw new AppValidationException("Vật tư đã tồn tại.");
 
                 var accessory = _mapper.Map<Accessory>(dto);
                 await _unitOfWork.GetRepository<Accessory>().InsertAsync(accessory);
@@ -76,7 +76,7 @@ namespace AptCare.Service.Services.Implements
                 // Clear cache after create
                 await _cacheService.RemoveByPrefixAsync("accessory");
 
-                return "Tạo phụ kiện thành công.";
+                return "Tạo vật tư thành công.";
             }
             catch (Exception e)
             {
@@ -95,13 +95,13 @@ namespace AptCare.Service.Services.Implements
                     predicate: x => x.AccessoryId == id
                 );
                 if (accessory == null)
-                    throw new AppValidationException("Phụ kiện không tồn tại.", StatusCodes.Status404NotFound);
+                    throw new AppValidationException("Vật tư không tồn tại.", StatusCodes.Status404NotFound);
 
                 var isDup = await _unitOfWork.GetRepository<Accessory>().AnyAsync(
                     predicate: x => x.Name == dto.Name && x.AccessoryId != id
                 );
                 if (isDup)
-                    throw new AppValidationException("Tên phụ kiện đã tồn tại.");
+                    throw new AppValidationException("Tên vật tư đã tồn tại.");
 
                 _mapper.Map(dto, accessory);
                 _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessory);
@@ -153,7 +153,7 @@ namespace AptCare.Service.Services.Implements
                 await _cacheService.RemoveByPrefixAsync("accessory:list");
                 await _cacheService.RemoveByPrefixAsync("accessory:paginate");
 
-                return "Cập nhật phụ kiện thành công.";
+                return "Cập nhật vật tư thành công.";
             }
             catch (Exception e)
             {
@@ -170,7 +170,7 @@ namespace AptCare.Service.Services.Implements
                     predicate: x => x.AccessoryId == id
                 );
                 if (accessory == null)
-                    throw new AppValidationException("Phụ kiện không tồn tại.", StatusCodes.Status404NotFound);
+                    throw new AppValidationException("Vật tư không tồn tại.", StatusCodes.Status404NotFound);
 
                 _unitOfWork.GetRepository<Accessory>().DeleteAsync(accessory);
                 await _unitOfWork.CommitAsync();
@@ -178,7 +178,7 @@ namespace AptCare.Service.Services.Implements
                 // Clear cache after delete
                 await _cacheService.RemoveByPrefixAsync("accessory");
 
-                return "Xóa phụ kiện thành công.";
+                return "Xóa vật tư thành công.";
             }
             catch (Exception e)
             {
@@ -201,7 +201,7 @@ namespace AptCare.Service.Services.Implements
                 predicate: p => p.AccessoryId == id
             );
             if (accessory == null)
-                throw new AppValidationException("Phụ kiện không tồn tại.", StatusCodes.Status404NotFound);
+                throw new AppValidationException("Vật tư không tồn tại.", StatusCodes.Status404NotFound);
 
             var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                 selector: s => _mapper.Map<MediaDto>(s),

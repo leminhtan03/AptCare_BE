@@ -74,12 +74,12 @@ namespace AptCare.Service.Services.Implements
 
                         if (accessoryDb == null)
                         {
-                            throw new AppValidationException($"Phụ kiện với ID {accessory.AccessoryId} không tồn tại.", StatusCodes.Status404NotFound);
+                            throw new AppValidationException($"Vật tư với ID {accessory.AccessoryId} không tồn tại.", StatusCodes.Status404NotFound);
                         }
 
                         if (accessoryDb.Quantity < accessory.Quantity)
                         {
-                            throw new AppValidationException($"Phụ kiện '{accessoryDb.Name}' không đủ số lượng. Còn: {accessoryDb.Quantity}, Cần: {accessory.Quantity}. " +
+                            throw new AppValidationException($"Vật tư '{accessoryDb.Name}' không đủ số lượng. Còn: {accessoryDb.Quantity}, Cần: {accessory.Quantity}. " +
                                 $"Vui lòng thêm vào danh sách Linh kiện cần mua để mua thêm.",
                                 StatusCodes.Status400BadRequest);
                         }
@@ -136,7 +136,7 @@ namespace AptCare.Service.Services.Implements
 
                         if (accessoryDb == null)
                         {
-                            throw new AppValidationException($"Phụ kiện với ID {accessory.AccessoryId} không tồn tại trong hệ thống.", StatusCodes.Status404NotFound);
+                            throw new AppValidationException($"Vật tư với ID {accessory.AccessoryId} không tồn tại trong hệ thống.", StatusCodes.Status404NotFound);
                         }
 
                         purchaseAmount += accessory.PurchasePrice * accessory.Quantity;
@@ -173,14 +173,14 @@ namespace AptCare.Service.Services.Implements
 
                 //    return $"Tạo biên lai sửa chữa thành công.\n\n" +
                 //           $"Biên lai chính:\n" +
-                //           $"   - Phụ kiện từ kho: {dto.AvailableAccessories?.Count ?? 0} loại\n" +
+                //           $"   - Vật tư từ kho: {dto.AvailableAccessories?.Count ?? 0} loại\n" +
                 //           $"   - Dịch vụ: {dto.Services?.Count ?? 0} loại\n" +
                 //           $"   - Tổng: {mainInvoiceTotalAmount:N0}đ\n\n" +
-                //           $"Biên lai mua phụ kiện:\n" +
+                //           $"Biên lai mua vật tư:\n" +
                 //           $"   - {purchaseDetails}\n" +
                 //           $"   - Tổng chi phí mua: {purchaseAmount:N0}đ\n" +
                 //           $"   - Trạng thái: Chờ phê duyệt\n\n" +
-                //           $"Biên lai mua phụ kiện sẽ được xử lý khi Manager/TechLead phê duyệt InspectionReport.";
+                //           $"Biên lai mua vật tư sẽ được xử lý khi Manager/TechLead phê duyệt InspectionReport.";
                 //}
 
                 return "Tạo biên lai sửa chữa thành công.";
