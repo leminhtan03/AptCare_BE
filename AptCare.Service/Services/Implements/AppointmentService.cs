@@ -39,6 +39,10 @@ namespace AptCare.Service.Services.Implements
             {
                 throw new AppValidationException("Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
             }
+            if (dto.StartTime < DateTime.Now)
+            {
+                throw new AppValidationException("Thời gian bắt đầu không được nhỏ hơn thời gian hiện tại.");
+            }
             if (dto.StartTime >= dto.EndTime)
             {
                 throw new AppValidationException("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
@@ -316,26 +320,26 @@ namespace AptCare.Service.Services.Implements
                 var timeNow = DateTime.Now;
                 var appointmentStartTime = appointment.StartTime;
 
-                //var workSlot = await _unitOfWork.GetRepository<WorkSlot>().SingleOrDefaultAsync(
-                //    predicate: ws => ws.Date == DateOnly.FromDateTime(timeNow) &&
-                //                     ws.Slot.FromTime <= timeNow.TimeOfDay &&
-                //                     ws.Slot.ToTime >= timeNow.TimeOfDay,
-                //    include: i => i.Include(x => x.Slot)
-                //    );
-                //if (workSlot == null)
-                //    throw new AppValidationException("Bạn không có lịch làm việc vào hôm nay.");
-                //if (workSlot.Status == WorkSlotStatus.NotStarted)
-                //    throw new AppValidationException("Bạn chưa check in ca làm.");
-                //if (workSlot.Status == WorkSlotStatus.Completed)
-                //    throw new AppValidationException("Bạn đã kết thúc ca làm.");
-                //if (workSlot.Status == WorkSlotStatus.Off)
-                //    throw new AppValidationException("Ca làm của bạn đã đánh dấu vắng.");
+                var workSlot = await _unitOfWork.GetRepository<WorkSlot>().SingleOrDefaultAsync(
+                    predicate: ws => ws.Date == DateOnly.FromDateTime(timeNow) &&
+                                     ws.Slot.FromTime <= timeNow.TimeOfDay &&
+                                     ws.Slot.ToTime >= timeNow.TimeOfDay,
+                    include: i => i.Include(x => x.Slot)
+                    );
+                if (workSlot == null)
+                    throw new AppValidationException("Bạn không có lịch làm việc vào hôm nay.");
+                if (workSlot.Status == WorkSlotStatus.NotStarted)
+                    throw new AppValidationException("Bạn chưa check in ca làm.");
+                if (workSlot.Status == WorkSlotStatus.Completed)
+                    throw new AppValidationException("Bạn đã kết thúc ca làm.");
+                if (workSlot.Status == WorkSlotStatus.Off)
+                    throw new AppValidationException("Ca làm của bạn đã đánh dấu vắng.");
 
 
-                //if (timeNow < appointmentStartTime.AddMinutes(-30))
-                //{
-                //    throw new AppValidationException("Chưa đến thời gian check-in cho lịch hẹn này.");
-                //}
+                if (timeNow < appointmentStartTime.AddMinutes(-30))
+                {
+                    throw new AppValidationException("Chưa đến thời gian check-in cho lịch hẹn này.");
+                }
 
                 var latestRequestStaus = await _unitOfWork.GetRepository<RequestTracking>().SingleOrDefaultAsync(
                     selector: s => s.Status,

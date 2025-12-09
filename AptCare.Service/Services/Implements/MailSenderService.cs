@@ -1,5 +1,4 @@
-﻿
-using AptCare.Repository.Repositories;
+﻿using AptCare.Repository.Repositories;
 using AptCare.Service.Exceptions;
 using MailKit.Net.Smtp;
 using MailKit.Security;
@@ -44,11 +43,49 @@ namespace AptCare.Service.Services.Interfaces
         {
             string htmlBody = await LoadEmailTemplateAsync(templateName);
 
+            htmlBody = RemoveConditionalBlocks(htmlBody, replacements);
+
             foreach (var rep in replacements)
             {
                 htmlBody = htmlBody.Replace($"{{{{{rep.Key}}}}}", rep.Value);
             }
+
             await SendEmailAsync(toEmail, subject, htmlBody);
+        }
+
+        private string RemoveConditionalBlocks(string html, Dictionary<string, string> data)
+        {
+            if (!data.ContainsKey("Note") || string.IsNullOrWhiteSpace(data["Note"]))
+            {
+                html = System.Text.RegularExpressions.Regex.Replace(
+                    html,
+                    @"<!--\s*BEGIN_NOTE\s*-->.*?<!--\s*END_NOTE\s*-->",
+                    "",
+                    System.Text.RegularExpressions.RegexOptions.Singleline
+                );
+            }
+
+            if (!data.ContainsKey("AppointmentTime") || string.IsNullOrWhiteSpace(data["AppointmentTime"]))
+            {
+                html = System.Text.RegularExpressions.Regex.Replace(
+                    html,
+                    @"<!--\s*BEGIN_APPOINTMENT\s*-->.*?<!--\s*END_APPOINTMENT\s*-->",
+                    "",
+                    System.Text.RegularExpressions.RegexOptions.Singleline
+                );
+            }
+
+            if (!data.ContainsKey("TechnicianName") || string.IsNullOrWhiteSpace(data["TechnicianName"]))
+            {
+                html = System.Text.RegularExpressions.Regex.Replace(
+                    html,
+                    @"<!--\s*BEGIN_TECHNICIAN\s*-->.*?<!--\s*END_TECHNICIAN\s*-->",
+                    "",
+                    System.Text.RegularExpressions.RegexOptions.Singleline
+                );
+            }
+
+            return html;
         }
 
         private async Task<string> LoadEmailTemplateAsync(string templateName)
@@ -74,7 +111,7 @@ namespace AptCare.Service.Services.Interfaces
 
             using var smtpClient = new SmtpClient
             {
-                Timeout = 15000 // 15s
+                Timeout = 15000
             };
 
             try

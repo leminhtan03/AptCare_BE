@@ -21,27 +21,27 @@ namespace AptCare.Api.Controllers
         /// <remarks>
         /// **Role:** 🧑‍🔧 Technician  
         /// 
-        /// - Biên lai nội bộ hỗ trợ 2 loại phụ kiện:
-        ///   1. **AvailableAccessories**: Phụ kiện có sẵn trong kho
-        ///   2. **AccessoriesToPurchase**: Phụ kiện cần mua từ bên ngoài
+        /// - Biên lai nội bộ hỗ trợ 2 loại vật tư:
+        ///   1. **AvailableAccessories**: Vật tư có sẵn trong kho
+        ///   2. **AccessoriesToPurchase**: Vật tư cần mua từ bên ngoài
         /// 
         /// **Quy trình:**
-        /// 1. Tạo invoice chính với phụ kiện có sẵn và dịch vụ
-        /// 2. Tự động tạo invoice phụ (AccessoryPurchase) cho phụ kiện cần mua
+        /// 1. Tạo invoice chính với vật tư có sẵn và dịch vụ
+        /// 2. Tự động tạo invoice phụ (AccessoryPurchase) cho vật tư cần mua
         /// 3. Khi Manager/TechLead approve InspectionReport:
-        ///    - Trừ quantity phụ kiện có sẵn từ kho
-        ///    - Trừ budget cho việc mua phụ kiện
+        ///    - Trừ quantity vật tư có sẵn từ kho
+        ///    - Trừ budget cho việc mua vật tư
         ///    - Tạo transaction ghi nhận chi tiêu
         /// 
         /// **Lưu ý:**
-        /// - Phụ kiện trong `AvailableAccessories` phải đủ số lượng trong kho
-        /// - Phụ kiện trong `AccessoriesToPurchase` phải cung cấp giá mua dự kiến
+        /// - Vật tư trong `AvailableAccessories` phải đủ số lượng trong kho
+        /// - Vật tư trong `AccessoriesToPurchase` phải cung cấp giá mua dự kiến
         /// - Chỉ tạo invoice phụ khi có `AccessoriesToPurchase`
         /// </remarks>
         /// <param name="dto">Thông tin tạo biên lai nội bộ.</param>
         /// <response code="200">Tạo biên lai thành công.</response>
         /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
-        /// <response code="404">Yêu cầu sửa chữa hoặc phụ kiện không tồn tại.</response>
+        /// <response code="404">Yêu cầu sửa chữa hoặc vật tư không tồn tại.</response>
         /// <response code="500">Lỗi hệ thống.</response>
         [HttpPost("internal")]
         [Authorize(Roles = nameof(AccountRole.Technician))]
@@ -65,8 +65,8 @@ namespace AptCare.Api.Controllers
         /// **Role:** 🧑‍💼 Manager  
         /// 
         /// - Dùng cho trường hợp thuê bên ngoài thực hiện sửa chữa.  
-        /// - Giá và tên dịch vụ, phụ kiện được nhập thủ công.  
-        /// - Không ảnh hưởng tới kho phụ kiện nội bộ.  
+        /// - Giá và tên dịch vụ, vật tư được nhập thủ công.  
+        /// - Không ảnh hưởng tới kho vật tư nội bộ.  
         /// 
         /// **Lưu ý:**  
         /// - Cần có `RepairRequestId` hợp lệ.  
@@ -98,7 +98,7 @@ namespace AptCare.Api.Controllers
         /// **Role:** 🧑‍🔧 Technician / 🧑‍💼 Manager / 👨‍🏭 TechnicianLead  
         /// 
         /// - Trả về toàn bộ biên lai thuộc về một yêu cầu sửa chữa.  
-        /// - Bao gồm thông tin phụ kiện và dịch vụ của từng biên lai.
+        /// - Bao gồm thông tin vật tư và dịch vụ của từng biên lai.
         /// 
         /// **Lưu ý:**  
         /// - Nếu `RepairRequestId` không tồn tại, hệ thống trả về 404.  

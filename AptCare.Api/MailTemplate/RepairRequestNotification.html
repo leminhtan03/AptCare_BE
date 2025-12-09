@@ -230,23 +230,15 @@
                     <div class="kv"><span class="k">Cập nhật lúc:</span><span class="v">{{UpdatedAt}}</span></div>
                 </div>
 
-                <!-- Hiển thị nếu có ghi chú -->
-                {{#if Note}}
                 <div class="note">
                     <strong>Ghi chú:</strong> {{Note}}
                 </div>
-                {{/if}}
 
-                <!-- Hiển thị nếu có thông tin lịch hẹn -->
-                {{#if AppointmentTime}}
                 <div class="box">
                     <h3 style="margin-top:0;font-size:15px;color:#111">Thông tin lịch hẹn</h3>
                     <div class="kv"><span class="k">Thời gian bắt đầu:</span><span class="v">{{AppointmentTime}}</span></div>
-                    {{#if TechnicianName}}
                     <div class="kv"><span class="k">Kỹ thuật viên:</span><span class="v">{{TechnicianName}}</span></div>
-                    {{/if}}
                 </div>
-                {{/if}}
 
                 <p>
                     <a class="btn" href="{{RequestUrl}}" target="_blank" rel="noopener">Xem chi tiết yêu cầu</a>

@@ -125,12 +125,16 @@ namespace AptCare.Service.Services.Implements
                     orderBy: q => q.OrderByDescending(ir => ir.CreatedAt),
                     include: i => i.Include(ir => ir.Appointment)
                 );
+                var existingContract = await _unitOfWork.GetRepository<Contract>().AnyAsync(
+                    predicate: c => c.RepairRequestId == repairRequestId
+                );
 
                 if (latestInspectionReport == null)
                 {
                     return false;
                 }
-                return latestInspectionReport.SolutionType == SolutionType.Outsource;
+
+                return (latestInspectionReport.SolutionType == SolutionType.Outsource) && !existingContract;
             }
             catch (Exception ex)
             {
@@ -232,7 +236,7 @@ namespace AptCare.Service.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting contracts by repair request id {RepairRequestId}", repairRequestId);
-                throw new Exception(ex.Message);  
+                throw new Exception(ex.Message);
             }
         }
 
@@ -340,7 +344,11 @@ namespace AptCare.Service.Services.Implements
                     contract.EndDate = dto.EndDate.Value;
 
                 if (dto.Amount.HasValue)
+                {
+                    if (dto.Amount.Value < 0)
+                        throw new AppValidationException("Số tiền hợp đồng không được âm.");
                     contract.Amount = dto.Amount.Value;
+                }
 
                 if (!string.IsNullOrEmpty(dto.Description))
                     contract.Description = dto.Description;

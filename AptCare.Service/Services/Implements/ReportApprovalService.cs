@@ -217,14 +217,14 @@ namespace AptCare.Service.Services.Implements
                             if (accessoryDb == null)
                             {
                                 throw new AppValidationException(
-                                    $"Phụ kiện '{invoiceAccessory.Name}' không tồn tại.",
+                                    $"Vật tư '{invoiceAccessory.Name}' không tồn tại.",
                                     StatusCodes.Status404NotFound);
                             }
 
                             if (accessoryDb.Quantity < invoiceAccessory.Quantity)
                             {
                                 throw new AppValidationException(
-                                    $"Phụ kiện '{invoiceAccessory.Name}' không đủ số lượng. " +
+                                    $"Vật tư '{invoiceAccessory.Name}' không đủ số lượng. " +
                                     $"Còn: {accessoryDb.Quantity}, Cần: {invoiceAccessory.Quantity}",
                                     StatusCodes.Status400BadRequest);
                             }
@@ -243,7 +243,7 @@ namespace AptCare.Service.Services.Implements
                             if (budget.Amount < purchaseInvoice.TotalAmount)
                             {
                                 throw new AppValidationException(
-                                    $"Ngân sách không đủ để mua phụ kiện.\n" +
+                                    $"Ngân sách không đủ để mua vật tư.\n" +
                                     $"Cần: {purchaseInvoice.TotalAmount:N0} VNĐ\n" +
                                     $"Còn: {budget.Amount:N0} VNĐ\n" +
                                     $"Thiếu: {(purchaseInvoice.TotalAmount - budget.Amount):N0} VNĐ",
@@ -266,9 +266,9 @@ namespace AptCare.Service.Services.Implements
                                 Provider = PaymentProvider.Budget,
                                 Direction = TransactionDirection.Expense,
                                 Amount = purchaseInvoice.TotalAmount,
-                                Description = $"Mua phụ kiện để sửa chữa ngay cho yêu cầu #{inspectionReport.Appointment.RepairRequestId}.\n" +
+                                Description = $"Mua vật tư để sửa chữa ngay cho yêu cầu #{inspectionReport.Appointment.RepairRequestId}.\n" +
                                              $"Chi tiết: {purchaseDetails}.\n" +
-                                             $"Phụ kiện được sử dụng trực tiếp, không nhập kho.\n" +
+                                             $"Vật tư được sử dụng trực tiếp, không nhập kho.\n" +
                                              $"Người phê duyệt: {role}",
                                 CreatedAt = DateTime.Now,
                                 PaidAt = DateTime.Now
@@ -339,7 +339,7 @@ namespace AptCare.Service.Services.Implements
                                 Amount = mainInvoice.TotalAmount,
                                 Description = $"Cam kết thanh toán cho nhà thầu (Invoice #{mainInvoice.InvoiceId}).\n" +
                                              $"Dịch vụ: {serviceDetails}\n" +
-                                             $"Phụ kiện: {accessoryDetails}\n" +
+                                             $"Vật tư: {accessoryDetails}\n" +
                                              $"Trạng thái: Đã dành tiền, chờ thanh toán thực tế.\n" +
                                              $"Người phê duyệt: {role}",
                                 CreatedAt = DateTime.Now,

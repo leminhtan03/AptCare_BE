@@ -86,7 +86,7 @@ namespace AptCare.UT.Services
             var result = await _service.CreateAccessoryAsync(dto);
 
             // Assert
-            Assert.Equal("Tạo phụ kiện thành công.", result);
+            Assert.Equal("Tạo vật tư thành công.", result);
             _accessoryRepo.Verify(r => r.InsertAsync(accessory), Times.Once);
             _uow.Verify(u => u.CommitTransactionAsync(), Times.Once);
         }
@@ -123,7 +123,7 @@ namespace AptCare.UT.Services
             var result = await _service.CreateAccessoryAsync(dto);
 
             // Assert
-            Assert.Equal("Tạo phụ kiện thành công.", result);
+            Assert.Equal("Tạo vật tư thành công.", result);
             _mediaRepo.Verify(r => r.InsertAsync(It.IsAny<Media>()), Times.Once);
             _cloudinary.Verify(c => c.UploadImageAsync(fileMock.Object), Times.Once);
         }
@@ -141,7 +141,7 @@ namespace AptCare.UT.Services
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.CreateAccessoryAsync(dto));
-            Assert.Equal("Lỗi hệ thống: Phụ kiện đã tồn tại.", ex.Message);
+            Assert.Equal("Lỗi hệ thống: Vật tư đã tồn tại.", ex.Message);
         }
 
         [Fact]
@@ -236,7 +236,7 @@ namespace AptCare.UT.Services
             var result = await _service.UpdateAccessoryAsync(id, dto);
 
             // Assert
-            Assert.Equal("Cập nhật phụ kiện thành công.", result);
+            Assert.Equal("Cập nhật vật tư thành công.", result);
             _accessoryRepo.Verify(r => r.UpdateAsync(existing), Times.Once);
             _uow.Verify(u => u.CommitTransactionAsync(), Times.Once);
         }
@@ -277,7 +277,7 @@ namespace AptCare.UT.Services
             var result = await _service.UpdateAccessoryAsync(id, dto);
 
             // Assert
-            Assert.Equal("Cập nhật phụ kiện thành công.", result);
+            Assert.Equal("Cập nhật vật tư thành công.", result);
             _mediaRepo.Verify(r => r.InsertAsync(It.IsAny<Media>()), Times.Once);
         }
 
@@ -316,7 +316,7 @@ namespace AptCare.UT.Services
             var result = await _service.UpdateAccessoryAsync(id, dto);
 
             // Assert
-            Assert.Equal("Cập nhật phụ kiện thành công.", result);
+            Assert.Equal("Cập nhật vật tư thành công.", result);
             _mediaRepo.Verify(r => r.DeleteAsync(media), Times.Once);
         }
 
@@ -334,7 +334,7 @@ namespace AptCare.UT.Services
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.UpdateAccessoryAsync(999, dto));
-            Assert.Equal("Lỗi hệ thống: Phụ kiện không tồn tại.", ex.Message);
+            Assert.Equal("Lỗi hệ thống: Vật tư không tồn tại.", ex.Message);
         }
 
         [Fact]
@@ -358,7 +358,7 @@ namespace AptCare.UT.Services
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.UpdateAccessoryAsync(id, dto));
-            Assert.Equal("Lỗi hệ thống: Tên phụ kiện đã tồn tại.", ex.Message);
+            Assert.Equal("Lỗi hệ thống: Tên vật tư đã tồn tại.", ex.Message);
         }
 
         [Fact]
@@ -417,7 +417,7 @@ namespace AptCare.UT.Services
             var result = await _service.DeleteAccessoryAsync(id);
 
             // Assert
-            Assert.Equal("Xóa phụ kiện thành công.", result);
+            Assert.Equal("Xóa vật tư thành công.", result);
             _accessoryRepo.Verify(r => r.DeleteAsync(accessory), Times.Once);
             _uow.Verify(u => u.CommitAsync(), Times.Once);
         }
@@ -434,7 +434,7 @@ namespace AptCare.UT.Services
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.DeleteAccessoryAsync(999));
-            Assert.Equal("Lỗi hệ thống: Phụ kiện không tồn tại.", ex.Message);
+            Assert.Equal("Lỗi hệ thống: Vật tư không tồn tại.", ex.Message);
         }
 
         #endregion
@@ -493,7 +493,7 @@ namespace AptCare.UT.Services
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.GetAccessoryByIdAsync(999));
-            Assert.Equal("Phụ kiện không tồn tại.", ex.Message);
+            Assert.Equal("Vật tư không tồn tại.", ex.Message);
         }
 
         #endregion

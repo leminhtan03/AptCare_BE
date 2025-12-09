@@ -223,7 +223,11 @@ namespace AptCare.Service.Services.Implements
                                         p.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) ==
                                                                          DateOnly.FromDateTime(appointment.StartTime) &&
                                                                          aa.Status != WorkOrderStatus.Cancel)
-                                                            .All(aa => aa.EstimatedEndTime <= appointment.StartTime || aa.EstimatedStartTime >= appointment.EndTime);
+                                                            .All(aa => aa.ActualEndTime == null ?
+                                                                (aa.EstimatedEndTime <= appointment.StartTime
+                                                                || aa.EstimatedStartTime >= appointment.EndTime)
+                                                                : (aa.ActualEndTime <= appointment.StartTime)
+                                                                );
             }
 
             var technicians = await _unitOfWork.GetRepository<User>().GetListAsync(

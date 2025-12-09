@@ -2,11 +2,11 @@
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
-using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
-using AptCare.Service.Dtos.UserDtos;
+using AptCare.Service.Dtos.EmailDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,12 +18,12 @@ namespace AptCare.Service.Services.Implements
     public class AccountService : BaseService<AccountService>, IAccountService
     {
         private readonly IPasswordHasher<Account> _pwdHasher;
-        private readonly IMailSenderService _mailSender;
+        private readonly IRabbitMQService _rabbitMQService;
 
-        public AccountService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IMailSenderService mailSender, IPasswordHasher<Account> pwdHasher, ILogger<AccountService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
+        public AccountService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, IRabbitMQService rabbitMQService, IPasswordHasher<Account> pwdHasher, ILogger<AccountService> logger, IMapper mapper) : base(unitOfWork, logger, mapper)
         {
             _pwdHasher = pwdHasher;
-            _mailSender = mailSender;
+            _rabbitMQService = rabbitMQService;
         }
 
         public async Task<string> CreateAccountForUserAsync(int id)
@@ -68,6 +68,7 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.GetRepository<Account>().InsertAsync(user.Account);
                 await _unitOfWork.CommitAsync();
                 await _unitOfWork.CommitTransactionAsync();
+
                 await SendAccountCredentialsEmail(user, password, determinedRole);
 
                 return $"Đã khởi tạo tài khoản thành công với vai trò {determinedRole}!";
@@ -79,6 +80,7 @@ namespace AptCare.Service.Services.Implements
                 throw new Exception("Lỗi khi tạo tài khoản: " + ex.Message);
             }
         }
+
         private string GenerateRandomPassword(int length = 12)
         {
             const string upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -108,6 +110,7 @@ namespace AptCare.Service.Services.Implements
 
             return new string(passwordArray);
         }
+
         private AccountRole DetermineUserRoleAutomatically(User user)
         {
             var hasActiveApartments = user.UserApartments?.Any(ua => ua.Status == ActiveStatus.Active) ?? false;
@@ -122,6 +125,7 @@ namespace AptCare.Service.Services.Implements
             throw new AppValidationException(
                 $"Không thể tạo tài khoản cho user ID {user.UserId}. ");
         }
+
         private async Task SendAccountCredentialsEmail(User user, string password, AccountRole role)
         {
             var replacements = new Dictionary<string, string>
@@ -137,19 +141,19 @@ namespace AptCare.Service.Services.Implements
                 ["Year"] = DateTime.Now.Year.ToString()
             };
 
-            await _mailSender.SendEmailWithTemplateAsync(
-                toEmail: user.Email,
-                subject: "[AptCare] Thông tin đăng nhập của bạn",
-                templateName: "AccountCredentials",
-                replacements: replacements
-            );
+            await _rabbitMQService.PublishEmailAsync(new EmailRequestDto
+            {
+                ToEmail = user.Email,
+                Subject = "[AptCare] Thông tin đăng nhập của bạn",
+                TemplateName = "AccountCredentials",
+                Replacements = replacements
+            });
 
             _logger.LogInformation(
-                "Account credentials email sent to {Email} for user ID {UserId} with role {Role}",
+                "Account credentials email queued for {Email}, user ID {UserId} with role {Role}",
                 user.Email,
                 user.UserId,
                 role);
         }
-
     }
 }
