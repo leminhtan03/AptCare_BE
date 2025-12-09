@@ -1,5 +1,6 @@
 ﻿using AptCare.Service.Services.Interfaces.IS3File;
 using Microsoft.AspNetCore.Mvc;
+using System.Web;
 
 namespace AptCare.Api.Controllers
 {
@@ -13,6 +14,7 @@ namespace AptCare.Api.Controllers
         {
             _s3FileService = s3FileService;
         }
+
         [HttpPost("upload")]
         public async Task<IActionResult> Upload(IFormFile file)
         {
@@ -31,7 +33,8 @@ namespace AptCare.Api.Controllers
 
             var (bytes, contentType, fileName) = await _s3FileService.GetFileAsync(key);
 
-            Response.Headers["Content-Disposition"] = $"inline; filename=\"{fileName}\"";
+            var encodedFileName = Uri.EscapeDataString(fileName);
+            Response.Headers["Content-Disposition"] = $"inline; filename*=UTF-8''{encodedFileName}";
 
             return File(bytes, contentType);
         }

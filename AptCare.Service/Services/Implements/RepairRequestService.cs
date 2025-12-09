@@ -109,6 +109,9 @@ namespace AptCare.Service.Services.Implements
                     }
                 }
 
+                if (dto.PreferredAppointment <= DateTime.Now)
+                    throw new AppValidationException("Thời gian cuộc hẹn phải lớn hơn thời gian hiện tại.");
+
                 var request = _mapper.Map<RepairRequest>(dto);
                 request.UserId = userId;
 

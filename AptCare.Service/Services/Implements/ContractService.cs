@@ -344,7 +344,11 @@ namespace AptCare.Service.Services.Implements
                     contract.EndDate = dto.EndDate.Value;
 
                 if (dto.Amount.HasValue)
+                {
+                    if (dto.Amount.Value < 0)
+                        throw new AppValidationException("Số tiền hợp đồng không được âm.");
                     contract.Amount = dto.Amount.Value;
+                }
 
                 if (!string.IsNullOrEmpty(dto.Description))
                     contract.Description = dto.Description;

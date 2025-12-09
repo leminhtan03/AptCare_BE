@@ -371,8 +371,9 @@ namespace AptCare.Api.MapperProfile
                         : src.Appointment.RepairRequest.MaintenanceSchedule != null
                             ? src.Appointment.RepairRequest.MaintenanceSchedule.CommonAreaObject.Name
                             : "N/A"))
-                .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals));
-
+                .ForMember(d => d.ReportApprovals, o => o.MapFrom(s => s.ReportApprovals))
+                .ForMember(d => d.WorkDescription, o => o.MapFrom(s => s.Description))
+                .ForMember(d => d.Status, o => o.MapFrom(s => s.Status));
             //ACCESSORY
             CreateMap<Accessory, AccessoryDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));

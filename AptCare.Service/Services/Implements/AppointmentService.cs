@@ -39,6 +39,10 @@ namespace AptCare.Service.Services.Implements
             {
                 throw new AppValidationException("Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
             }
+            if (dto.StartTime < DateTime.Now)
+            {
+                throw new AppValidationException("Thời gian bắt đầu không được nhỏ hơn thời gian hiện tại.");
+            }
             if (dto.StartTime >= dto.EndTime)
             {
                 throw new AppValidationException("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
