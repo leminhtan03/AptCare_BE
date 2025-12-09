@@ -48,8 +48,8 @@ namespace AptCare.UT.Services
             _cacheService.Setup(c => c.GetAsync<IEnumerable<CommonAreaDto>>(It.IsAny<string>()))
                 .ReturnsAsync((IEnumerable<CommonAreaDto>)null);
 
-            _cacheService.Setup(c => c.GetAsync<IPaginate<CommonAreaDto>>(It.IsAny<string>()))
-                .ReturnsAsync((IPaginate<CommonAreaDto>)null);
+            _cacheService.Setup(c => c.GetAsync<Paginate<CommonAreaDto>>(It.IsAny<string>()))
+                .ReturnsAsync((Paginate<CommonAreaDto>)null);
 
             _service = new CommonAreaService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);
         }

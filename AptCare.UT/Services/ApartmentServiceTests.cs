@@ -50,8 +50,8 @@ namespace AptCare.UT.Services
             _cacheService.Setup(c => c.GetAsync<IEnumerable<ApartmentBasicDto>>(It.IsAny<string>()))
                 .ReturnsAsync((IEnumerable<ApartmentBasicDto>)null);
 
-            _cacheService.Setup(c => c.GetAsync<IPaginate<ApartmentDto>>(It.IsAny<string>()))
-                .ReturnsAsync((IPaginate<ApartmentDto>)null);
+            _cacheService.Setup(c => c.GetAsync<Paginate<ApartmentDto>>(It.IsAny<string>()))
+                .ReturnsAsync((Paginate<ApartmentDto>)null);
 
             // ✅ Inject IRedisCacheService vào constructor
             _service = new ApartmentService(_uow.Object, _logger.Object, _mapper.Object, _cacheService.Object);

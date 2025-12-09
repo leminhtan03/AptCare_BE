@@ -8,7 +8,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace AptCare.Service.Services.Implements.RabbitMQ
 {
@@ -29,7 +31,9 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             try
             {
                 var queueName = "notification";
-                await SendMessageAsync(queueName, message);
+                var dlqName = "notification.dlq";
+                var dlxName = "notification.dlx";
+                await SendMessageAsync(queueName, dlqName, dlxName, message);
             }
             catch (Exception ex)
             {
@@ -43,7 +47,9 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             try
             {
                 var queueName = "notification_push";
-                await SendMessageAsync(queueName, message);
+                var dlqName = "notification_push.dlq";
+                var dlxName = "notification_push.dlx";
+                await SendMessageAsync(queueName, dlqName, dlxName, message);
             }
             catch (Exception ex)
             {
@@ -57,7 +63,9 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             try
             {
                 var queueName = "email_notification";
-                await SendMessageAsync(queueName, message);
+                var dlqName = "email_notification.dlq";
+                var dlxName = "email_notification.dlx";
+                await SendMessageAsync(queueName, dlqName, dlxName, message);
             }
             catch (Exception ex)
             {
@@ -71,7 +79,9 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             try
             {
                 var queueName = "bulk_email";
-                await SendMessageAsync(queueName, message);
+                var dlqName = "bulk_email.dlq";
+                var dlxName = "bulk_email.dlx";
+                await SendMessageAsync(queueName, dlqName, dlxName, message);
             }
             catch (Exception ex)
             {
@@ -80,18 +90,46 @@ namespace AptCare.Service.Services.Implements.RabbitMQ
             }
         }
 
-        private async Task SendMessageAsync<T>(string queueName, T message)
+        private async Task SendMessageAsync<T>(string queueName, string dlqName, string dlxName, T message)
         {
             try
             {
                 using var connection = await _factory.CreateConnectionAsync();
                 using var channel = await connection.CreateChannelAsync();
 
+                // Declare Dead Letter Exchange
+                await channel.ExchangeDeclareAsync(
+                    exchange: dlxName,
+                    type: ExchangeType.Direct,
+                    durable: true,
+                    autoDelete: false);
+
+                // Declare Dead Letter Queue
+                await channel.QueueDeclareAsync(
+                    queue: dlqName,
+                    durable: true,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: null);
+
+                // Bind DLQ to DLX
+                await channel.QueueBindAsync(
+                    queue: dlqName,
+                    exchange: dlxName,
+                    routingKey: queueName);
+
+                // Declare main queue with DLX configuration
+                var queueArgs = new Dictionary<string, object>
+                {
+                    { "x-dead-letter-exchange", dlxName },
+                    { "x-dead-letter-routing-key", queueName }
+                };
+
                 await channel.QueueDeclareAsync(queue: queueName,
                                      durable: true,
                                      exclusive: false,
                                      autoDelete: false,
-                                     arguments: null);
+                                     arguments: queueArgs);
 
                 var json = JsonSerializer.Serialize(message);
                 var body = Encoding.UTF8.GetBytes(json);

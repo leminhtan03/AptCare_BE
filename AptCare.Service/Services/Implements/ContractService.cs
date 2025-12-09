@@ -109,7 +109,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error creating contract for repair request {RepairRequestId}", dto.RepairRequestId);
-               throw new Exception(ex.Message);
+                throw new AppValidationException(ex.Message);
             }
         }
 
@@ -184,7 +184,7 @@ namespace AptCare.Service.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting contract by id {ContractId}", contractId);
-                throw new Exception(ex.Message);
+                throw new AppValidationException(ex.Message);
             }
         }
 
@@ -396,7 +396,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Error updating contract {ContractId}", contractId);
-                throw new Exception(ex.Message);
+                throw new AppValidationException(ex.Message);
             }
         }
 
@@ -432,7 +432,7 @@ namespace AptCare.Service.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error inactivating contract {ContractId}", contractId);
-                throw new Exception(ex.Message);
+                throw new AppValidationException(ex.Message);
             }
         }
 

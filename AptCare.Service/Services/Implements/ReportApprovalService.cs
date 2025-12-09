@@ -63,7 +63,7 @@ namespace AptCare.Service.Services.Implements
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo approval. ReportId: {ReportId}", dto.ReportId);
-                throw new Exception(ex.Message);
+                throw new AppValidationException(ex.Message);
             }
         }
         public async Task<bool> ApproveReportAsync(ApproveReportCreateDto dto)
@@ -100,7 +100,7 @@ namespace AptCare.Service.Services.Implements
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Lỗi khi xử lý approval. ReportId: {ReportId}", dto.ReportId);
-                throw new Exception(ex.Message);
+                throw new AppValidationException(ex.Message);
             }
         }
 

@@ -70,8 +70,8 @@ namespace AptCare.UT.Services
             _cacheService.Setup(c => c.GetAsync<UserDto>(It.IsAny<string>()))
                 .ReturnsAsync((UserDto)null);
 
-            _cacheService.Setup(c => c.GetAsync<IPaginate<UserGetAllDto>>(It.IsAny<string>()))
-                .ReturnsAsync((IPaginate<UserGetAllDto>)null);
+            _cacheService.Setup(c => c.GetAsync<Paginate<UserGetAllDto>>(It.IsAny<string>()))
+                .ReturnsAsync((Paginate<UserGetAllDto>)null);
 
             _userService = new UserService(
                 _mockUnitOfWork.Object,
