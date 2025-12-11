@@ -323,7 +323,8 @@ namespace AptCare.Service.Services.Implements
                 var workSlot = await _unitOfWork.GetRepository<WorkSlot>().SingleOrDefaultAsync(
                     predicate: ws => ws.Date == DateOnly.FromDateTime(timeNow) &&
                                      ws.Slot.FromTime <= timeNow.TimeOfDay &&
-                                     ws.Slot.ToTime >= timeNow.TimeOfDay,
+                                     ws.Slot.ToTime >= timeNow.TimeOfDay &&
+                                     ws.TechnicianId == userId,
                     include: i => i.Include(x => x.Slot)
                     );
                 if (workSlot == null)
