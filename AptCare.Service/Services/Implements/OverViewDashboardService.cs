@@ -41,8 +41,12 @@ namespace AptCare.Service.Services.Implements
                 .GroupBy(r => r.RequestTrackings.OrderByDescending(t => t.UpdatedAt).FirstOrDefault()?.Status ?? RequestStatus.Pending)
                 .ToDictionary(g => g.Key.ToString(), g => g.Count());
 
-            kpi.PendingToday = statusGroups.GetValueOrDefault(RequestStatus.Pending.ToString(), 0);
-            kpi.InProgressToday = statusGroups.GetValueOrDefault(RequestStatus.InProgress.ToString(), 0);
+            kpi.PendingToday = statusGroups.GetValueOrDefault(RequestStatus.Pending.ToString(), 0) +
+                                  statusGroups.GetValueOrDefault(RequestStatus.WaitingManagerApproval.ToString(), 0);
+            kpi.InProgressToday = statusGroups.GetValueOrDefault(RequestStatus.InProgress.ToString(), 0) +
+                                  statusGroups.GetValueOrDefault(RequestStatus.Approved.ToString(), 0) +
+                                  statusGroups.GetValueOrDefault(RequestStatus.AcceptancePendingVerify.ToString(), 0) +
+                                  statusGroups.GetValueOrDefault(RequestStatus.Scheduling.ToString(), 0); 
             kpi.CompletedToday = statusGroups.GetValueOrDefault(RequestStatus.Completed.ToString(), 0);
             kpi.CancelledToday = statusGroups.GetValueOrDefault(RequestStatus.Cancelled.ToString(), 0);
             kpi.StatusBreakdown = statusGroups;
@@ -226,27 +230,36 @@ namespace AptCare.Service.Services.Implements
 
             var paidInvoices = await invoiceRepo.GetListAsync(
                 predicate: i => i.Status == InvoiceStatus.Paid && 
-                              i.CreatedAt.Year == year,
-                include: i => i.Include(inv => inv.Transactions)
+                              i.CreatedAt.Year == year
             );
+
+            var transactions = await transactionRepo.GetListAsync(
+                    predicate: p => p.CreatedAt.Year == year
+                );
 
             var monthlyData = Enumerable.Range(1, 12).Select(month =>
             {
                 var monthInvoices = paidInvoices.Where(i => i.CreatedAt.Month == month).ToList();
 
-                var paidAmount = monthInvoices
+                var incomeInvoice = monthInvoices
+                    .Where(i => !i.IsChargeable)
+                    .Sum(i => i.TotalAmount);
+
+                var expenseInvoice = monthInvoices
                     .Where(i => i.IsChargeable)
                     .Sum(i => i.TotalAmount);
 
-                var refundAmount = monthInvoices
-                    .Where(i => !i.IsChargeable)
-                    .Sum(i => i.TotalAmount);
+                var monthTransactions = transactions.Where(p => p.CreatedAt.Month == month).ToList();
+
+                var expenseTransaction = monthTransactions
+                    .Where(i => i.Direction == TransactionDirection.Expense)
+                    .Sum(i => i.Amount);
 
                 return new MonthlyRevenueData
                 {
                     Month = month,
-                    PaidInvoicesAmount = paidAmount,
-                    RefundAmount = refundAmount
+                    IncomeAmount = incomeInvoice,
+                    ExpenseAmount = expenseInvoice + expenseTransaction
                 };
             }).ToList();
 
