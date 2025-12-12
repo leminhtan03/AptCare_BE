@@ -11,6 +11,7 @@ using AptCare.Service.Dtos.AuthenDto;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Query;
@@ -26,7 +27,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IPasswordHasher<Account>> _mockPasswordHasher;
         private readonly Mock<IOtpService> _mockOtpService;
         private readonly Mock<ITokenService> _mockTokenService;
-        private readonly Mock<IMailSenderService> _mockMailSenderService;
+        private readonly Mock<IRabbitMQService> _rabbitMQService;
         private readonly Mock<IUserContext> _mockUserContext;
         private readonly Mock<ILogger<AuthenticationService>> _mockLogger;
         private readonly Mock<IMapper> _mockMapper;
@@ -41,7 +42,7 @@ namespace AptCare.UT.Services
             _mockPasswordHasher = new Mock<IPasswordHasher<Account>>();
             _mockOtpService = new Mock<IOtpService>();
             _mockTokenService = new Mock<ITokenService>();
-            _mockMailSenderService = new Mock<IMailSenderService>();
+            _rabbitMQService = new Mock<IRabbitMQService>();
             _mockUserContext = new Mock<IUserContext>();
             _mockLogger = new Mock<ILogger<AuthenticationService>>();
             _mockMapper = new Mock<IMapper>();
@@ -56,7 +57,7 @@ namespace AptCare.UT.Services
 
             _authenticationService = new AuthenticationService(
                 _mockUnitOfWork.Object,
-                (Service.Services.Interfaces.RabbitMQ.IRabbitMQService)_mockMailSenderService.Object,
+                _rabbitMQService.Object,
                 _mockPasswordHasher.Object,
                 _mockOtpService.Object,
                 _mockUserContext.Object,
@@ -105,13 +106,6 @@ namespace AptCare.UT.Services
                 It.IsAny<TimeSpan>(),
                 6
             )).ReturnsAsync("123456");
-
-            _mockMailSenderService.Setup(m => m.SendEmailWithTemplateAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>()
-            )).Returns(Task.CompletedTask);
 
             // Act
             var result = await _authenticationService.RegisterAsync(registerDto);
@@ -442,25 +436,12 @@ namespace AptCare.UT.Services
                 6
             )).ReturnsAsync("123456");
 
-            _mockMailSenderService.Setup(m => m.SendEmailWithTemplateAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>()
-            )).Returns(Task.CompletedTask);
-
             // Act
             var result = await _authenticationService.PasswordResetRequestAsync(dto);
 
             // Assert
             Assert.NotNull(result);
             Assert.Equal(user.Account.AccountId, result.AccountId);
-            _mockMailSenderService.Verify(m => m.SendEmailWithTemplateAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>()
-            ), Times.Once);
         }
 
         [Fact]

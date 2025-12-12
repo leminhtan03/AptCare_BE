@@ -1,5 +1,6 @@
 ﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
+using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.OTPEnum;
 using AptCare.Repository.Enum.TokenEnum;
@@ -154,6 +155,8 @@ namespace AptCare.Service.Services.Implements
                                 include: q => q.Include(x => x.User));
             if (account == null)
                 throw new AppValidationException("Tài khoản hoặc mật khẩu không đúng.");
+            if (account.LockoutEnabled)
+                throw new AppValidationException("Tài khoản đã bị vô hiệu hoá.");
             if (account.MustChangePassword)
                 throw new PasswordChangeRequiredException(account.AccountId);
             if (!account.EmailConfirmed)
@@ -275,7 +278,7 @@ namespace AptCare.Service.Services.Implements
                     selector: e => _mapper.Map<GetOwnProfileDto>(e)
                 );
                 var userprofileImagepath = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
-                    predicate: m => m.EntityId == userID && m.Entity == nameof(User),
+                    predicate: m => m.EntityId == userID && m.Entity == nameof(User) && m.Status == ActiveStatus.Active,
                     selector: m => m.FilePath
                 );
                 existUser.profileUrl = userprofileImagepath;

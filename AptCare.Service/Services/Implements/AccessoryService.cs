@@ -205,7 +205,7 @@ namespace AptCare.Service.Services.Implements
 
             var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                 selector: s => _mapper.Map<MediaDto>(s),
-                predicate: x => x.Entity == nameof(Accessory) && x.EntityId == id
+                predicate: x => x.Entity == nameof(Accessory) && x.EntityId == id && x.Status == ActiveStatus.Active
             );
 
             accessory.Images = medias.ToList();
@@ -248,7 +248,7 @@ namespace AptCare.Service.Services.Implements
             {
                 var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                     selector: s => _mapper.Map<MediaDto>(s),
-                    predicate: x => x.Entity == nameof(Accessory) && x.EntityId == item.AccessoryId
+                    predicate: x => x.Entity == nameof(Accessory) && x.EntityId == item.AccessoryId && x.Status == ActiveStatus.Active
                 );
 
                 item.Images = medias.ToList();
@@ -280,7 +280,7 @@ namespace AptCare.Service.Services.Implements
             {
                 var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                     selector: s => _mapper.Map<MediaDto>(s),
-                    predicate: x => x.Entity == nameof(Accessory) && x.EntityId == item.AccessoryId
+                    predicate: x => x.Entity == nameof(Accessory) && x.EntityId == item.AccessoryId && x.Status == ActiveStatus.Active
                 );
 
                 item.Images = medias.ToList();

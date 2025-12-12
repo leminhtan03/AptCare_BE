@@ -274,7 +274,7 @@ namespace AptCare.UT.Services
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() =>
                 _service.CreateContractAsync(dto));
-            Assert.Contains("đã tồn tại", ex.Message);
+            Assert.Contains("Không thể tạo hợp đồng", ex.Message);
         }
 
         [Fact]

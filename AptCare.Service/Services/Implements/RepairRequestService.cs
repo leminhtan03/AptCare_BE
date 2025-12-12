@@ -526,7 +526,7 @@ namespace AptCare.Service.Services.Implements
             {
                 var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                     selector: s => _mapper.Map<MediaDto>(s),
-                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == request.RepairRequestId
+                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == request.RepairRequestId && p.Status == ActiveStatus.Active
                     );
                 request.Medias = medias.ToList();
             }
@@ -593,7 +593,7 @@ namespace AptCare.Service.Services.Implements
 
             var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                 selector: s => _mapper.Map<MediaDto>(s),
-                predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == id
+                predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == id && p.Status == ActiveStatus.Active
                 );
             result.Medias = medias.ToList();
 
@@ -1506,7 +1506,7 @@ namespace AptCare.Service.Services.Implements
             {
                 var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                     selector: s => _mapper.Map<MediaDto>(s),
-                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == request.RepairRequestId
+                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == request.RepairRequestId && p.Status == ActiveStatus.Active
                 );
                 request.Medias = medias.ToList();
             }

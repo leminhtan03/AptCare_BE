@@ -465,7 +465,8 @@ namespace AptCare.UT.Services
                     {
                         RepairRequestId = 1
                     }
-                }
+                },
+                CreatedAt = DateTime.Now
             };
 
             var reports = new List<InspectionReportDetailDto> { reportDetail };

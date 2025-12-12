@@ -31,8 +31,4 @@
 		<PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.7" />
 		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Dtos\DashboardDtos\" />
-	</ItemGroup>
 </Project>

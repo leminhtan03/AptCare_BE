@@ -69,6 +69,7 @@ namespace AptCare.Api.Extensions
             service.AddScoped<IMaintenanceTaskService, MaintenanceTaskService>();
             service.AddScoped<IBudgetService, BudgetService>();
             service.AddScoped<IRepairRequestTaskService, RepairRequestTaskService>();
+            service.AddScoped<IOverViewDashboardService, OverViewDashboardService>();
             service.AddScoped<IAccessoryStockService, AccessoryStockService>();
 
             service.AddHostedService<BulkEmailConsumerService>();

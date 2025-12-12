@@ -194,7 +194,7 @@ namespace AptCare.Service.Services.Implements
                  
                 image = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
                     selector: s => s.FilePath,
-                    predicate: p => p.Entity == nameof(User) && p.EntityId == id
+                    predicate: p => p.Entity == nameof(User) && p.EntityId == id && p.Status == ActiveStatus.Active
                     );
 
             }

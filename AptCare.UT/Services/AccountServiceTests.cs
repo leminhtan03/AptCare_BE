@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
-using AptCare.Repository;
+﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
@@ -16,11 +11,17 @@ using AptCare.Service.Dtos.UserDtos;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Implements;
 using AptCare.Service.Services.Interfaces;
+using AptCare.Service.Services.Interfaces.RabbitMQ;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.Logging;
 using Moq;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace AptCare.UT.Services
@@ -32,7 +33,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<User>> _userRepo = new();
         private readonly Mock<IGenericRepository<Media>> _mediaRepo = new();
         private readonly Mock<IPasswordHasher<Account>> _passwordHasher = new();
-        private readonly Mock<IMailSenderService> _mailSender = new();
+        private readonly Mock<IRabbitMQService> _rabbitMQService = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<AccountService>> _logger = new();
 
@@ -50,7 +51,7 @@ namespace AptCare.UT.Services
 
             _service = new AccountService(
                 _uow.Object,
-                (Service.Services.Interfaces.RabbitMQ.IRabbitMQService)_mailSender.Object,
+                _rabbitMQService.Object,
                 _passwordHasher.Object,
                 _logger.Object,
                 _mapper.Object
@@ -88,13 +89,6 @@ namespace AptCare.UT.Services
             _passwordHasher.Setup(p => p.HashPassword(It.IsAny<Account>(), It.IsAny<string>()))
                 .Returns("hashed_password");
 
-            _mailSender.Setup(m => m.SendEmailWithTemplateAsync(
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>()
-            )).Returns(Task.CompletedTask);
-
             Account insertedAccount = null;
             _accountRepo.Setup(r => r.InsertAsync(It.IsAny<Account>()))
                 .Callback<Account>(a => insertedAccount = a)
@@ -112,12 +106,6 @@ namespace AptCare.UT.Services
             Assert.True(insertedAccount.MustChangePassword);
             _accountRepo.Verify(r => r.InsertAsync(It.IsAny<Account>()), Times.Once);
             _uow.Verify(u => u.CommitAsync(), Times.Once);
-            _mailSender.Verify(m => m.SendEmailWithTemplateAsync(
-                user.Email,
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<Dictionary<string, string>>()
-            ), Times.Once);
         }
 
         [Fact]

@@ -61,8 +61,8 @@ namespace AptCare.Service.Services.Implements
                             );
                 if (existingReport != null && existingReport.ReportApprovals.Any(s => s.Status == ReportStatus.Pending))
                     throw new AppValidationException("Báo cáo kiểm tra cho cuộc hẹn này đang chờ phê duyệt. Vui lòng không tạo báo cáo mới.", StatusCodes.Status400BadRequest);
-                if (existingReport != null && existingReport.ReportApprovals.Any(s => s.Status != ReportStatus.Rejected))
-                    throw new AppValidationException("Đã tồn tại báo cáo kiểm tra được thông qua vui lòng kiểm tra lại phản hồi.", StatusCodes.Status400BadRequest);
+                //if (existingReport != null && existingReport.ReportApprovals.Any(s => s.Status != ReportStatus.Rejected))
+                //    throw new AppValidationException("Đã tồn tại báo cáo kiểm tra được thông qua vui lòng kiểm tra lại phản hồi.", StatusCodes.Status400BadRequest);
                 List<string> uploadedFilePaths = new List<string>();
                 if (dto.Files != null && dto.Files.Any())
                 {
@@ -292,7 +292,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                         selector: s => _mapper.Map<MediaDto>(s),
-                        predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == report.InspectionReportId
+                        predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == report.InspectionReportId && p.Status == ActiveStatus.Active
                         );
                     report.Medias = medias.ToList();
                 }
@@ -337,7 +337,7 @@ namespace AptCare.Service.Services.Implements
                 var result = _mapper.Map<InspectionReportDetailDto>(inspectionReport);
                 var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                     selector: s => _mapper.Map<MediaDto>(s),
-                    predicate: p => p.Entity == nameof(InspectionReport) && p.EntityId == result.InspectionReportId
+                    predicate: p => p.Entity == nameof(InspectionReport) && p.EntityId == result.InspectionReportId && p.Status == ActiveStatus.Active
                     );
                 if (medias.Count != 0)
                 {
@@ -444,7 +444,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                         selector: s => _mapper.Map<MediaDto>(s),
-                        predicate: p => p.Entity == nameof(InspectionReport) && p.EntityId == item.InspectionReportId
+                        predicate: p => p.Entity == nameof(InspectionReport) && p.EntityId == item.InspectionReportId && p.Status == ActiveStatus.Active
                     );
                     item.Medias = medias.ToList();
 

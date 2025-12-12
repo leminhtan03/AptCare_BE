@@ -139,7 +139,7 @@ namespace AptCare.Service.Services.Implements
 
             var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                     selector: s => _mapper.Map<MediaDto>(s),
-                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == appointment.RepairRequest.RepairRequestId
+                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == appointment.RepairRequest.RepairRequestId && p.Status == ActiveStatus.Active
                     );
             appointment.RepairRequest.Medias = medias.ToList();
 
