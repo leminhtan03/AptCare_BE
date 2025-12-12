@@ -283,7 +283,7 @@ namespace AptCare.Service.Services.Implements
             {
                 var medias = await _unitOfWork.GetRepository<Media>().ProjectToListAsync<MediaDto>(
                     configuration: _mapper.ConfigurationProvider,
-                    predicate: m => m.EntityId == invoice.InvoiceId && m.Entity == nameof(Invoice)
+                    predicate: m => m.EntityId == invoice.InvoiceId && m.Entity == nameof(Invoice) && m.Status == ActiveStatus.Active
                 );
                 invoice.Medias = (List<MediaDto>?)medias;
             }

@@ -90,7 +90,7 @@ namespace AptCare.Service.Services.Implements
                 );
 
                 var image = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
-                    predicate: p => p.Entity == nameof(User) && p.EntityId == userId
+                    predicate: p => p.Entity == nameof(User) && p.EntityId == userId && p.Status == ActiveStatus.Active
                     );
                 result.SenderAvatar = image.FilePath;
 
@@ -163,7 +163,7 @@ namespace AptCare.Service.Services.Implements
                 );
 
                 var image = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
-                    predicate: p => p.Entity == nameof(User) && p.EntityId == userId
+                    predicate: p => p.Entity == nameof(User) && p.EntityId == userId && p.Status == ActiveStatus.Active
                     );
                 result.SenderAvatar = image.FilePath;
 
@@ -203,7 +203,7 @@ namespace AptCare.Service.Services.Implements
 
             var avatar = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
                 selector: s => s.FilePath,
-                predicate: p => p.Entity == nameof(User) && p.EntityId == message.SenderId
+                predicate: p => p.Entity == nameof(User) && p.EntityId == message.SenderId && p.Status == ActiveStatus.Active
                 );
 
             var image = string.IsNullOrEmpty(avatar) ? Constant.AVATAR_DEFAULT_IMAGE : avatar;
@@ -289,7 +289,7 @@ namespace AptCare.Service.Services.Implements
                 msg.IsMine = msg.SenderId == userId;
 
                 var image = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
-                    predicate: p => p.Entity == nameof(User) && p.EntityId == msg.SenderId
+                    predicate: p => p.Entity == nameof(User) && p.EntityId == msg.SenderId && p.Status == ActiveStatus.Active
                     );
                 msg.SenderAvatar = image.FilePath;
             }
@@ -317,7 +317,7 @@ namespace AptCare.Service.Services.Implements
             message.IsMine = message.SenderId == userId;
 
             var image = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
-                predicate: p => p.Entity == nameof(User) && p.EntityId == message.SenderId
+                predicate: p => p.Entity == nameof(User) && p.EntityId == message.SenderId && p.Status == ActiveStatus.Active
                 );
             message.SenderAvatar = image.FilePath;
 

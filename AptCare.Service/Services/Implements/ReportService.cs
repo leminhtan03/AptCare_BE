@@ -237,7 +237,7 @@ namespace AptCare.Service.Services.Implements
             // Load media files
             var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
                 selector: m => _mapper.Map<MediaDto>(m),
-                predicate: m => m.Entity == nameof(Report) && m.EntityId == result.ReportId);
+                predicate: m => m.Entity == nameof(Report) && m.EntityId == result.ReportId && m.Status == ActiveStatus.Active);
 
             result.Medias = medias.ToList();
 

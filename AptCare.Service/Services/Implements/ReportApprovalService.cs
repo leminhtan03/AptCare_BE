@@ -18,6 +18,7 @@ namespace AptCare.Service.Services.Implements
     public class ReportApprovalService : BaseService<ReportApprovalService>, IReportApprovalService
     {
         private readonly IUserContext _userContext;
+        private readonly IRedisCacheService _cacheService;
         private const string INSPECTION_REPORT_TYPE = "InspectionReport";
         private const string REPAIR_REPORT_TYPE = "RepairReport";
 
@@ -25,9 +26,11 @@ namespace AptCare.Service.Services.Implements
             IUnitOfWork<AptCareSystemDBContext> unitOfWork,
             IUserContext userContext,
             ILogger<ReportApprovalService> logger,
-            IMapper mapper) : base(unitOfWork, logger, mapper)
+            IMapper mapper,
+            IRedisCacheService cacheService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
+            _cacheService = cacheService;
         }
         public async Task<bool> CreateApproveReportAsync(ApproveReportCreateDto dto)
         {
@@ -230,8 +233,13 @@ namespace AptCare.Service.Services.Implements
                             }
 
                             accessoryDb.Quantity -= invoiceAccessory.Quantity;
-                            _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessoryDb);
+                            _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessoryDb); 
+                            await _cacheService.RemoveAsync($"accessory:{invoiceAccessory.AccessoryId }");
                         }
+
+                        await _cacheService.RemoveByPrefixAsync("accessory:list");
+                        await _cacheService.RemoveByPrefixAsync("accessory:paginate");
+
                         if (purchaseInvoice != null)
                         {
                             var budget = await budgetRepo.SingleOrDefaultAsync();

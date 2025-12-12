@@ -73,8 +73,8 @@ namespace AptCare.UT.Services
             var dto = new AppointmentCreateDto
             {
                 RepairRequestId = 1,
-                StartTime = DateTime.UtcNow.AddHours(1),
-                EndTime = DateTime.UtcNow.AddHours(2)
+                StartTime = DateTime.Now.AddHours(1),
+                EndTime = DateTime.Now.AddHours(2)
             };
 
             _rrRepo.Setup(r => r.AnyAsync(
@@ -85,8 +85,8 @@ namespace AptCare.UT.Services
             var appointment = new Appointment
             {
                 RepairRequestId = 1,
-                StartTime = DateTime.UtcNow.AddHours(1),
-                EndTime = DateTime.UtcNow.AddHours(2),
+                StartTime = DateTime.Now.AddHours(1),
+                EndTime = DateTime.Now.AddHours(2),
                 AppointmentTrackings = new List<AppointmentTracking>()
             };
             _mapper.Setup(m => m.Map<Appointment>(dto)).Returns(appointment);
@@ -122,8 +122,8 @@ namespace AptCare.UT.Services
             var dto = new AppointmentCreateDto
             {
                 RepairRequestId = 1,
-                StartTime = DateTime.UtcNow.AddHours(2),
-                EndTime = DateTime.UtcNow.AddHours(1)
+                StartTime = DateTime.Now.AddHours(2),
+                EndTime = DateTime.Now.AddHours(1)
             };
 
             _rrRepo.Setup(r => r.AnyAsync(
@@ -133,7 +133,7 @@ namespace AptCare.UT.Services
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.CreateAppointmentAsync(dto));
-            Assert.Contains("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc", ex.Message);
+            Assert.Contains("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.", ex.Message);
         }
 
         #endregion
@@ -380,20 +380,37 @@ namespace AptCare.UT.Services
         {
             // Arrange
             var id = 1;
+            var userId = 1;
+            var timeNow = DateTime.UtcNow;
+            
             var appointment = new Appointment
             {
                 AppointmentId = id,
-                StartTime = DateTime.UtcNow.AddMinutes(-30),
+                StartTime = timeNow.AddMinutes(-20),
                 RepairRequestId = 1,
                 AppointmentTrackings = new List<AppointmentTracking>
                 {
-                    new AppointmentTracking { Status = AppointmentStatus.Confirmed, UpdatedAt = DateTime.UtcNow }
+                    new AppointmentTracking { Status = AppointmentStatus.Confirmed, UpdatedAt = timeNow }
                 },
                 AppointmentAssigns = new List<AppointmentAssign>
                 {
                     new AppointmentAssign { Status = WorkOrderStatus.Pending }
                 },
-                RepairRequest = new RepairRequest()
+                RepairRequest = new RepairRequest { RepairRequestId = 1 }
+            };
+
+            var workSlot = new WorkSlot
+            {
+                WorkSlotId = 1,
+                Date = DateOnly.FromDateTime(timeNow),
+                TechnicianId = userId,
+                Status = WorkSlotStatus.Working,
+                Slot = new Slot
+                {
+                    SlotId = 1,
+                    FromTime = timeNow.AddHours(-1).TimeOfDay,
+                    ToTime = timeNow.AddHours(2).TimeOfDay
+                }
             };
 
             _apptRepo.Setup(r => r.SingleOrDefaultAsync(
@@ -401,6 +418,15 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<IQueryable<Appointment>, IOrderedQueryable<Appointment>>>(),
                 It.IsAny<Func<IQueryable<Appointment>, IIncludableQueryable<Appointment, object>>>()
             )).ReturnsAsync(appointment);
+
+            var workSlotRepo = new Mock<IGenericRepository<WorkSlot>>();
+            workSlotRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<WorkSlot, bool>>>(),
+                It.IsAny<Func<IQueryable<WorkSlot>, IOrderedQueryable<WorkSlot>>>(),
+                It.IsAny<Func<IQueryable<WorkSlot>, IIncludableQueryable<WorkSlot, object>>>()
+            )).ReturnsAsync(workSlot);
+
+            _uow.Setup(u => u.GetRepository<WorkSlot>()).Returns(workSlotRepo.Object);
 
             _reqTrackingRepo.Setup(r => r.SingleOrDefaultAsync(
                 It.IsAny<Expression<Func<RequestTracking, RequestStatus>>>(),
@@ -412,7 +438,7 @@ namespace AptCare.UT.Services
             _rrService.Setup(s => s.ToggleRepairRequestStatusAsync(It.IsAny<ToggleRRStatus>()))
                 .ReturnsAsync(true);
 
-            _userContext.SetupGet(u => u.CurrentUserId).Returns(1);
+            _userContext.SetupGet(u => u.CurrentUserId).Returns(userId);
 
             // Act
             var result = await _service.CheckInAsync(id);
@@ -420,6 +446,7 @@ namespace AptCare.UT.Services
             // Assert
             Assert.True(result);
             _trackingRepo.Verify(r => r.InsertAsync(It.Is<AppointmentTracking>(t => t.Status == AppointmentStatus.InVisit)), Times.Once);
+            _assignRepo.Verify(r => r.UpdateAsync(It.IsAny<AppointmentAssign>()), Times.Once);
             _uow.Verify(u => u.CommitTransactionAsync(), Times.Once);
         }
 
@@ -443,13 +470,33 @@ namespace AptCare.UT.Services
         {
             // Arrange
             var id = 1;
+            var userId = 1;
+            var timeNow = DateTime.UtcNow;
+            
             var appointment = new Appointment
             {
                 AppointmentId = id,
-                StartTime = DateTime.UtcNow,
+                StartTime = timeNow.AddMinutes(-20),
+                RepairRequestId = 1,
                 AppointmentTrackings = new List<AppointmentTracking>
                 {
-                    new AppointmentTracking { Status = AppointmentStatus.Pending, UpdatedAt = DateTime.UtcNow }
+                    new AppointmentTracking { Status = AppointmentStatus.Pending, UpdatedAt = timeNow }
+                },
+                AppointmentAssigns = new List<AppointmentAssign>(),
+                RepairRequest = new RepairRequest { RepairRequestId = 1 }
+            };
+
+            var workSlot = new WorkSlot
+            {
+                WorkSlotId = 1,
+                Date = DateOnly.FromDateTime(timeNow),
+                TechnicianId = userId,
+                Status = WorkSlotStatus.Working,
+                Slot = new Slot
+                {
+                    SlotId = 1,
+                    FromTime = timeNow.AddHours(-1).TimeOfDay,
+                    ToTime = timeNow.AddHours(2).TimeOfDay
                 }
             };
 
@@ -458,6 +505,15 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<IQueryable<Appointment>, IOrderedQueryable<Appointment>>>(),
                 It.IsAny<Func<IQueryable<Appointment>, IIncludableQueryable<Appointment, object>>>()
             )).ReturnsAsync(appointment);
+
+            var workSlotRepo = new Mock<IGenericRepository<WorkSlot>>();
+            workSlotRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<WorkSlot, bool>>>(),
+                It.IsAny<Func<IQueryable<WorkSlot>, IOrderedQueryable<WorkSlot>>>(),
+                It.IsAny<Func<IQueryable<WorkSlot>, IIncludableQueryable<WorkSlot, object>>>()
+            )).ReturnsAsync(workSlot);
+
+            _uow.Setup(u => u.GetRepository<WorkSlot>()).Returns(workSlotRepo.Object);
 
             // Act & Assert
             var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.CheckInAsync(id));

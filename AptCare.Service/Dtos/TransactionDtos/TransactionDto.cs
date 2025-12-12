@@ -13,6 +13,7 @@ namespace AptCare.Service.Dtos.TransactionDtos
         public int InvoiceId { get; set; }
         public TransactionType TransactionType { get; set; }
         public TransactionStatus Status { get; set; }
+        public TransactionDirection Direction { get; set; }
         public PaymentProvider Provider { get; set; }
         public decimal Amount { get; set; }
         public string Description { get; set; } = null!;
