@@ -1,6 +1,4 @@
 ﻿using AptCare.Repository.Enum;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -23,5 +21,6 @@ namespace AptCare.Repository.Entities
         public ICollection<InvoiceAccessory>? InvoiceAccessories { get; set; }
         public ICollection<InvoiceService>? InvoiceServices { get; set; }
         public ICollection<Transaction>? Transactions { get; set; }
+        public ICollection<AccessoryStockTransaction>? AccessoryStockTransactions { get; set; }
     }
 }

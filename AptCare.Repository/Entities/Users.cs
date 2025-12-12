@@ -1,6 +1,4 @@
-﻿
-using AptCare.Repository.Enum;
-using AptCare.Repository.Enum.AccountUserEnum;
+﻿using AptCare.Repository.Enum;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace AptCare.Repository.Entities
@@ -21,7 +19,6 @@ namespace AptCare.Repository.Entities
         [Required]
         [MaxLength(20)]
         [StringLength(20)]
-        // [Index(IsUnique = true)]
         public string PhoneNumber { get; set; } = null!;
 
         [Required]
@@ -49,5 +46,7 @@ namespace AptCare.Repository.Entities
         public ICollection<AppointmentAssign>? AppointmentAssigns { get; set; }
         public ICollection<AppointmentTracking>? AppointmentTrackings { get; set; }
         public ICollection<RequestTracking>? RequestTrackings { get; set; }
+        public ICollection<AccessoryStockTransaction>? CreatedStockTransactions { get; set; }
+        public ICollection<AccessoryStockTransaction>? ApprovedStockTransactions { get; set; }
     }
 }

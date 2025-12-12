@@ -19,5 +19,6 @@ namespace AptCare.Repository.Entities
         public ActiveStatus Status { get; set; }
 
         public ICollection<InvoiceAccessory>? InvoiceAccessories { get; set; }
+        public ICollection<AccessoryStockTransaction>? StockTransactions { get; set; }
     }
 }

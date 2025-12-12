@@ -470,6 +470,15 @@ namespace AptCare.Api.MapperProfile
             CreateMap<RepairRequestTaskStatusUpdateDto, RepairRequestTask>()
                 .ForMember(d => d.CompletedAt, o => o.MapFrom(s => DateTime.Now));
             CreateMap<Budget, BudgetDto>();
+
+            CreateMap<AccessoryStockTransaction, AccessoryStockTransactionDto>()
+                .ForMember(dest => dest.AccessoryName, opt => opt.MapFrom(src => src.Accessory != null ? src.Accessory.Name : null))
+                .ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.UnitPrice))
+                .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.TotalAmount))
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => (src.CreatedByUser.FirstName + " " + src.CreatedByUser.LastName)))
+                .ForMember(dest => dest.InvoiceId, opt => opt.MapFrom(src => src.InvoiceId))
+                .ForMember(dest => dest.ApprovedByName, opt => opt.MapFrom(src => src.ApprovedByUser != null ? (src.ApprovedByUser.FirstName + " " + src.ApprovedByUser.LastName) : null))
+                ;
         }
     }
 }

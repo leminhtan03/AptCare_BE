@@ -50,7 +50,7 @@ namespace AptCare.UT.Services
 
             _service = new AccountService(
                 _uow.Object,
-                _mailSender.Object,
+                (Service.Services.Interfaces.RabbitMQ.IRabbitMQService)_mailSender.Object,
                 _passwordHasher.Object,
                 _logger.Object,
                 _mapper.Object
