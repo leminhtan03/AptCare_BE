@@ -58,7 +58,7 @@ namespace AptCare.Api.Extensions
             service.AddSingleton<IS3FileService, S3FileService>();
             service.AddTransient<IPayOSWebhookService, PayOSWebhookService>();
             service.AddTransient<IContractService, ContractService>();
-            service.AddScoped<ITransactionService, TransactionService>();
+            service.AddTransient<ITransactionService, TransactionService>();
             service.AddScoped<ICommonAreaObjectService, CommonAreaObjectService>();
             service.AddScoped<IReportService, ReportService>();
             service.AddScoped<IRedisCacheService, RedisCacheService>();
@@ -70,12 +70,14 @@ namespace AptCare.Api.Extensions
             service.AddScoped<IBudgetService, BudgetService>();
             service.AddScoped<IRepairRequestTaskService, RepairRequestTaskService>();
             service.AddScoped<IOverViewDashboardService, OverViewDashboardService>();
+            service.AddScoped<IAccessoryStockService, AccessoryStockService>();
 
             service.AddHostedService<BulkEmailConsumerService>();
             service.AddHostedService<NotificationBackgroundService>();
             service.AddHostedService<NotificationConsumerService>();
             service.AddHostedService<PushNotificationConsumerService>();
             service.AddHostedService<EmailConsumerService>();
+
 
 
             return service;

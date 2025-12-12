@@ -50,6 +50,7 @@ namespace AptCare.Repository
         public DbSet<CommonAreaObjectType> CommonAreaObjectTypes { get; set; }
         public DbSet<MaintenanceTask> MaintenanceTasks { get; set; }
         public DbSet<RepairRequestTask> RepairRequestTasks { get; set; }
+        public DbSet<AccessoryStockTransaction> AccessoryStockTransactions { get; set; }
         public DbSet<Budget> Budgets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -431,6 +432,31 @@ namespace AptCare.Repository
             // Media generic (EntityType + EntityId)
             modelBuilder.Entity<Media>()
                 .HasIndex(m => new { m.Entity, m.EntityId });
+            // ========================= Accessory Stock Transaction =========================
+            modelBuilder.Entity<AccessoryStockTransaction>()
+                .HasOne(x => x.CreatedByUser)
+                .WithMany(u => u.CreatedStockTransactions)
+                .HasForeignKey(x => x.CreatedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AccessoryStockTransaction>()
+                .HasOne(x => x.ApprovedByUser)
+                .WithMany(u => u.ApprovedStockTransactions)
+                .HasForeignKey(x => x.ApprovedBy)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<AccessoryStockTransaction>()
+                .HasOne(x => x.Invoice)
+                .WithMany(i => i.AccessoryStockTransactions)
+                .HasForeignKey(x => x.InvoiceId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<AccessoryStockTransaction>()
+                .HasOne(x => x.Accessory)
+                .WithMany(a => a.StockTransactions)
+                .HasForeignKey(x => x.AccessoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
         }
     }
 }
