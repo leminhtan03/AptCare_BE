@@ -3,43 +3,46 @@ using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.AccessoryDto;
 using AptCare.Service.Services.Interfaces;
-using CloudinaryDotNet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AptCare.Api.Controllers
 {
+    [ApiController]
+    [Route("api/[controller]")]
     public class AccessoryController : BaseApiController
     {
         private readonly IAccessoryService _accessoryService;
+        private readonly IAccessoryStockService _stockService;
 
-        public AccessoryController(IAccessoryService accessoryService)
+        public AccessoryController(IAccessoryService accessoryService, IAccessoryStockService stockService)
         {
             _accessoryService = accessoryService;
+            _stockService = stockService;
         }
 
-        /// <summary>
-        /// Tạo mới một linh kiện.
-        /// </summary>
-        /// <remarks>
-        /// Chỉ dành cho các vai trò: Manager hoặc TechnicianLead.  
-        /// Body: `AccessoryCreateDto` (Name, Description, Price, Quantity)
-        /// </remarks>
-        /// <response code="201">Tạo thành công, trả về thông điệp.</response>
-        /// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
-        /// <response code="401">Không có quyền truy cập.</response>
-        /// <response code="403">Bị từ chối truy cập.</response>
-        [HttpPost]
-        [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
-        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult> CreateAccessory([FromForm] AccessoryCreateDto dto)
-        {
-            var result = await _accessoryService.CreateAccessoryAsync(dto);
-            return Created(string.Empty, result);
-        }
+        ///// <summary>
+        ///// Tạo mới một linh kiện.
+        ///// </summary>
+        ///// <remarks>
+        ///// Chỉ dành cho các vai trò: Manager hoặc TechnicianLead.  
+        ///// Body: `AccessoryCreateDto` (Name, Description, Price, Quantity)
+        ///// </remarks>
+        ///// <response code="201">Tạo thành công, trả về thông điệp.</response>
+        ///// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
+        ///// <response code="401">Không có quyền truy cập.</response>
+        ///// <response code="403">Bị từ chối truy cập.</response>
+        //[HttpPost]
+        //[Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
+        //[ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+        //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        //[ProducesResponseType(StatusCodes.Status403Forbidden)]
+        //public async Task<ActionResult> CreateAccessory([FromForm] AccessoryCreateDto dto)
+        //{
+        //    var result = await _accessoryService.CreateAccessoryAsync(dto);
+        //    return Created(string.Empty, result);
+        //}
 
         /// <summary>
         /// Cập nhật thông tin linh kiện.
@@ -168,6 +171,148 @@ namespace AptCare.Api.Controllers
         public async Task<ActionResult<IEnumerable<AccessoryDto>>> GetAccessories()
         {
             var result = await _accessoryService.GetAccessoriesAsync();
+            return Ok(result);
+        }
+
+        // --- AccessoryStock (StockIn/StockOut) APIs tích hợp tại đây ---
+
+        /// <summary>
+        /// Tạo yêu cầu nhập kho vật tư (tạo mới hoặc nhập thêm).
+        /// </summary>
+        /// <remarks>
+        /// <b>Chức năng:</b> Tạo yêu cầu nhập kho vật tư. Nếu vật tư chưa tồn tại sẽ tự động tạo mới.<br/>
+        /// <b>Yêu cầu quyền:</b> Manager, TechnicianLead.<br/>
+        /// <b>Thuộc tính <see cref="StockInAccessoryDto"/>:</b>
+        /// <ul>
+        ///   <li><b>AccessoryId</b> (int?, optional): ID vật tư đã có. Nếu null hoặc 0 sẽ tạo mới vật tư mới.</li> 
+        ///   <li><b>Name</b> (string, required nếu tạo mới): Tên vật tư mới.</li>
+        ///   <li><b>Description</b> (string, optional): Mô tả vật tư.</li>
+        ///   <li><b>UnitPrice</b> (decimal?, optional): Đơn giá vật tư.</li>
+        ///   <li><b>Quantity</b> (int, required): Số lượng nhập kho.</li>
+        ///   <li><b>Note</b> (string, optional): Ghi chú cho yêu cầu nhập kho.</li>
+        /// </ul>
+        /// <b>Kết quả:</b> Trả về thông báo tạo yêu cầu nhập kho thành công.
+        /// </remarks>
+        [HttpPost("stock-in")]
+        [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+        public async Task<IActionResult> CreateStockInRequest([FromForm] StockInAccessoryDto dto)
+        {
+            var result = await _stockService.CreateStockInRequestAsync(dto);
+            return Created(string.Empty, result);
+        }
+
+        /// <summary>
+        /// Phê duyệt hoặc từ chối yêu cầu nhập kho.
+        /// </summary>
+        /// <remarks>
+        /// <b>Chức năng:</b> Phê duyệt hoặc từ chối một yêu cầu nhập kho vật tư.<br/>
+        /// <b>Yêu cầu quyền:</b> Manager, TechnicianLead.<br/>
+        /// <b>Tham số:</b>
+        /// <ul>
+        ///   <li><b>stockTransactionId</b> (int): ID giao dịch nhập kho.</li>
+        ///   <li><b>isApprove</b> (bool): true = phê duyệt, false = từ chối.</li>
+        ///   <li><b>note</b> (string, optional): Ghi chú khi phê duyệt/từ chối.</li>
+        /// </ul>
+        /// <b>Kết quả:</b> Trả về true nếu thao tác thành công.
+        /// </remarks>
+        [HttpPatch("stock-in/approve/{stockTransactionId:int}")]
+        [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ApproveStockInRequest(int stockTransactionId, [FromQuery] bool isApprove, [FromQuery] string? note)
+        {
+            var result = await _stockService.ApproveStockInRequestAsync(stockTransactionId, isApprove, note);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Xác nhận hoàn thành nhập kho (kèm file xác thực nếu có).
+        /// </summary>
+        /// <remarks>
+        /// <b>Chức năng:</b> Xác nhận đã nhập kho thực tế, có thể đính kèm file xác thực (PDF hoặc ảnh).<br/>
+        /// <b>Yêu cầu quyền:</b> Manager, TechnicianLead.<br/>
+        /// <b>Thuộc tính <see cref="ConfirmStockInDto"/>:</b>
+        /// <ul>
+        ///   <li><b>StockTransactionId</b> (int): ID giao dịch nhập kho cần xác nhận.</li>
+        ///   <li><b>VerificationFile</b> (IFormFile, optional): File xác thực (PDF hoặc ảnh).</li>
+        ///   <li><b>Note</b> (string, optional): Ghi chú xác nhận.</li>
+        /// </ul>
+        /// <b>Kết quả:</b> Trả về true nếu xác nhận thành công.
+        /// </remarks>
+        [HttpPost("stock-in/confirm")]
+        [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ConfirmStockIn([FromForm] ConfirmStockInDto dto)
+        {
+            var result = await _stockService.ConfirmStockInAsync(dto);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Lấy danh sách giao dịch nhập/xuất kho (phân trang, tìm kiếm, lọc).
+        /// </summary>
+        /// <remarks>
+        /// <b>Chức năng:</b> Lấy danh sách các giao dịch nhập/xuất kho với phân trang, tìm kiếm theo tên vật tư hoặc ghi chú, lọc theo loại giao dịch, trạng thái, ngày tạo.<br/>
+        /// <b>Thuộc tính <see cref="StockTransactionFilterDto"/>:</b>
+        /// <ul>
+        ///   <li><b>search</b> (string, optional): Tìm kiếm theo tên vật tư hoặc ghi chú.</li>
+        ///   <li><b>Type</b> (StockTransactionType?, optional): Lọc theo loại giao dịch (Import/Export). Giá trị hợp lệ: <code>Import</code>, <code>Export</code>, để trống = tất cả.</li>
+        ///   <li><b>Status</b> (StockTransactionStatus?, optional): Lọc theo trạng thái giao dịch. Giá trị hợp lệ: <code>Pending</code>, <code>Approved</code>, <code>Rejected</code>, <code>Completed</code>, để trống = tất cả.</li>
+        ///   <li><b>FromDate</b> (DateOnly?, optional): Lọc từ ngày tạo.</li>
+        ///   <li><b>ToDate</b> (DateOnly?, optional): Lọc đến ngày tạo.</li>
+        ///   <li><b>page</b> (int, optional): Số trang.</li>
+        ///   <li><b>size</b> (int, optional): Số bản ghi mỗi trang.</li>
+        ///   <li><b>sortBy</b> (string, optional): Sắp xếp theo trường. Giá trị hợp lệ:
+        ///     <ul>
+        ///         <li><code>createdAt</code>: theo ngày tạo tăng dần</li>
+        ///         <li><code>createdAt_desc</code>: theo ngày tạo giảm dần (mặc định)</li>
+        ///         <li><code>name</code>: theo tên vật tư tăng dần</li>
+        ///         <li><code>name_desc</code>: theo tên vật tư giảm dần</li>
+        ///         <li><code>quantity</code>: theo số lượng tăng dần</li>
+        ///         <li><code>quantity_desc</code>: theo số lượng giảm dần</li>
+        ///     </ul>
+        ///   </li>
+        ///   <li><b>filter</b> (string, optional): Lọc nhanh theo trạng thái. Giá trị hợp lệ:
+        ///     <ul>
+        ///         <li><code>pending</code>: chỉ giao dịch chờ duyệt</li>
+        ///         <li><code>approved</code>: chỉ giao dịch đã duyệt</li>
+        ///         <li><code>rejected</code>: chỉ giao dịch bị từ chối</li>
+        ///         <li><code>completed</code>: chỉ giao dịch đã hoàn thành</li>
+        ///         <li><code>import</code>: chỉ giao dịch nhập kho</li>
+        ///         <li><code>export</code>: chỉ giao dịch xuất kho</li>
+        ///         <li>để trống/null: không lọc nhanh</li>
+        ///     </ul>
+        ///     Có thể kết hợp đồng thời với <b>Type</b> để lọc cả loại giao dịch và trạng thái.
+        ///   </li>
+        /// </ul>
+        /// <b>Kết quả:</b> Trả về danh sách phân trang các giao dịch nhập/xuất kho.
+        /// </remarks>
+        [HttpGet("stock-transaction/paginate")]
+        [Authorize]
+        [ProducesResponseType(typeof(IPaginate<AccessoryStockTransactionDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetPaginateStockTransactions([FromQuery] StockTransactionFilterDto filter)
+        {
+            var result = await _stockService.GetPaginateStockTransactionsAsync(filter);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Lấy chi tiết giao dịch nhập/xuất kho theo ID (bao gồm media).
+        /// </summary>
+        /// <remarks>
+        /// <b>Chức năng:</b> Lấy chi tiết một giao dịch nhập/xuất kho, bao gồm thông tin vật tư, trạng thái, các file xác thực (media) nếu có.<br/>
+        /// <b>Tham số:</b>
+        /// <ul>
+        ///   <li><b>stockTransactionId</b> (int): ID giao dịch nhập/xuất kho.</li>
+        /// </ul>
+        /// <b>Kết quả:</b> Trả về đối tượng AccessoryStockTransactionDto gồm thông tin giao dịch và danh sách media.
+        /// </remarks>
+        [HttpGet("stock-transactions/{stockTransactionId:int}")]
+        [Authorize]
+        [ProducesResponseType(typeof(AccessoryStockTransactionDto), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetStockTransactionById(int stockTransactionId)
+        {
+            var result = await _stockService.GetStockTransactionByIdAsync(stockTransactionId);
             return Ok(result);
         }
     }

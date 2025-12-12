@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿
 
 namespace AptCare.Service.Dtos
 {
@@ -22,4 +18,5 @@ namespace AptCare.Service.Dtos
         public int PageSize { get; set; } = 10;
 
     }
+
 }

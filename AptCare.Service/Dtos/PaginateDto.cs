@@ -1,11 +1,6 @@
 ﻿using AptCare.Repository.Enum;
 using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Enum.TransactionEnum;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace AptCare.Service.Dtos
 {
@@ -36,6 +31,13 @@ namespace AptCare.Service.Dtos
         public TransactionStatus? Status { get; set; }
         public PaymentProvider? Provider { get; set; }
         public TransactionDirection? Direction { get; set; }
+        public DateOnly? FromDate { get; set; }
+        public DateOnly? ToDate { get; set; }
+    }
+    public class StockTransactionFilterDto : PaginateDto
+    {
+        public StockTransactionType? Type { get; set; }
+        public StockTransactionStatus? Status { get; set; }
         public DateOnly? FromDate { get; set; }
         public DateOnly? ToDate { get; set; }
     }

@@ -56,7 +56,7 @@ namespace AptCare.UT.Services
 
             _authenticationService = new AuthenticationService(
                 _mockUnitOfWork.Object,
-                _mockMailSenderService.Object,
+                (Service.Services.Interfaces.RabbitMQ.IRabbitMQService)_mockMailSenderService.Object,
                 _mockPasswordHasher.Object,
                 _mockOtpService.Object,
                 _mockUserContext.Object,
