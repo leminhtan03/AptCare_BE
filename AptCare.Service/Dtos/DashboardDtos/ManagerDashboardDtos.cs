@@ -17,8 +17,8 @@ namespace AptCare.Service.Dtos.DashboardDtos
     public class MonthlyRevenueData
     {
         public int Month { get; set; }
-        public decimal PaidInvoicesAmount { get; set; }
-        public decimal RefundAmount { get; set; }
+        public decimal IncomeAmount { get; set; }
+        public decimal ExpenseAmount { get; set; }
     }
 
     // Chart 2: Top Accessories
