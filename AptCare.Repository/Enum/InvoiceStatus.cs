@@ -12,6 +12,7 @@ namespace AptCare.Repository.Enum
         Approved = 2,
         AwaitingPayment = 3,
         Paid = 4,
-        Cancelled = 5
+        Cancelled = 5,
+        Rejected = 6
     }
 }

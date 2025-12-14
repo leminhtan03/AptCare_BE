@@ -45,6 +45,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IReportApprovalService> _reportApprovalService = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<InspectionReporService>> _logger = new();
+        private readonly Mock<IInvoiceService> _invoiceService = new();
 
         private readonly InspectionReporService _service;
 
@@ -69,7 +70,8 @@ namespace AptCare.UT.Services
                 _cloudinaryService.Object,
                 _repairRequestService.Object,
                 _appointmentService.Object,
-                _reportApprovalService.Object
+                _reportApprovalService.Object,
+                _invoiceService.Object
             );
         }
 
@@ -378,7 +380,7 @@ namespace AptCare.UT.Services
             {
                 InspectionReportId = reportId,
                 Description = "Test report",
-                Appointment = new Appointment { RepairRequestId = 1},
+                Appointment = new Appointment { RepairRequestId = 1 },
                 CreatedAt = DateTime.Now
             };
 
@@ -396,7 +398,7 @@ namespace AptCare.UT.Services
 
             _mapper.Setup(m => m.Map<InspectionReportDto>(report)).Returns(reportDto);
             _mapper.Setup(m => m.Map<MediaDto>(It.IsAny<Media>())).Returns(new MediaDto());
-            _mapper.Setup(m => m.Map<InspectionReportDetailDto>(It.IsAny<InspectionReport>())).Returns(new InspectionReportDetailDto { InspectionReportId = report.InspectionReportId});
+            _mapper.Setup(m => m.Map<InspectionReportDetailDto>(It.IsAny<InspectionReport>())).Returns(new InspectionReportDetailDto { InspectionReportId = report.InspectionReportId });
 
             _mediaRepo.Setup(r => r.GetListAsync(
                 It.IsAny<Expression<Func<Media, MediaDto>>>(),

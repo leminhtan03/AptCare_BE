@@ -145,6 +145,47 @@ namespace AptCare.Api.Controllers
             var result = await _invoiceService.ConfirmExternalContractorPaymentAsync(dto);
             return Ok(result);
         }
+
+        /// <summary>
+        /// Hủy invoice và hoàn trả vật tư/budget (dành cho Manager/TechLead).
+        /// </summary>
+        /// <remarks>
+        /// **Role:** Manager, TechnicianLead  
+        /// 
+        /// **Chức năng:**
+        /// - Hủy invoice Draft hoặc Approved
+        /// - Tự động hoàn trả vật tư đã xuất về kho
+        /// - Hoàn trả budget đã chi cho vật tư cần mua
+        /// - Cập nhật trạng thái phiếu xuất/nhập kho thành Cancelled
+        /// 
+        /// **Ràng buộc:**
+        /// - Không thể hủy invoice đã thanh toán (Paid)
+        /// - Không thể hủy invoice đang chờ thanh toán từ resident (AwaitingPayment)
+        /// 
+        /// **Logic hoàn trả:**
+        /// - **Phiếu xuất (FromStock):** Cộng lại số lượng vào kho
+        /// - **Phiếu nhập (ToBePurchased):**
+        ///   - Nếu Completed: Cộng lại số lượng vào kho
+        ///   - Nếu Pending/Approved: Chỉ cancel phiếu, hoàn trả budget
+        /// </remarks>
+        /// <param name="invoiceId">ID invoice cần hủy</param>
+        /// <param name="dto">Lý do hủy invoice</param>
+        /// <response code="200">Hủy invoice thành công</response>
+        /// <response code="400">Invoice không hợp lệ hoặc không thể hủy</response>
+        /// <response code="404">Không tìm thấy invoice</response>
+        [HttpPost("cancel/{invoiceId:int}")]
+        [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> CancelInvoice(int invoiceId, [FromBody] CancelInvoiceDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _invoiceService.CancelInvoiceAsync(invoiceId, dto.Reason);
+            return Ok(result);
+        }
     }
 
 }

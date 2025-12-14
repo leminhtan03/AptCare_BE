@@ -234,7 +234,8 @@ namespace AptCare.Service.Services.Implements
 
             Expression<Func<Accessory, bool>> predicate = p =>
                 (string.IsNullOrEmpty(search) || p.Name.ToLower().Contains(search) || (p.Descrption != null && p.Descrption.ToLower().Contains(search))) &&
-                (string.IsNullOrEmpty(filter) || (filter == "active" && p.Status == ActiveStatus.Active) || (filter == "inactive" && p.Status == ActiveStatus.Inactive));
+                (string.IsNullOrEmpty(filter) || (filter == "active" && p.Status == ActiveStatus.Active) || (filter == "inactive" && p.Status == ActiveStatus.Inactive)) &&
+                p.Status != ActiveStatus.Darft;
 
             var result = await _unitOfWork.GetRepository<Accessory>().ProjectToPagingListAsync<AccessoryDto>(
                 configuration: _mapper.ConfigurationProvider,

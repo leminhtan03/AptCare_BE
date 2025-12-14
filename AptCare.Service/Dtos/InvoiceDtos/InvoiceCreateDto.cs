@@ -34,12 +34,10 @@ namespace AptCare.Service.Dtos.InvoiceDtos
     {
         public int? AccessoryId { get; set; }
 
-        [Required]
-        public string Name { get; set; } = null!;
+        public string? Name { get; set; } = null!;
 
         public int Quantity { get; set; }
 
-        [Required]
         public decimal PurchasePrice { get; set; }
     }
 

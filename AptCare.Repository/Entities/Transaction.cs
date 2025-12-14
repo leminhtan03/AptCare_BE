@@ -36,5 +36,7 @@ namespace AptCare.Repository.Entities
 
         [ForeignKey(nameof(InvoiceId))]
         public Invoice? Invoice { get; set; } = null!;
+
+
     }
 }

@@ -9,7 +9,9 @@ using AptCare.Service.Dtos.AccessoryDto;
 using AptCare.Service.Exceptions;
 using AptCare.Service.Services.Interfaces;
 using AptCare.Service.Services.Interfaces.IS3File;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Linq.Expressions;
 
@@ -21,7 +23,13 @@ namespace AptCare.Service.Services.Implements
         private readonly ICloudinaryService _cloudinaryService;
         private readonly IS3FileService _s3FileService;
 
-        public AccessoryStockService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<AccessoryStockService> logger, IUserContext userContext, ICloudinaryService cloudinaryService, IS3FileService s3FileService) : base(unitOfWork, logger, null)
+        public AccessoryStockService(
+            IUnitOfWork<AptCareSystemDBContext> unitOfWork,
+            ILogger<AccessoryStockService> logger,
+            IUserContext userContext,
+            ICloudinaryService cloudinaryService,
+            IS3FileService s3FileService,
+            IMapper mapper) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _cloudinaryService = cloudinaryService;
@@ -53,7 +61,7 @@ namespace AptCare.Service.Services.Implements
                     Descrption = dto.Description,
                     Price = dto.UnitPrice,
                     Quantity = 0,
-                    Status = ActiveStatus.Active
+                    Status = ActiveStatus.Darft
                 };
                 await _unitOfWork.GetRepository<Accessory>().InsertAsync(accessory);
                 await _unitOfWork.CommitAsync();
@@ -64,6 +72,8 @@ namespace AptCare.Service.Services.Implements
             {
                 AccessoryId = accessoryId,
                 Quantity = dto.Quantity,
+                UnitPrice = dto.UnitPrice,
+                TotalAmount = dto.Quantity * dto.UnitPrice,
                 Type = StockTransactionType.Import,
                 Status = StockTransactionStatus.Pending,
                 Note = dto.Note,
@@ -79,11 +89,18 @@ namespace AptCare.Service.Services.Implements
 
         public async Task<bool> ApproveStockInRequestAsync(int stockTransactionId, bool isApprove, string? note = null)
         {
-
             var repo = _unitOfWork.GetRepository<AccessoryStockTransaction>();
-            var stockIn = await repo.SingleOrDefaultAsync(predicate: x => x.StockTransactionId == stockTransactionId && x.Type == StockTransactionType.Import);
+            var stockIn = await repo.SingleOrDefaultAsync(
+                predicate: x => x.StockTransactionId == stockTransactionId && x.Type == StockTransactionType.Import,
+                include: s => s.Include(a => a.Accessory)
+            );
+
             if (stockIn == null || stockIn.Status != StockTransactionStatus.Pending)
                 throw new AppValidationException("Yêu cầu nhập kho không hợp lệ hoặc đã được xử lý.");
+
+            if (!stockIn.TotalAmount.HasValue)
+                throw new AppValidationException("Tổng tiền không hợp lệ.");
+
             try
             {
                 await _unitOfWork.BeginTransactionAsync();
@@ -96,7 +113,7 @@ namespace AptCare.Service.Services.Implements
                 {
                     var transaction = new Transaction
                     {
-                        UserId = stockIn.ApprovedBy.Value,
+                        UserId = _userContext.CurrentUserId,
                         TransactionType = TransactionType.Cash,
                         Status = TransactionStatus.Success,
                         Provider = PaymentProvider.Budget,
@@ -107,14 +124,27 @@ namespace AptCare.Service.Services.Implements
                         PaidAt = null
                     };
                     await _unitOfWork.GetRepository<Transaction>().InsertAsync(transaction);
+                    await _unitOfWork.CommitAsync();
+
                     stockIn.TransactionId = transaction.TransactionId;
 
                     var budgetRepo = _unitOfWork.GetRepository<Budget>();
                     var budget = await budgetRepo.SingleOrDefaultAsync();
+
+                    if (budget == null)
+                        throw new AppValidationException("Không tìm thấy thông tin ngân sách.");
+
                     budget.Amount -= stockIn.TotalAmount.Value;
                     budgetRepo.UpdateAsync(budget);
                     await _unitOfWork.CommitAsync();
 
+                    if (stockIn.Accessory == null)
+                        throw new AppValidationException("Không tìm thấy thông tin vật tư.");
+                    if (stockIn.Accessory.Status != ActiveStatus.Active)
+                        stockIn.Accessory.Status = ActiveStatus.Active;
+
+                    _unitOfWork.GetRepository<Accessory>().UpdateAsync(stockIn.Accessory);
+                    await _unitOfWork.CommitAsync();
                 }
 
                 repo.UpdateAsync(stockIn);
@@ -127,121 +157,241 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.RollbackTransactionAsync();
                 _logger.LogError(ex, "Lỗi khi phê duyệt yêu cầu nhập kho.");
                 throw;
-
             }
         }
-
-        public async Task<int> CreateStockOutRequestAsync(int accessoryId, int quantity, int? repairRequestId, int? invoiceId, string note)
-        {
-            var stockOut = new AccessoryStockTransaction
-            {
-                AccessoryId = accessoryId,
-                Quantity = quantity,
-                Type = StockTransactionType.Export,
-                Status = StockTransactionStatus.Pending,
-                Note = note,
-                CreatedBy = _userContext.CurrentUserId,
-                CreatedAt = DateTime.Now,
-                InvoiceId = invoiceId
-            };
-            await _unitOfWork.GetRepository<AccessoryStockTransaction>().InsertAsync(stockOut);
-            await _unitOfWork.CommitAsync();
-            return stockOut.StockTransactionId;
-        }
-
-        public async Task<bool> ApproveStockOutRequestAsync(int stockTransactionId)
+        public async Task<bool> ApproveStockOutRequestAsync(int stockTransactionId, bool isApprove, string? note)
         {
             var repo = _unitOfWork.GetRepository<AccessoryStockTransaction>();
-            var stockOut = await repo.SingleOrDefaultAsync(predicate: x => x.StockTransactionId == stockTransactionId && x.Type == StockTransactionType.Export);
+            var stockOut = await repo.SingleOrDefaultAsync(
+                predicate: x => x.StockTransactionId == stockTransactionId
+                                && x.Type == StockTransactionType.Export);
+
             if (stockOut == null || stockOut.Status != StockTransactionStatus.Pending)
+            {
                 throw new AppValidationException("Yêu cầu xuất kho không hợp lệ hoặc đã được xử lý.");
+            }
 
-            // Kiểm tra tồn kho
-            var accessory = await _unitOfWork.GetRepository<Accessory>().SingleOrDefaultAsync(predicate: x => x.AccessoryId == stockOut.AccessoryId);
-            if (accessory.Quantity < stockOut.Quantity)
-                throw new AppValidationException("Không đủ số lượng vật tư trong kho.");
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
 
-            stockOut.Status = StockTransactionStatus.Approved;
-            stockOut.ApprovedBy = _userContext.CurrentUserId;
-            stockOut.ApprovedAt = DateTime.Now;
+                stockOut.ApprovedBy = _userContext.CurrentUserId;
+                stockOut.ApprovedAt = DateTime.Now;
+                if (note != null)
+                {
+                    stockOut.Note = note;
+                }
+                if (isApprove)
+                {
+                    var accessoryRepo = _unitOfWork.GetRepository<Accessory>();
+                    var accessory = await accessoryRepo.SingleOrDefaultAsync(
+                        predicate: x => x.AccessoryId == stockOut.AccessoryId);
 
-            accessory.Quantity -= stockOut.Quantity;
-            _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessory);
+                    if (accessory == null)
+                    {
+                        throw new AppValidationException("Vật tư không tồn tại.");
+                    }
 
-            repo.UpdateAsync(stockOut);
-            await _unitOfWork.CommitAsync();
-            return true;
+                    if (accessory.Quantity < stockOut.Quantity)
+                    {
+                        throw new AppValidationException("Không đủ số lượng vật tư trong kho.");
+                    }
+
+                    accessory.Quantity -= stockOut.Quantity;
+                    accessoryRepo.UpdateAsync(accessory);
+                    stockOut.Status = StockTransactionStatus.Approved;
+                }
+                else
+                {
+                    stockOut.Status = StockTransactionStatus.Rejected;
+                }
+
+                repo.UpdateAsync(stockOut);
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Lỗi khi phê duyệt yêu cầu xuất kho.");
+                throw;
+            }
         }
 
 
         public async Task<bool> ConfirmStockInAsync(ConfirmStockInDto dto)
         {
-            var repo = _unitOfWork.GetRepository<AccessoryStockTransaction>();
-            var stockIn = await repo.SingleOrDefaultAsync(predicate: x => x.StockTransactionId == dto.StockTransactionId && x.Type == StockTransactionType.Import);
-            if (stockIn == null || stockIn.Status != StockTransactionStatus.Approved)
-                throw new AppValidationException("Yêu cầu nhập kho không hợp lệ hoặc chưa được duyệt.");
-
-            var accessory = await _unitOfWork.GetRepository<Accessory>().SingleOrDefaultAsync(predicate: x => x.AccessoryId == stockIn.AccessoryId);
-            accessory.Quantity += stockIn.Quantity;
-            _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessory);
-
-            if (dto.VerificationFile != null && dto.VerificationFile.Length > 0)
+            try
             {
-                string? filePath = null;
-                var contentType = dto.VerificationFile.ContentType.ToLower();
+                await _unitOfWork.BeginTransactionAsync();
 
-                if (contentType.Contains("application/pdf"))
-                {
-                    filePath = await _s3FileService.UploadFileAsync(dto.VerificationFile, $"stock-in/{stockIn.StockTransactionId}/");
-                }
-                else if (contentType.Contains("image/jpeg") || contentType.Contains("image/png") || contentType.Contains("image/jpg"))
-                {
-                    filePath = await _cloudinaryService.UploadImageAsync(dto.VerificationFile);
-                }
+                var repo = _unitOfWork.GetRepository<AccessoryStockTransaction>();
+                var stockIn = await repo.SingleOrDefaultAsync(
+                    predicate: x => x.StockTransactionId == dto.StockTransactionId && x.Type == StockTransactionType.Import,
+                    include: s => s.Include(a => a.Invoice)
+                                   .Include(a => a.Accessory)
+                );
 
-                if (!string.IsNullOrEmpty(filePath))
+                if (stockIn == null)
+                    throw new AppValidationException("Yêu cầu nhập kho không tồn tại.");
+
+                if (stockIn.Status != StockTransactionStatus.Approved)
+                    throw new AppValidationException("Yêu cầu nhập kho chưa được phê duyệt hoặc đã được xử lý.");
+
+                var accessory = stockIn.Accessory;
+
+                if (accessory == null)
+                    throw new AppValidationException("Vật tư không tồn tại.");
+
+                if (dto.IsConfirm)
                 {
-                    await _unitOfWork.GetRepository<Media>().InsertAsync(new Media
+                    if (stockIn.Invoice == null)
                     {
-                        Entity = nameof(AccessoryStockTransaction),
-                        EntityId = stockIn.StockTransactionId,
-                        FileName = dto.VerificationFile.FileName,
-                        FilePath = filePath,
-                        ContentType = dto.VerificationFile.ContentType,
-                        CreatedAt = DateTime.Now,
-                        Status = ActiveStatus.Active
-                    });
+                        accessory.Quantity += stockIn.Quantity;
+                        _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessory);
+                    }
+                    else
+                    {
+                        if (stockIn.Invoice.Status == InvoiceStatus.Cancelled ||
+                            stockIn.Invoice.Status == InvoiceStatus.Rejected)
+                        {
+                            accessory.Quantity += stockIn.Quantity;
+                            _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessory);
+                        }
+                        //else if (stockIn.Invoice.Status == InvoiceStatus.Draft ||
+                        //         stockIn.Invoice.Status == InvoiceStatus.Approved)
+                        //{
+                        //    accessory.Quantity += stockIn.Quantity;
+                        //    _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessory);
+                        //}
+                        //else
+                        //{
+                        //    accessory.Quantity += stockIn.Quantity;
+                        //    _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessory);
+                        //}
+                    }
+
+                    if (dto.VerificationFile != null && dto.VerificationFile.Length > 0)
+                    {
+                        string? filePath = null;
+                        var contentType = dto.VerificationFile.ContentType.ToLower();
+
+                        if (contentType.Contains("application/pdf"))
+                        {
+                            filePath = await _s3FileService.UploadFileAsync(
+                                dto.VerificationFile,
+                                $"stock-in/{stockIn.StockTransactionId}/"
+                            );
+                        }
+                        else if (contentType.Contains("image/jpeg") ||
+                                 contentType.Contains("image/png") ||
+                                 contentType.Contains("image/jpg"))
+                        {
+                            filePath = await _cloudinaryService.UploadImageAsync(dto.VerificationFile);
+                        }
+
+                        if (!string.IsNullOrEmpty(filePath))
+                        {
+                            await _unitOfWork.GetRepository<Media>().InsertAsync(new Media
+                            {
+                                Entity = nameof(AccessoryStockTransaction),
+                                EntityId = stockIn.StockTransactionId,
+                                FileName = dto.VerificationFile.FileName,
+                                FilePath = filePath,
+                                ContentType = dto.VerificationFile.ContentType,
+                                CreatedAt = DateTime.Now,
+                                Status = ActiveStatus.Active
+                            });
+                        }
+                    }
+
+                    stockIn.Status = StockTransactionStatus.Completed;
+                    if (!string.IsNullOrWhiteSpace(dto.Note))
+                        stockIn.Note += $"\n[Confirmed at {DateTime.Now:dd/MM/yyyy HH:mm}] {dto.Note}";
+
+                    if (stockIn.TransactionId.HasValue)
+                    {
+                        var transaction = await _unitOfWork.GetRepository<Transaction>().SingleOrDefaultAsync(
+                            predicate: x => x.TransactionId == stockIn.TransactionId
+                        );
+
+                        if (transaction != null)
+                        {
+                            transaction.PaidAt = DateTime.Now;
+                            transaction.Status = TransactionStatus.Success;
+                            _unitOfWork.GetRepository<Transaction>().UpdateAsync(transaction);
+                        }
+                    }
                 }
+                else if (!dto.IsConfirm)
+                {
+
+                    if (stockIn.Invoice != null)
+                    {
+                        if (stockIn.Invoice.Status != InvoiceStatus.Cancelled || stockIn.Invoice.Status != InvoiceStatus.Rejected)
+                        {
+                            _logger.LogWarning(
+                                "Yêu cầu nhập hàng #{StockInId} đang thực hiện cho yêu cầu sữa chữa #{RepairRequesrId} vui lòng kiểm tra lại khi hủy yêu cầu nhập hàng.",
+                                stockIn.StockTransactionId,
+                                stockIn.Invoice.RepairRequestId
+                            );
+                            throw new AppValidationException("Yêu cầu nhập hàng #{StockInId} đang thực hiện cho yêu cầu sữa chữa #{RepairRequesrId} vui lòng kiểm tra lại khi hủy yêu cầu nhập hàng.",
+                                stockIn.StockTransactionId,
+                                stockIn.Invoice.RepairRequestId);
+                        }
+                    }
+                    stockIn.Status = StockTransactionStatus.Rejected;
+                    stockIn.Note += dto.Note;
+
+                    // Hoàn trả budget (vì đã trừ budget lúc approve)
+                    if (stockIn.TransactionId.HasValue)
+                    {
+                        var transaction = await _unitOfWork.GetRepository<Transaction>().SingleOrDefaultAsync(
+                            predicate: x => x.TransactionId == stockIn.TransactionId
+                        );
+
+                        if (transaction != null)
+                        {
+                            transaction.Status = TransactionStatus.Failed;
+                            transaction.Description += $"\n[Rejected] Nhập kho bị từ chối, hoàn trả tiền.";
+                            _unitOfWork.GetRepository<Transaction>().UpdateAsync(transaction);
+
+                            var budgetRepo = _unitOfWork.GetRepository<Budget>();
+                            var budget = await budgetRepo.SingleOrDefaultAsync();
+                            if (budget != null)
+                            {
+                                budget.Amount += stockIn.TotalAmount.Value;
+                                budgetRepo.UpdateAsync(budget);
+                            }
+                        }
+                    }
+                }
+
+                repo.UpdateAsync(stockIn);
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return true;
             }
-
-            stockIn.Status = StockTransactionStatus.Completed;
-            if (!string.IsNullOrWhiteSpace(dto.Note))
-                stockIn.Note = dto.Note;
-            var transaction = await _unitOfWork.GetRepository<Transaction>().SingleOrDefaultAsync(predicate: x => x.TransactionId == stockIn.TransactionId);
-            transaction.PaidAt = DateTime.Now;
-            transaction.Status = TransactionStatus.Success;
-            _unitOfWork.GetRepository<Transaction>().UpdateAsync(transaction);
-
-            repo.UpdateAsync(stockIn);
-            await _unitOfWork.CommitAsync();
-            return true;
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Error confirming/rejecting stock-in transaction {StockTransactionId}", dto.StockTransactionId);
+                throw;
+            }
         }
-
         public async Task<IPaginate<AccessoryStockTransactionDto>> GetPaginateStockTransactionsAsync(StockTransactionFilterDto filter)
         {
             var page = filter.page > 0 ? filter.page : 1;
             var size = filter.size > 0 ? filter.size : 10;
             var search = filter.search?.ToLower() ?? string.Empty;
             var filterStr = filter.filter?.ToLower() ?? string.Empty;
-            var sortBy = filter.sortBy?.ToLower() ?? string.Empty;
 
             StockTransactionStatus? filterStatus = null;
-            if (!string.IsNullOrEmpty(filterStr))
+            if (!string.IsNullOrEmpty(filterStr) && Enum.TryParse<StockTransactionStatus>(filterStr, true, out var parsedStatus))
             {
-                if (Enum.TryParse<StockTransactionStatus>(filterStr, true, out var parsedStatus))
-                {
-                    filterStatus = parsedStatus;
-                }
+                filterStatus = parsedStatus;
             }
 
             Expression<Func<AccessoryStockTransaction, bool>> predicate = x =>
@@ -254,27 +404,14 @@ namespace AptCare.Service.Services.Implements
                 && (!filter.FromDate.HasValue || x.CreatedAt >= filter.FromDate.Value.ToDateTime(TimeOnly.MinValue))
                 && (!filter.ToDate.HasValue || x.CreatedAt <= filter.ToDate.Value.ToDateTime(TimeOnly.MaxValue));
 
-            Func<IQueryable<AccessoryStockTransaction>, IOrderedQueryable<AccessoryStockTransaction>> orderBy = q =>
-            {
-                return sortBy switch
-                {
-                    "createdat" => q.OrderBy(x => x.CreatedAt),
-                    "createdat_desc" => q.OrderByDescending(x => x.CreatedAt),
-                    "quantity" => q.OrderBy(x => x.Quantity),
-                    "quantity_desc" => q.OrderByDescending(x => x.Quantity),
-                    "status" => q.OrderBy(x => x.Status),
-                    "status_desc" => q.OrderByDescending(x => x.Status),
-                    "type" => q.OrderBy(x => x.Type),
-                    "type_desc" => q.OrderByDescending(x => x.Type),
-                    _ => q.OrderByDescending(x => x.CreatedAt)
-                };
-            };
-
-            var result = await _unitOfWork.GetRepository<AccessoryStockTransaction>()
+            var result = await _unitOfWork
+                .GetRepository<AccessoryStockTransaction>()
                 .ProjectToPagingListAsync<AccessoryStockTransactionDto>(
                     configuration: _mapper.ConfigurationProvider,
                     predicate: predicate,
-                    orderBy: orderBy,
+                    include: s => s.Include(a => a.Accessory)
+                                   .Include(c => c.CreatedByUser)
+                                   .Include(a => a.ApprovedByUser),
                     page: page,
                     size: size
                 );
@@ -287,8 +424,12 @@ namespace AptCare.Service.Services.Implements
             var transaction = await _unitOfWork.GetRepository<AccessoryStockTransaction>()
                 .ProjectToSingleOrDefaultAsync<AccessoryStockTransactionDto>(
                     configuration: _mapper.ConfigurationProvider,
-                    predicate: x => x.StockTransactionId == stockTransactionId
+                    predicate: x => x.StockTransactionId == stockTransactionId,
+                    include: s => s.Include(a => a.Accessory)
+                                   .Include(c => c.CreatedByUser)
+                                   .Include(a => a.ApprovedByUser)
                 );
+
             if (transaction == null)
                 throw new AppValidationException("Không tìm thấy giao dịch xuất/nhập kho.", StatusCodes.Status404NotFound);
 
@@ -301,6 +442,35 @@ namespace AptCare.Service.Services.Implements
             transaction.medias = medias.ToList();
 
             return transaction;
+        }
+
+        public async Task<string> CreateStockOutRequestAsync(int id, StockOutAccessoryDto dto)
+        {
+            try
+            {
+                var stockRepo = _unitOfWork.GetRepository<AccessoryStockTransaction>();
+                var newStockOut = _mapper.Map<AccessoryStockTransaction>(dto);
+                newStockOut.AccessoryId = id;
+                newStockOut.CreatedBy = _userContext.CurrentUserId;
+                await stockRepo.InsertAsync(newStockOut);
+                await _unitOfWork.CommitAsync();
+                return "Yêu cầu xuất kho đã được tạo thành công và đang chờ phê duyệt.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo yêu cầu xuất kho.");
+                throw;
+            }
+        }
+
+        public Task RevertStockForCancelledInvoiceAsync(int invoiceId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<string>> EnsureStockForInvoiceAsync(int invoiceId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

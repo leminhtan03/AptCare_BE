@@ -14,7 +14,7 @@ namespace AptCare.Service.Dtos.AccessoryDto
         public decimal? UnitPrice { get; set; }
         public decimal? TotalAmount { get; set; }
         public string? Note { get; set; }
-        public int CreatedBy { get; set; }
+        public int? CreatedBy { get; set; }
         public string? CreatedByName { get; set; }
         public DateTime CreatedAt { get; set; }
         public int? ApprovedBy { get; set; }

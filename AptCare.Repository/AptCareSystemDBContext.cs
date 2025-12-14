@@ -381,6 +381,10 @@ namespace AptCare.Repository
                       .HasForeignKey(ia => ia.AccessoryId);
             });
 
+            modelBuilder.Entity<InvoiceAccessory>()
+                .HasIndex(ia => new { ia.InvoiceId, ia.AccessoryId, ia.SourceType })
+                .IsUnique();
+
             // Invoice - InvoiceService (1 - n)
             modelBuilder.Entity<InvoiceService>(entity =>
             {
