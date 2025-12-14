@@ -213,8 +213,7 @@ namespace AptCare.UT.Services
             var dto = new AccessoryUpdateDto
             {
                 Name = "Updated Name",
-                Price = 200,
-                Quantity = 20
+                Price = 200
             };
 
             var existing = new Accessory { AccessoryId = id, Name = "Old Name" };

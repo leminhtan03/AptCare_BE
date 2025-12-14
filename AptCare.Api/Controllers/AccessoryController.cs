@@ -1,4 +1,5 @@
-﻿using AptCare.Repository.Enum.AccountUserEnum;
+﻿using AptCare.Repository.Entities;
+using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Paginate;
 using AptCare.Service.Dtos;
 using AptCare.Service.Dtos.AccessoryDto;
@@ -21,28 +22,6 @@ namespace AptCare.Api.Controllers
             _stockService = stockService;
         }
 
-        ///// <summary>
-        ///// Tạo mới một linh kiện.
-        ///// </summary>
-        ///// <remarks>
-        ///// Chỉ dành cho các vai trò: Manager hoặc TechnicianLead.  
-        ///// Body: `AccessoryCreateDto` (Name, Description, Price, Quantity)
-        ///// </remarks>
-        ///// <response code="201">Tạo thành công, trả về thông điệp.</response>
-        ///// <response code="400">Dữ liệu đầu vào không hợp lệ.</response>
-        ///// <response code="401">Không có quyền truy cập.</response>
-        ///// <response code="403">Bị từ chối truy cập.</response>
-        //[HttpPost]
-        //[Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
-        //[ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
-        //[ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        //[ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        //[ProducesResponseType(StatusCodes.Status403Forbidden)]
-        //public async Task<ActionResult> CreateAccessory([FromForm] AccessoryCreateDto dto)
-        //{
-        //    var result = await _accessoryService.CreateAccessoryAsync(dto);
-        //    return Created(string.Empty, result);
-        //}
 
         /// <summary>
         /// Cập nhật thông tin linh kiện.
@@ -226,23 +205,44 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
-        /// Xác nhận hoàn thành nhập kho (kèm file xác thực nếu có).
+        /// Xác nhận hoặc từ chối nhập kho (kèm file xác thực nếu có).
         /// </summary>
         /// <remarks>
-        /// <b>Chức năng:</b> Xác nhận đã nhập kho thực tế, có thể đính kèm file xác thực (PDF hoặc ảnh).<br/>
+        /// <b>Chức năng:</b> Xác nhận hoặc từ chối nhập kho thực tế, có thể đính kèm file xác thực (PDF hoặc ảnh).<br/>
         /// <b>Yêu cầu quyền:</b> Manager, TechnicianLead.<br/>
         /// <b>Thuộc tính <see cref="ConfirmStockInDto"/>:</b>
         /// <ul>
-        ///   <li><b>StockTransactionId</b> (int): ID giao dịch nhập kho cần xác nhận.</li>
+        ///   <li><b>StockTransactionId</b> (int): ID giao dịch nhập kho cần xử lý.</li>
+        ///   <li><b>IsConfirm</b> (bool): true = xác nhận nhập kho, false = từ chối.</li>
         ///   <li><b>VerificationFile</b> (IFormFile, optional): File xác thực (PDF hoặc ảnh).</li>
-        ///   <li><b>Note</b> (string, optional): Ghi chú xác nhận.</li>
+        ///   <li><b>Note</b> (string, optional): Ghi chú xác nhận/từ chối.</li>
         /// </ul>
-        /// <b>Kết quả:</b> Trả về true nếu xác nhận thành công.
+        /// <b>Logic xử lý:</b>
+        /// <ul>
+        ///   <li><b>Confirm (IsConfirm = true):</b>
+        ///     <ul>
+        ///       <li>Nếu không gắn invoice → Cộng kho ngay (hàng dự trữ)</li>
+        ///       <li>Nếu gắn invoice còn active → Cộng kho để sẵn sàng sử dụng</li>
+        ///       <li>Nếu gắn invoice đã cancelled → Cộng kho (trở thành dự trữ)</li>
+        ///       <li>Đánh dấu transaction tài chính = Success</li>
+        ///     </ul>
+        ///   </li>
+        ///   <li><b>Reject (IsConfirm = false):</b>
+        ///     <ul>
+        ///       <li>Không cộng kho</li>
+        ///       <li>Hoàn trả budget (đã trừ lúc approve)</li>
+        ///       <li>Đánh dấu transaction tài chính = Fail</li>
+        ///       <li>Cảnh báo nếu gắn với invoice còn active</li>
+        ///     </ul>
+        ///   </li>
+        /// </ul>
+        /// <b>Kết quả:</b> Trả về true nếu xử lý thành công.
         /// </remarks>
         [HttpPost("stock-in/confirm")]
         [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
         [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
-        public async Task<IActionResult> ConfirmStockIn([FromForm] ConfirmStockInDto dto)
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ConfirmOrRejectStockIn([FromForm] ConfirmStockInDto dto)
         {
             var result = await _stockService.ConfirmStockInAsync(dto);
             return Ok(result);
@@ -313,6 +313,31 @@ namespace AptCare.Api.Controllers
         public async Task<IActionResult> GetStockTransactionById(int stockTransactionId)
         {
             var result = await _stockService.GetStockTransactionByIdAsync(stockTransactionId);
+            return Ok(result);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="accessoryId"></param>
+        /// <param name="dto"></param>
+        /// <returns></returns>
+        [HttpPost("stock-out/{accessoryId:int}")]
+        [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
+        [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
+        public async Task<IActionResult> CreateStockOutRequest(int accessoryId, [FromBody] StockOutAccessoryDto dto)
+        {
+            var result = await _stockService.CreateStockOutRequestAsync(accessoryId,
+                dto);
+
+            return Ok(result);
+        }
+
+        [HttpPatch("stock-out/approve/{stockTransactionId:int}")]
+        [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ApproveStockOutRequest(int stockTransactionId, [FromQuery] bool isApprove, [FromQuery] string? note)
+        {
+            var result = await _stockService.ApproveStockOutRequestAsync(stockTransactionId, isApprove, note);
             return Ok(result);
         }
     }

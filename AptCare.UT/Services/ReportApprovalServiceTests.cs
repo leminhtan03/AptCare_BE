@@ -29,7 +29,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IGenericRepository<RepairReport>> _repairReportRepo = new();
         private readonly Mock<IGenericRepository<InspectionReport>> _inspectionReportRepo = new();
         private readonly Mock<IGenericRepository<User>> _userRepo = new();
-        private readonly Mock<IGenericRepository<Invoice>> _invoiceRepo = new(); 
+        private readonly Mock<IGenericRepository<Invoice>> _invoiceRepo = new();
         private readonly Mock<IGenericRepository<Budget>> _budgetRepo = new();
         private readonly Mock<IGenericRepository<Transaction>> _transactionRepo = new();
         private readonly Mock<IGenericRepository<Accessory>> _accessoryRepo = new();
@@ -37,6 +37,7 @@ namespace AptCare.UT.Services
         private readonly Mock<IUserContext> _userContext = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<ILogger<ReportApprovalService>> _logger = new();
+        private readonly Mock<IRedisCacheService> _cacheService = new();
 
         private readonly ReportApprovalService _service;
 
@@ -59,7 +60,8 @@ namespace AptCare.UT.Services
                 _uow.Object,
                 _userContext.Object,
                 _logger.Object,
-                _mapper.Object
+                _mapper.Object,
+                _cacheService.Object
             );
         }
 
@@ -761,6 +763,185 @@ namespace AptCare.UT.Services
             _uow.Verify(u => u.RollbackTransactionAsync(), Times.Once);
         }
 
+        [Fact]
+        public async Task ApproveReportAsync_Success_ApprovesInspectionReport_WithMixedAccessories()
+        {
+            // Arrange
+            var userId = 2;
+            var dto = new ApproveReportCreateDto
+            {
+                ReportId = 1,
+                ReportType = "InspectionReport",
+                Status = ReportStatus.Approved,
+                Comment = "Inspection approved",
+                EscalateToHigherLevel = false
+            };
+
+            var pendingApproval = new ReportApproval
+            {
+                ReportApprovalId = 1,
+                InspectionReportId = 1,
+                UserId = userId,
+                Role = AccountRole.TechnicianLead,
+                Status = ReportStatus.Pending
+            };
+
+            var now = DateTime.Now;
+            var inspectionReport = new InspectionReport
+            {
+                InspectionReportId = 1,
+                Status = ReportStatus.Pending,
+                SolutionType = SolutionType.Replacement,
+                CreatedAt = now,
+                ReportApprovals = new List<ReportApproval> { pendingApproval },
+                Appointment = new Appointment
+                {
+                    AppointmentId = 1,
+                    RepairRequestId = 10,
+                    RepairRequest = new RepairRequest { RepairRequestId = 10 }
+                }
+            };
+
+            _userContext.SetupGet(u => u.CurrentUserId).Returns(userId);
+            _userContext.SetupGet(u => u.Role).Returns(AccountRole.TechnicianLead.ToString());
+
+            _inspectionReportRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<InspectionReport, bool>>>(),
+                It.IsAny<Func<IQueryable<InspectionReport>, IOrderedQueryable<InspectionReport>>>(),
+                It.IsAny<Func<IQueryable<InspectionReport>, IIncludableQueryable<InspectionReport, object>>>()
+            )).ReturnsAsync(inspectionReport);
+
+            // ✅ Mock invoice với cả FromStock và ToBePurchased
+            var mainInvoice = new Invoice
+            {
+                InvoiceId = 100,
+                RepairRequestId = 10,
+                Type = InvoiceType.InternalRepair,
+                Status = InvoiceStatus.Draft,
+                CreatedAt = now.AddMinutes(-1),
+                TotalAmount = 1500000,
+                IsChargeable = false,
+                InvoiceAccessories = new List<InvoiceAccessory>
+                {
+                    // Vật tư từ kho
+                    new InvoiceAccessory
+                    {
+                        InvoiceAccessoryId = 1,
+                        AccessoryId = 1,
+                        Name = "Ống nước",
+                        Quantity = 5,
+                        Price = 50000,
+                        SourceType = InvoiceAccessorySourceType.FromStock
+                    },
+                    // Vật tư cần mua
+                    new InvoiceAccessory
+                    {
+                        InvoiceAccessoryId = 2,
+                        AccessoryId = 2,
+                        Name = "Van điều áp",
+                        Quantity = 2,
+                        Price = 500000,
+                        SourceType = InvoiceAccessorySourceType.ToBePurchased
+                    }
+                },
+                InvoiceServices = new List<Repository.Entities.InvoiceService>()
+            };
+
+            _invoiceRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Invoice, bool>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IOrderedQueryable<Invoice>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IIncludableQueryable<Invoice, object>>>()
+            )).ReturnsAsync(mainInvoice);
+
+            // ✅ Mock accessory từ kho (có sẵn)
+            var stockAccessory = new Accessory
+            {
+                AccessoryId = 1,
+                Name = "Ống nước",
+                Quantity = 100,
+                Status = ActiveStatus.Active
+            };
+
+            // ✅ Mock accessory cần mua (mới tạo, Darft)
+            var newAccessory = new Accessory
+            {
+                AccessoryId = 2,
+                Name = "Van điều áp",
+                Quantity = 0,
+                Status = ActiveStatus.Darft
+            };
+
+            _accessoryRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Accessory, bool>>>(),
+                It.IsAny<Func<IQueryable<Accessory>, IOrderedQueryable<Accessory>>>(),
+                It.IsAny<Func<IQueryable<Accessory>, IIncludableQueryable<Accessory, object>>>()
+            )).ReturnsAsync((
+                Expression<Func<Accessory, bool>> predicate,
+                Func<IQueryable<Accessory>, IOrderedQueryable<Accessory>> orderBy,
+                Func<IQueryable<Accessory>, IIncludableQueryable<Accessory, object>> include) =>
+            {
+                var func = predicate.Compile();
+                if (func(stockAccessory)) return stockAccessory;
+                if (func(newAccessory)) return newAccessory;
+                return null;
+            });
+
+            // ✅ Mock Budget
+            var budget = new Budget
+            {
+                BudgetId = 1,
+                Amount = 5000000
+            };
+
+            _budgetRepo.Setup(r => r.SingleOrDefaultAsync(
+                It.IsAny<Expression<Func<Budget, bool>>>(),
+                It.IsAny<Func<IQueryable<Budget>, IOrderedQueryable<Budget>>>(),
+                It.IsAny<Func<IQueryable<Budget>, IIncludableQueryable<Budget, object>>>()
+            )).ReturnsAsync(budget);
+
+            var stockTxRepo = new Mock<IGenericRepository<AccessoryStockTransaction>>();
+            _uow.Setup(u => u.GetRepository<AccessoryStockTransaction>()).Returns(stockTxRepo.Object);
+
+            _transactionRepo.Setup(r => r.InsertAsync(It.IsAny<Transaction>()))
+                .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _service.ApproveReportAsync(dto);
+
+            // Assert
+            Assert.True(result);
+            Assert.Equal(ReportStatus.Approved, inspectionReport.Status);
+            Assert.Equal(InvoiceStatus.Approved, mainInvoice.Status);
+
+            // ✅ Verify tạo 1 phiếu xuất (FromStock)
+            stockTxRepo.Verify(r => r.InsertAsync(It.Is<AccessoryStockTransaction>(st =>
+                st.Type == StockTransactionType.Export &&
+                st.AccessoryId == 1 &&
+                st.Quantity == 5
+            )), Times.Once);
+
+            // ✅ Verify tạo 1 phiếu nhập (ToBePurchased)
+            stockTxRepo.Verify(r => r.InsertAsync(It.Is<AccessoryStockTransaction>(st =>
+                st.Type == StockTransactionType.Import &&
+                st.AccessoryId == 2 &&
+                st.Quantity == 2
+            )), Times.Once);
+
+            // ✅ Verify trừ kho cho vật tư FromStock
+            Assert.Equal(95, stockAccessory.Quantity); // 100 - 5
+
+            // ✅ Verify kích hoạt vật tư mới
+            Assert.Equal(ActiveStatus.Active, newAccessory.Status);
+
+            // ✅ Verify trừ budget
+            Assert.Equal(4000000, budget.Amount); // 5M - 1M
+
+            // ✅ Verify tạo transaction
+            _transactionRepo.Verify(r => r.InsertAsync(It.Is<Transaction>(t =>
+                t.Amount == 1000000 &&
+                t.Direction == TransactionDirection.Expense
+            )), Times.Once);
+        }
         #endregion
     }
 }

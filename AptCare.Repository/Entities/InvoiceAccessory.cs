@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using AptCare.Repository.Enum;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AptCare.Repository.Entities
@@ -22,5 +23,7 @@ namespace AptCare.Repository.Entities
 
         public int Quantity { get; set; }
         public decimal Price { get; set; }
+        public InvoiceAccessorySourceType SourceType { get; set; } = InvoiceAccessorySourceType.FromStock;
+
     }
 }

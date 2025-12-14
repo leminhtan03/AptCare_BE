@@ -25,15 +25,17 @@ namespace AptCare.Service.Services.Implements
         private readonly IRepairRequestService _repairRequestService;
         private readonly IAppointmentService _appointmentService;
         private readonly IReportApprovalService _reportApprovalService;
+        private readonly IInvoiceService _invoiceService;
         private const int TIME_TOLERANCE_SECONDS = 5;
 
-        public InspectionReporService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InspectionReporService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService, IRepairRequestService repairRequestService, IAppointmentService appointmentService, IReportApprovalService reportApprovalService) : base(unitOfWork, logger, mapper)
+        public InspectionReporService(IUnitOfWork<AptCareSystemDBContext> unitOfWork, ILogger<InspectionReporService> logger, IMapper mapper, IUserContext userContext, ICloudinaryService cloudinaryService, IRepairRequestService repairRequestService, IAppointmentService appointmentService, IReportApprovalService reportApprovalService, IInvoiceService invoiceService) : base(unitOfWork, logger, mapper)
         {
             _userContext = userContext;
             _cloudinaryService = cloudinaryService;
             _repairRequestService = repairRequestService;
             _appointmentService = appointmentService;
             _reportApprovalService = reportApprovalService;
+            _invoiceService = invoiceService;
         }
 
         public async Task<InspectionReportDto> CreateInspectionReportAsync(CreateInspectionReporDto dto)
@@ -41,28 +43,33 @@ namespace AptCare.Service.Services.Implements
             try
             {
                 var appoRepo = _unitOfWork.GetRepository<Appointment>();
+                var invoiceRepo = _unitOfWork.GetRepository<Invoice>();
                 var repairRequestRepo = _unitOfWork.GetRepository<RepairRequest>();
                 var appointmentExists = await appoRepo.SingleOrDefaultAsync(
                     predicate: e => e.AppointmentId == dto.AppointmentId,
                     include: i => i.Include(o => o.AppointmentTrackings));
+
                 if (appointmentExists == null)
                     throw new AppValidationException("Cuộc hẹn không tồn tại hoặc đang trong quá trình phân công nhân lực");
+
                 var repairRequest = await repairRequestRepo.SingleOrDefaultAsync(
                     predicate: e => e.Appointments.Any(a => a.AppointmentId == dto.AppointmentId),
                     include: e => e.Include(e => e.Appointments));
 
                 if (repairRequest == null)
                     throw new AppValidationException("Không tìm thấy yêu cầu sửa chữa liên quan");
+
                 var existingReport = await _unitOfWork.GetRepository<InspectionReport>()
                             .SingleOrDefaultAsync(
                                 predicate: e => e.AppointmentId == dto.AppointmentId,
                                 orderBy: q => q.OrderByDescending(r => r.InspectionReportId),
                                 include: i => i.Include(r => r.ReportApprovals)
                             );
+
                 if (existingReport != null && existingReport.ReportApprovals.Any(s => s.Status == ReportStatus.Pending))
-                    throw new AppValidationException("Báo cáo kiểm tra cho cuộc hẹn này đang chờ phê duyệt. Vui lòng không tạo báo cáo mới.", StatusCodes.Status400BadRequest);
-                //if (existingReport != null && existingReport.ReportApprovals.Any(s => s.Status != ReportStatus.Rejected))
-                //    throw new AppValidationException("Đã tồn tại báo cáo kiểm tra được thông qua vui lòng kiểm tra lại phản hồi.", StatusCodes.Status400BadRequest);
+                    throw new AppValidationException("Báo cáo kiểm tra cho cuộc hẹn này đang chờ phê duyệt. Vui lòng không tạo báo cáo mới."
+                        , StatusCodes.Status400BadRequest);
+               
                 List<string> uploadedFilePaths = new List<string>();
                 if (dto.Files != null && dto.Files.Any())
                 {

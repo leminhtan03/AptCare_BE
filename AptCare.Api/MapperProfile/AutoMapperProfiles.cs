@@ -475,10 +475,17 @@ namespace AptCare.Api.MapperProfile
                 .ForMember(dest => dest.AccessoryName, opt => opt.MapFrom(src => src.Accessory != null ? src.Accessory.Name : null))
                 .ForMember(dest => dest.UnitPrice, opt => opt.MapFrom(src => src.UnitPrice))
                 .ForMember(dest => dest.TotalAmount, opt => opt.MapFrom(src => src.TotalAmount))
-                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => (src.CreatedByUser.FirstName + " " + src.CreatedByUser.LastName)))
+                .ForMember(dest => dest.CreatedByName, opt => opt.MapFrom(src => src.CreatedByUser != null
+                    ? (src.CreatedByUser.FirstName + " " + src.CreatedByUser.LastName)
+                    : null))
                 .ForMember(dest => dest.InvoiceId, opt => opt.MapFrom(src => src.InvoiceId))
-                .ForMember(dest => dest.ApprovedByName, opt => opt.MapFrom(src => src.ApprovedByUser != null ? (src.ApprovedByUser.FirstName + " " + src.ApprovedByUser.LastName) : null))
-                ;
+                .ForMember(dest => dest.ApprovedByName, opt => opt.MapFrom(src => src.ApprovedByUser != null
+                    ? (src.ApprovedByUser.FirstName + " " + src.ApprovedByUser.LastName)
+                    : null));
+            CreateMap<StockOutAccessoryDto, AccessoryStockTransaction>()
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => StockTransactionType.Export))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.Now))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => StockTransactionStatus.Pending));
         }
     }
 }

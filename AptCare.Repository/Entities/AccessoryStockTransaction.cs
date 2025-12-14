@@ -20,10 +20,12 @@ namespace AptCare.Repository.Entities
         public int CreatedBy { get; set; }
         [ForeignKey("CreatedBy")]
         public User CreatedByUser { get; set; } = null!;
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime CreatedAt { get; set; }
         public int? ApprovedBy { get; set; }
         [ForeignKey("ApprovedBy")]
         public User? ApprovedByUser { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime? ApprovedAt { get; set; }
 
         public decimal? UnitPrice { get; set; }

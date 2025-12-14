@@ -3,6 +3,7 @@ using System;
 using AptCare.Repository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AptCare.Repository.Migrations
 {
     [DbContext(typeof(AptCareSystemDBContext))]
-    partial class AptCareSystemDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251213123529_timestampwwithoutzone")]
+    partial class timestampwwithoutzone
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -727,15 +730,11 @@ namespace AptCare.Repository.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
-                    b.Property<int>("SourceType")
-                        .HasColumnType("integer");
-
                     b.HasKey("InvoiceAccessoryId");
 
                     b.HasIndex("AccessoryId");
 
-                    b.HasIndex("InvoiceId", "AccessoryId", "SourceType")
-                        .IsUnique();
+                    b.HasIndex("InvoiceId");
 
                     b.ToTable("InvoiceAccessories");
                 });
