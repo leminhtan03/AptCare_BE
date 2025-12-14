@@ -204,7 +204,7 @@ namespace AptCare.UT.Services
                     }
                 }
             };
-                
+
             _accessoryRepo.Setup(r => r.SingleOrDefaultAsync(
                 It.IsAny<Expression<Func<Accessory, bool>>>(),
                 It.IsAny<Func<System.Linq.IQueryable<Accessory>, System.Linq.IOrderedQueryable<Accessory>>>(),
@@ -237,7 +237,14 @@ namespace AptCare.UT.Services
 
             // Assert
             Assert.Equal("Tạo biên lai sửa chữa thành công.", result);
-            _invoiceRepo.Verify(r => r.InsertAsync(It.IsAny<Invoice>()), Times.Exactly(2)); // Main invoice + Purchase invoice
+
+            // ✅ FIXED - Chỉ tạo 1 invoice duy nhất
+            _invoiceRepo.Verify(r => r.InsertAsync(It.Is<Invoice>(i =>
+                i.Type == InvoiceType.InternalRepair &&
+                i.InvoiceAccessories.Any(a => a.SourceType == InvoiceAccessorySourceType.FromStock) &&
+                i.InvoiceAccessories.Any(a => a.SourceType == InvoiceAccessorySourceType.ToBePurchased)
+            )), Times.Once);
+
             _uow.Verify(u => u.CommitTransactionAsync(), Times.Once);
         }
 

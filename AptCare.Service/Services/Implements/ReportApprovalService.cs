@@ -426,6 +426,7 @@ namespace AptCare.Service.Services.Implements
                     }
                     else if (dto.Status == ReportStatus.Rejected)
                     {
+
                         mainInvoice.Status = InvoiceStatus.Cancelled;
                         _unitOfWork.GetRepository<Invoice>().UpdateAsync(mainInvoice);
                     }

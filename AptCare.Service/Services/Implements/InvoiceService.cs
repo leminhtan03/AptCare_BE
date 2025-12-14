@@ -47,7 +47,6 @@ namespace AptCare.Service.Services.Implements
                 if (lastStatusRequest != RequestStatus.InProgress)
                     throw new AppValidationException($"Trạng thái sửa chữa đang là {lastStatusRequest}.", StatusCodes.Status404NotFound);
 
-                // ✅ KIỂM TRA INVOICE CŨ
                 var existingInvoices = repairRequest.Invoices
                     ?.Where(i => i.Type == InvoiceType.InternalRepair &&
                                 (i.Status == InvoiceStatus.Draft ||
@@ -176,8 +175,19 @@ namespace AptCare.Service.Services.Implements
                                 throw new AppValidationException("Vật tư mới phải có tên (Name).", StatusCodes.Status400BadRequest);
 
                             if (accessory.PurchasePrice <= 0)
-                                throw new AppValidationException($"Giá mua của vật tư '{accessory.Name}' phải lớn hơn 0.",
+                                throw new AppValidationException($"Giá mua của vật tư '{accessory.Name}' phải lớn hơn 0.", StatusCodes.Status400BadRequest);
+
+                            var isDuplicate = await _unitOfWork.GetRepository<Accessory>().AnyAsync(
+                                predicate: a => a.Name.ToLower() == accessory.Name.ToLower()
+                            );
+
+                            if (isDuplicate)
+                            {
+                                throw new AppValidationException(
+                                    $"Vật tư '{accessory.Name}' đã tồn tại trong hệ thống.\n" +
+                                    $"Vui lòng chọn từ danh sách hoặc sử dụng tên khác.",
                                     StatusCodes.Status400BadRequest);
+                            }
 
                             var newAccessory = new Accessory
                             {
@@ -432,6 +442,11 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.BeginTransactionAsync();
 
                 var invoiceRepo = _unitOfWork.GetRepository<Invoice>();
+                var accessoryRepo = _unitOfWork.GetRepository<Accessory>();
+                var stockTxRepo = _unitOfWork.GetRepository<AccessoryStockTransaction>();
+                var budgetRepo = _unitOfWork.GetRepository<Budget>(); // ✅ THÊM
+                var transactionRepo = _unitOfWork.GetRepository<Transaction>(); // ✅ THÊM
+
                 var invoice = await invoiceRepo.SingleOrDefaultAsync(
                     predicate: x => x.InvoiceId == invoiceId,
                     include: i => i.Include(x => x.InvoiceAccessories)
@@ -447,11 +462,6 @@ namespace AptCare.Service.Services.Implements
                 if (invoice.Status == InvoiceStatus.AwaitingPayment)
                     throw new AppValidationException("Không thể hủy invoice đang chờ thanh toán.");
 
-
-                var accessoryRepo = _unitOfWork.GetRepository<Accessory>();
-                var stockTxRepo = _unitOfWork.GetRepository<AccessoryStockTransaction>();
-                var budgetRepo = _unitOfWork.GetRepository<Budget>();
-                var transactionRepo = _unitOfWork.GetRepository<Transaction>();
 
                 // XỬ LÝ VẬT TƯ TỪ KHO (FromStock) - Phiếu xuất
                 var stockOutTransactions = invoice.AccessoryStockTransactions
