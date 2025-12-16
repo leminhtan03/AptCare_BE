@@ -317,6 +317,15 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Lịch phân công không tồn tại.", StatusCodes.Status404NotFound);
                 }
 
+                var lastRequestTracking = await _unitOfWork.GetRepository<RequestTracking>().SingleOrDefaultAsync(
+                    predicate: x => x.RepairRequestId == Appoiment.RepairRequestId,
+                    orderBy: o => o.OrderByDescending(x => x.UpdatedAt)
+                    );
+                if (lastRequestTracking.Status == RequestStatus.Pending)
+                {
+                    throw new AppValidationException("Yêu cầu sửa chữa chưa  được phê duyệt.");
+                }
+
                 if (isConfirmed)
                 {
                     var AppoinmentTracking = Appoiment.AppointmentTrackings;
