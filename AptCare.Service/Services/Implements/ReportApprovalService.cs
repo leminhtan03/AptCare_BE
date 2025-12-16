@@ -419,7 +419,6 @@ namespace AptCare.Service.Services.Implements
                         }
                         else
                         {
-                            // Resident trả tiền
                             mainInvoice.Status = InvoiceStatus.AwaitingPayment;
                             _unitOfWork.GetRepository<Invoice>().UpdateAsync(mainInvoice);
                         }
