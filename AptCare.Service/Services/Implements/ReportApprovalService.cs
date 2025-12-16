@@ -177,8 +177,7 @@ namespace AptCare.Service.Services.Implements
                     predicate: x => x.RepairRequestId == inspectionReport.Appointment.RepairRequestId &&
                                     x.CreatedAt >= minTime &&
                                     x.CreatedAt <= maxTime &&
-                                    x.Status == InvoiceStatus.Draft &&
-                                    x.Type == InvoiceType.InternalRepair,
+                                    x.Status == InvoiceStatus.Draft,
                     include: i => i.Include(x => x.InvoiceAccessories)
                                    .Include(x => x.InvoiceServices),
                     orderBy: o => o.OrderByDescending(x => x.CreatedAt)
