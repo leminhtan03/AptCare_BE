@@ -80,10 +80,13 @@ namespace AptCare.Service.Services.Implements
                         predicate: x => x.TechnicianId == userId && DateOnly.FromDateTime(x.EstimatedStartTime) ==
                                                                          DateOnly.FromDateTime(appointment.StartTime) &&
                                                                     x.Status != WorkOrderStatus.Cancel &&
-                                                                    ((x.EstimatedStartTime >= appointment.StartTime &&
-                                                                        x.EstimatedStartTime <= appointment.EndTime) ||
-                                                                     (x.EstimatedEndTime >= appointment.StartTime &&
-                                                                        x.EstimatedEndTime <= appointment.EndTime))
+                                                                    (x.ActualEndTime == null ? 
+                                                                        ((x.EstimatedStartTime >= appointment.StartTime &&
+                                                                            x.EstimatedStartTime <= appointment.EndTime) ||
+                                                                         (x.EstimatedEndTime >= appointment.StartTime &&
+                                                                            x.EstimatedEndTime <= appointment.EndTime)) :
+                                                                        ((x.ActualEndTime >= appointment.StartTime &&
+                                                                        x.ActualEndTime <= appointment.EndTime)))
                         );
                     if (isConflictAppoAssign)
                     {
