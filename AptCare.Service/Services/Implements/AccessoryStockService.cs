@@ -332,11 +332,11 @@ namespace AptCare.Service.Services.Implements
                         if (stockIn.Invoice.Status != InvoiceStatus.Cancelled)
                         {
                             _logger.LogWarning(
-                                "Yêu cầu nhập hàng #{StockInId} đang thực hiện cho yêu cầu sữa chữa #{RepairRequesrId} vui lòng kiểm tra lại khi hủy yêu cầu nhập hàng.",
+                                "Yêu cầu nhập hàng #{StockTransactionId} đang thực hiện cho yêu cầu sữa chữa #{RepairRequestId} vui lòng kiểm tra lại khi hủy yêu cầu nhập hàng.",
                                 stockIn.StockTransactionId,
                                 stockIn.Invoice.RepairRequestId
                             );
-                            throw new AppValidationException("Yêu cầu nhập hàng #{StockInId} đang thực hiện cho yêu cầu sữa chữa #{RepairRequesrId} vui lòng kiểm tra lại khi hủy yêu cầu nhập hàng.",
+                            throw new AppValidationException("Yêu cầu nhập hàng #{StockTransactionId} đang thực hiện cho yêu cầu sữa chữa #{RepairRequestId} vui lòng kiểm tra lại khi hủy yêu cầu nhập hàng.",
                                 stockIn.StockTransactionId,
                                 stockIn.Invoice.RepairRequestId);
                         }

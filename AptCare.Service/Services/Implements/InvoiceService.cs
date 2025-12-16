@@ -284,7 +284,8 @@ namespace AptCare.Service.Services.Implements
                         {
                             Name = accessory.Name,
                             Quantity = accessory.Quantity,
-                            Price = accessory.Price
+                            Price = accessory.Price,
+                            SourceType = InvoiceAccessorySourceType.ToBePurchased,
                         });
                     }
                 }
