@@ -174,7 +174,7 @@ namespace AptCare.Api.Controllers
         /// <response code="400">Invoice không hợp lệ hoặc không thể hủy</response>
         /// <response code="404">Không tìm thấy invoice</response>
         [HttpPost("cancel/{invoiceId:int}")]
-        [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
+        [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)},{nameof(AccountRole.Technician)}")]
         [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]

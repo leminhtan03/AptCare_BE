@@ -15,8 +15,6 @@ namespace AptCare.Service.Dtos.InspectionReporDtos
         public string Description { get; set; } = string.Empty;
         public string Solution { get; set; } = string.Empty;
         public List<IFormFile>? Files { get; set; }
-        public bool IsRevision { get; set; } = false;
-        public string? RevisionReason { get; set; }
 
     }
 }
