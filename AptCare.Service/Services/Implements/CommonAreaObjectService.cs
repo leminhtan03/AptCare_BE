@@ -202,7 +202,8 @@ namespace AptCare.Service.Services.Implements
                 selector: x => _mapper.Map<CommonAreaObjectDto>(x),
                 predicate: p => p.CommonAreaObjectId == id,
                 include: i => i.Include(x => x.CommonArea)
-                                    .ThenInclude(x => x.Floor));
+                                    .ThenInclude(x => x.Floor)
+                                .Include(x => x.CommonAreaObjectType));
 
             if (commonAreaObject == null)
                 throw new AppValidationException("Đối tượng khu vực chung không tồn tại.", StatusCodes.Status404NotFound);
@@ -255,7 +256,8 @@ namespace AptCare.Service.Services.Implements
                 selector: s => _mapper.Map<CommonAreaObjectDto>(s),
                 predicate: predicate,
                 include: i => i.Include(x => x.CommonArea)
-                                    .ThenInclude(x => x.Floor),
+                                    .ThenInclude(x => x.Floor)
+                                .Include(x => x.CommonAreaObjectType),
                 orderBy: BuildOrderBy(dto.sortBy ?? string.Empty),
                 page: page,
                 size: size

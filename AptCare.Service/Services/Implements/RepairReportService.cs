@@ -1,6 +1,7 @@
 ﻿using AptCare.Repository;
 using AptCare.Repository.Entities;
 using AptCare.Repository.Enum;
+using AptCare.Repository.Enum.AccountUserEnum;
 using AptCare.Repository.Paginate;
 using AptCare.Repository.UnitOfWork;
 using AptCare.Service.Dtos;
@@ -102,6 +103,25 @@ namespace AptCare.Service.Services.Implements
                     }
                     await _unitOfWork.CommitAsync();
                 }
+
+                if (appointment.RepairRequest.ApartmentId != null)
+                {
+                    var residentIds = await _unitOfWork.GetRepository<UserApartment>().SingleOrDefaultAsync(
+                        selector: s => s.UserId,
+                        predicate: p => p.ApartmentId == appointment.RepairRequest.ApartmentId && p.Status == ActiveStatus.Active
+                    );
+
+                    await _unitOfWork.GetRepository<ReportApproval>().InsertAsync(new ReportApproval
+                    {
+                        UserId = residentIds,
+                        Role = AccountRole.Resident,
+                        RepairReportId = newReport.RepairReportId,
+                        Status = ReportStatus.Pending,
+                        Comment = dto.Note,
+                        CreatedAt = DateTime.Now
+                    });
+                }
+
 
                 var approvalCreated = await _reportApprovalService.CreateApproveReportAsync(
                     new ApproveReportCreateDto
