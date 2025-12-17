@@ -7,6 +7,7 @@ namespace AptCare.Service.Services.Interfaces
     public interface IAppointmentService
     {
         Task<string> CreateAppointmentAsync(AppointmentCreateDto dto);
+        Task<string> CreateAppointmentWithOldTechnicianAsync(AppointmentCreateDto dto);
         Task<string> UpdateAppointmentAsync(int id, AppointmentUpdateDto dto);
         Task<string> DeleteAppointmentAsync(int id);
         Task<AppointmentDto> GetAppointmentByIdAsync(int id);

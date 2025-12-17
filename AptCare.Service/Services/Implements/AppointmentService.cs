@@ -62,6 +62,130 @@ namespace AptCare.Service.Services.Implements
             return "Tạo lịch hẹn thành công";
         }
 
+        public async Task<string> CreateAppointmentWithOldTechnicianAsync(AppointmentCreateDto dto)
+        {
+            var isExistingRepairRequest = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
+                        predicate: x => x.RepairRequestId == dto.RepairRequestId
+                        );
+            if (!isExistingRepairRequest)
+            {
+                throw new AppValidationException("Yêu cầu sửa chữa không tồn tại.", StatusCodes.Status404NotFound);
+            }
+            if (dto.StartTime < DateTime.Now)
+            {
+                throw new AppValidationException("Thời gian bắt đầu không được nhỏ hơn thời gian hiện tại.");
+            }
+            if (dto.StartTime >= dto.EndTime)
+            {
+                throw new AppValidationException("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
+            }
+
+            // Lấy lịch hẹn cũ đầu tiên của yêu cầu sửa chữa
+            var oldAppointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
+                predicate: x => x.RepairRequestId == dto.RepairRequestId,
+                include: i => i.Include(x => x.AppointmentAssigns)
+                                .ThenInclude(x => x.Technician),
+                orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+            );
+
+            if (oldAppointment == null || !oldAppointment.AppointmentAssigns.Any())
+            {
+                throw new AppValidationException("Không tìm thấy lịch hẹn cũ hoặc lịch hẹn cũ chưa được phân công kỹ thuật viên.");
+            }
+
+            // Lấy danh sách kỹ thuật viên từ lịch hẹn cũ (không bao gồm những người đã hủy)
+            var oldTechnicianIds = oldAppointment.AppointmentAssigns
+                .Where(aa => aa.Status != WorkOrderStatus.Cancel)
+                .Select(aa => aa.TechnicianId)
+                .ToList();
+
+            if (!oldTechnicianIds.Any())
+            {
+                throw new AppValidationException("Không có kỹ thuật viên hợp lệ từ lịch hẹn cũ.");
+            }
+
+            // Kiểm tra xung đột lịch cho từng kỹ thuật viên
+            foreach (var technicianId in oldTechnicianIds)
+            {
+                var conflictingAssign = await _unitOfWork.GetRepository<AppointmentAssign>().SingleOrDefaultAsync(
+                    predicate: x => x.TechnicianId == technicianId &&
+                                   DateOnly.FromDateTime(x.EstimatedStartTime) == DateOnly.FromDateTime(dto.StartTime) &&
+                                   x.Status != WorkOrderStatus.Cancel &&
+                                   (x.ActualEndTime == null ?
+                                       ((x.EstimatedStartTime >= dto.StartTime && x.EstimatedStartTime < dto.EndTime) ||
+                                        (x.EstimatedEndTime > dto.StartTime && x.EstimatedEndTime <= dto.EndTime) ||
+                                        (x.EstimatedStartTime <= dto.StartTime && x.EstimatedEndTime >= dto.EndTime)) :
+                                       ((x.ActualEndTime > dto.StartTime && x.ActualEndTime <= dto.EndTime))),
+                    include: i => i.Include(x => x.Technician)
+                                    .Include(x => x.Appointment)
+                );
+
+                if (conflictingAssign != null)
+                {
+                    var technicianName = $"{conflictingAssign.Technician.FirstName} {conflictingAssign.Technician.LastName}";
+                    var conflictStartTime = conflictingAssign.EstimatedStartTime.ToString("HH:mm dd/MM/yyyy");
+                    var conflictEndTime = conflictingAssign.EstimatedEndTime.ToString("HH:mm dd/MM/yyyy");
+
+                    throw new AppValidationException(
+                        $"Kỹ thuật viên {technicianName} (ID: {technicianId}) đã có lịch hẹn từ {conflictStartTime} đến {conflictEndTime}. " +
+                        $"Không thể phân công vào thời gian {dto.StartTime:HH:mm dd/MM/yyyy} - {dto.EndTime:HH:mm dd/MM/yyyy}."
+                    );
+                }
+            }
+
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                // Tạo lịch hẹn mới
+                var appointment = _mapper.Map<Appointment>(dto);
+                appointment.AppointmentTrackings.Add(new AppointmentTracking
+                {
+                    Status = AppointmentStatus.Pending,
+                    Note = dto.Note,
+                    UpdatedAt = DateTime.Now,
+                    UpdatedBy = _userContext.CurrentUserId
+                });
+                await _unitOfWork.GetRepository<Appointment>().InsertAsync(appointment);
+                await _unitOfWork.CommitAsync();
+
+                // Phân công kỹ thuật viên từ lịch hẹn cũ
+                foreach (var technicianId in oldTechnicianIds)
+                {
+                    await _unitOfWork.GetRepository<AppointmentAssign>().InsertAsync(new AppointmentAssign
+                    {
+                        TechnicianId = technicianId,
+                        AppointmentId = appointment.AppointmentId,
+                        EstimatedStartTime = dto.StartTime,
+                        EstimatedEndTime = (DateTime)dto.EndTime,
+                        AssignedAt = DateTime.Now,
+                        Status = WorkOrderStatus.Pending
+                    });
+                }
+
+                // Cập nhật trạng thái lịch hẹn sang Assigned
+                await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(new AppointmentTracking
+                {
+                    AppointmentId = appointment.AppointmentId,
+                    Status = AppointmentStatus.Assigned,
+                    UpdatedAt = DateTime.Now,
+                    UpdatedBy = _userContext.CurrentUserId,
+                    Note = "Tự động phân công kỹ thuật viên từ lịch hẹn cũ."
+                });
+
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return "Tạo lịch hẹn và phân công kỹ thuật viên từ lịch hẹn cũ thành công.";
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Error during CreateAppointmentWithOldTechnicianAsync");
+                throw new AppValidationException($"Tạo lịch hẹn thất bại: {ex.Message}");
+            }
+        }
+
         public async Task<string> UpdateAppointmentAsync(int id, AppointmentUpdateDto dto)
         {
             var appointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
