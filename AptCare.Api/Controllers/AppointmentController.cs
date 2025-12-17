@@ -63,6 +63,66 @@ namespace AptCare.Api.Controllers
         }
 
         /// <summary>
+        /// Tạo lịch hẹn mới và tự động phân công kỹ thuật viên từ lịch hẹn cũ.
+        /// </summary>
+        /// <remarks>
+        /// <b>Chỉ role:</b> Technician, TechnicianLead<br/>
+        /// <b>Yêu cầu:</b>
+        /// <ul>
+        ///   <li><b>RepairRequestId</b>: ID yêu cầu sửa chữa, phải đã có lịch hẹn trước đó.</li>
+        ///   <li><b>StartTime</b>: Thời gian bắt đầu lịch hẹn (yyyy-MM-dd HH:mm).</li>
+        ///   <li><b>EndTime</b>: Thời gian kết thúc lịch hẹn (yyyy-MM-dd HH:mm).</li>
+        ///   <li><b>Note</b>: Ghi chú cho lịch hẹn (tùy chọn).</li>
+        /// </ul>
+        /// <b>Chức năng:</b>
+        /// <ul>
+        ///   <li>Tự động lấy danh sách kỹ thuật viên từ lịch hẹn đầu tiên của yêu cầu sửa chữa.</li>
+        ///   <li>Kiểm tra xung đột lịch của từng kỹ thuật viên.</li>
+        ///   <li>Nếu có kỹ thuật viên bị trùng lịch, sẽ throw exception chi tiết về tên, thời gian xung đột.</li>
+        ///   <li>Tạo lịch hẹn mới và tự động phân công kỹ thuật viên (status = Assigned).</li>
+        /// </ul>
+        /// </remarks>
+        /// <param name="dto">
+        /// <b>AppointmentCreateDto:</b>
+        /// <ul>
+        ///   <li><b>RepairRequestId</b>: ID yêu cầu sửa chữa liên kết (phải đã có lịch hẹn trước đó).</li>
+        ///   <li><b>StartTime</b>: Thời gian bắt đầu lịch hẹn.</li>
+        ///   <li><b>EndTime</b>: Thời gian kết thúc lịch hẹn.</li>
+        ///   <li><b>Note</b>: Ghi chú (tùy chọn).</li>
+        /// </ul>
+        /// </param>
+        /// <returns>Thông báo tạo lịch hẹn và phân công thành công.</returns>
+        /// <response code="201">Tạo lịch hẹn và phân công kỹ thuật viên thành công.</response>
+        /// <response code="400">
+        /// <ul>
+        ///   <li>Dữ liệu không hợp lệ (thời gian sai, không có lịch hẹn cũ).</li>
+        ///   <li>Kỹ thuật viên bị trùng lịch (kèm thông tin chi tiết về xung đột).</li>
+        /// </ul>
+        /// </response>
+        /// <response code="404">
+        /// <ul>
+        ///   <li>Không tìm thấy yêu cầu sửa chữa.</li>
+        ///   <li>Không tìm thấy lịch hẹn cũ hoặc lịch hẹn cũ chưa được phân công kỹ thuật viên.</li>
+        /// </ul>
+        /// </response>
+        /// <response code="401">Không có quyền truy cập.</response>
+        /// <response code="403">Không đủ quyền.</response>
+        /// <response code="500">Lỗi hệ thống.</response>
+        [HttpPost("with-old-technician")]
+        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)}, {nameof(AccountRole.Technician)}")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult> CreateAppointmentWithOldTechnician([FromBody] AppointmentCreateDto dto)
+        {
+            var result = await _appointmentService.CreateAppointmentWithOldTechnicianAsync(dto);
+            return Created(string.Empty, result);
+        }
+
+        /// <summary>
         /// Cập nhật lịch hẹn sửa chữa.
         /// </summary>
         /// <remarks>
