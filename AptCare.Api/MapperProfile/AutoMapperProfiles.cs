@@ -419,9 +419,10 @@ namespace AptCare.Api.MapperProfile
             CreateMap<CommonAreaObjectType, CommonAreaObjectTypeDto>()
                 .ForMember(d => d.Status, o => o.MapFrom(s => s.Status.ToString()));
             CreateMap<CommonAreaObjectTypeCreateDto, CommonAreaObjectType>()
-                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active));
+                .ForMember(d => d.Status, o => o.MapFrom(s => ActiveStatus.Active))
+                .ForMember(d => d.MaintenanceTasks, o => o.Ignore());
             CreateMap<CommonAreaObjectTypeUpdateDto, CommonAreaObjectType>()
-                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+                .ForMember(d => d.MaintenanceTasks, o => o.Ignore()); 
 
             // REPORT
             CreateMap<Report, ReportDto>()

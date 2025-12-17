@@ -37,6 +37,8 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var isDuplicate = await _unitOfWork.GetRepository<CommonAreaObjectType>().AnyAsync(
                     predicate: x => x.TypeName.ToLower() == dto.TypeName.ToLower()
                 );
@@ -50,12 +52,57 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.GetRepository<CommonAreaObjectType>().InsertAsync(commonAreaObjectType);
                 await _unitOfWork.CommitAsync();
 
+                if (dto.MaintenanceTasks != null && dto.MaintenanceTasks.Any())
+                {
+                    var duplicateDisplayOrders = dto.MaintenanceTasks
+                        .GroupBy(t => t.DisplayOrder)
+                        .Where(g => g.Count() > 1)
+                        .Select(g => g.Key)
+                        .ToList();
+
+                    if (duplicateDisplayOrders.Any())
+                        throw new AppValidationException(
+                            $"Thứ tự hiển thị bị trùng lặp: {string.Join(", ", duplicateDisplayOrders)}",
+                            StatusCodes.Status400BadRequest);
+
+                    var duplicateTaskNames = dto.MaintenanceTasks
+                        .GroupBy(t => t.TaskName.ToLower())
+                        .Where(g => g.Count() > 1)
+                        .Select(g => g.Key)
+                        .ToList();
+
+                    if (duplicateTaskNames.Any())
+                        throw new AppValidationException(
+                            $"Tên nhiệm vụ bị trùng lặp: {string.Join(", ", duplicateTaskNames)}",
+                            StatusCodes.Status400BadRequest);
+
+                    foreach (var taskDto in dto.MaintenanceTasks)
+                    {
+                        var maintenanceTask = new MaintenanceTask
+                        {
+                            CommonAreaObjectTypeId = commonAreaObjectType.CommonAreaObjectTypeId,
+                            TaskName = taskDto.TaskName,
+                            TaskDescription = taskDto.TaskDescription,
+                            RequiredTools = taskDto.RequiredTools,
+                            DisplayOrder = taskDto.DisplayOrder,
+                            EstimatedDurationMinutes = taskDto.EstimatedDurationMinutes,
+                            Status = ActiveStatus.Active
+                        };
+
+                        await _unitOfWork.GetRepository<MaintenanceTask>().InsertAsync(maintenanceTask);
+                    }
+
+                    await _unitOfWork.CommitAsync();
+                }
+
                 await _cacheService.RemoveByPrefixAsync("common_area_object_type");
+                await _unitOfWork.CommitTransactionAsync();
 
                 return "Tạo loại đối tượng khu vực chung mới thành công";
             }
             catch (Exception e)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
@@ -64,6 +111,8 @@ namespace AptCare.Service.Services.Implements
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var commonAreaObjectType = await _unitOfWork.GetRepository<CommonAreaObjectType>()
                     .SingleOrDefaultAsync(predicate: x => x.CommonAreaObjectTypeId == id);
 
@@ -80,8 +129,94 @@ namespace AptCare.Service.Services.Implements
 
                 _mapper.Map(dto, commonAreaObjectType);
                 _unitOfWork.GetRepository<CommonAreaObjectType>().UpdateAsync(commonAreaObjectType);
-                await _unitOfWork.CommitAsync();
 
+                if (dto.MaintenanceTasks != null)
+                {
+                    // Kiểm tra trùng lặp DisplayOrder trong danh sách mới
+                    var duplicateDisplayOrders = dto.MaintenanceTasks
+                        .GroupBy(t => t.DisplayOrder)
+                        .Where(g => g.Count() > 1)
+                        .Select(g => g.Key)
+                        .ToList();
+
+                    if (duplicateDisplayOrders.Any())
+                        throw new AppValidationException(
+                            $"Thứ tự hiển thị bị trùng lặp: {string.Join(", ", duplicateDisplayOrders)}",
+                            StatusCodes.Status400BadRequest);
+
+                    // Kiểm tra trùng lặp TaskName trong danh sách mới
+                    var duplicateTaskNames = dto.MaintenanceTasks
+                        .GroupBy(t => t.TaskName.ToLower())
+                        .Where(g => g.Count() > 1)
+                        .Select(g => g.Key)
+                        .ToList();
+
+                    if (duplicateTaskNames.Any())
+                        throw new AppValidationException(
+                            $"Tên nhiệm vụ bị trùng lặp: {string.Join(", ", duplicateTaskNames)}",
+                            StatusCodes.Status400BadRequest);
+
+                    // Lấy các task hiện tại
+                    var existingTasks = await _unitOfWork.GetRepository<MaintenanceTask>().GetListAsync(
+                        predicate: t => t.CommonAreaObjectTypeId == id,
+                        include: i => i.Include(x => x.RepairRequestTasks)
+                    );
+
+                    // Xóa các task không còn trong danh sách mới
+                    var tasksToDelete = existingTasks
+                        .Where(et => !dto.MaintenanceTasks.Any(nt =>
+                            nt.TaskName.ToLower() == et.TaskName.ToLower()))
+                        .ToList();
+
+                    foreach (var taskToDelete in tasksToDelete)
+                    {
+                        if (taskToDelete.RepairRequestTasks?.Any() == true)
+                            throw new AppValidationException(
+                                $"Không thể xóa nhiệm vụ '{taskToDelete.TaskName}' vì đang có yêu cầu sửa chữa liên kết.",
+                                StatusCodes.Status400BadRequest);
+
+                        _unitOfWork.GetRepository<MaintenanceTask>().DeleteAsync(taskToDelete);
+                    }
+
+                    // Cập nhật hoặc thêm mới các task
+                    foreach (var taskDto in dto.MaintenanceTasks)
+                    {
+                        var existingTask = existingTasks.FirstOrDefault(
+                            et => et.TaskName.ToLower() == taskDto.TaskName.ToLower());
+
+                        if (existingTask != null)
+                        {
+                            // Cập nhật task hiện có
+                            existingTask.TaskDescription = taskDto.TaskDescription;
+                            existingTask.RequiredTools = taskDto.RequiredTools;
+                            existingTask.DisplayOrder = taskDto.DisplayOrder;
+                            existingTask.EstimatedDurationMinutes = taskDto.EstimatedDurationMinutes;
+
+                            _unitOfWork.GetRepository<MaintenanceTask>().UpdateAsync(existingTask);
+                        }
+                        else
+                        {
+                            // Thêm task mới
+                            var newTask = new MaintenanceTask
+                            {
+                                CommonAreaObjectTypeId = id,
+                                TaskName = taskDto.TaskName,
+                                TaskDescription = taskDto.TaskDescription,
+                                RequiredTools = taskDto.RequiredTools,
+                                DisplayOrder = taskDto.DisplayOrder,
+                                EstimatedDurationMinutes = taskDto.EstimatedDurationMinutes,
+                                Status = ActiveStatus.Active
+                            };
+
+                            await _unitOfWork.GetRepository<MaintenanceTask>().InsertAsync(newTask);
+                        }
+                    }
+
+                    await UpdateEstimatedDurationMaintenanceScheduleAsync(id);
+                }
+
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
                 await _cacheService.RemoveAsync($"common_area_object_type:{id}");
                 await _cacheService.RemoveByPrefixAsync("common_area_object_type:list");
                 await _cacheService.RemoveByPrefixAsync("common_area_object_type:paginate");
@@ -90,6 +225,7 @@ namespace AptCare.Service.Services.Implements
             }
             catch (Exception e)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 throw new AppValidationException($"Lỗi hệ thống: {e.Message}", StatusCodes.Status500InternalServerError);
             }
         }
@@ -197,7 +333,8 @@ namespace AptCare.Service.Services.Implements
 
             var commonAreaObjectType = await _unitOfWork.GetRepository<CommonAreaObjectType>().SingleOrDefaultAsync(
                 selector: x => _mapper.Map<CommonAreaObjectTypeDto>(x),
-                predicate: p => p.CommonAreaObjectTypeId == id
+                predicate: p => p.CommonAreaObjectTypeId == id,
+                include: i => i.Include(x => x.MaintenanceTasks)
             );
 
             if (commonAreaObjectType == null)
@@ -242,6 +379,7 @@ namespace AptCare.Service.Services.Implements
             var result = await _unitOfWork.GetRepository<CommonAreaObjectType>().GetPagingListAsync(
                 selector: s => _mapper.Map<CommonAreaObjectTypeDto>(s),
                 predicate: predicate,
+                include: i => i.Include(x => x.MaintenanceTasks),
                 orderBy: BuildOrderBy(sortBy),
                 page: page,
                 size: size
@@ -265,7 +403,7 @@ namespace AptCare.Service.Services.Implements
             var result = await _unitOfWork.GetRepository<CommonAreaObjectType>().GetListAsync(
                 selector: s => _mapper.Map<CommonAreaObjectTypeDto>(s),
                 predicate: p => p.Status == ActiveStatus.Active,
-                orderBy: o => o.OrderBy(x => x.TypeName)
+                include: i => i.Include(x => x.MaintenanceTasks)
             );
 
             await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromHours(1));
@@ -286,6 +424,32 @@ namespace AptCare.Service.Services.Implements
                 "status_desc" => q => q.OrderByDescending(p => p.Status),
                 _ => q => q.OrderByDescending(p => p.CommonAreaObjectTypeId)
             };
+        }
+
+        private async Task UpdateEstimatedDurationMaintenanceScheduleAsync(int commonAreaObjectTypeId)
+        {
+            var maintenanceTasks = await _unitOfWork.GetRepository<MaintenanceTask>().GetListAsync(
+                predicate: mt => mt.CommonAreaObjectTypeId == commonAreaObjectTypeId &&
+                                 mt.Status == ActiveStatus.Active
+            );
+
+            var totalEstimatedDurationHours = maintenanceTasks.Sum(mt => mt.EstimatedDurationMinutes) / 60;
+
+            var commonAreaObjects = await _unitOfWork.GetRepository<CommonAreaObject>().GetListAsync(
+                predicate: cao => cao.CommonAreaObjectTypeId == commonAreaObjectTypeId,
+                include: i => i.Include(x => x.MaintenanceSchedule)
+            );
+
+            foreach (var commonAreaObject in commonAreaObjects)
+            {
+                if (commonAreaObject.MaintenanceSchedule != null)
+                {
+                    commonAreaObject.MaintenanceSchedule.EstimatedDuration = totalEstimatedDurationHours;
+                    _unitOfWork.GetRepository<MaintenanceSchedule>().UpdateAsync(commonAreaObject.MaintenanceSchedule);
+                }
+            }
+
+            await _unitOfWork.CommitAsync();
         }
     }
 }
