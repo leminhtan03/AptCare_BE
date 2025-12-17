@@ -573,5 +573,103 @@ namespace AptCare.Service.Services.Implements
 
             await reportApprovalRepo.InsertAsync(newApproval);
         }
+
+        public async Task<bool> ResidentApproveRepairReportAsync(int repairReportId)
+        {
+            try
+            {
+                var userId = _userContext.CurrentUserId;
+                var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
+                var repairRepo = _unitOfWork.GetRepository<RepairReport>();
+
+                var repairReport = await repairRepo.SingleOrDefaultAsync(
+                    predicate: rr => rr.RepairReportId == repairReportId,
+                    include: i => i.Include(rr => rr.Appointment)
+                                       .ThenInclude(a => a.RepairRequest)
+                                  );
+                if (repairReport == null)
+                {
+                    throw new AppValidationException(
+                        $"Không tìm thấy báo cáo sửa chữa. ReportId: {repairReportId}",
+                        StatusCodes.Status404NotFound);
+                }
+
+                var residentApproval = await reportApprovalRepo.SingleOrDefaultAsync(
+                    predicate: ra => ra.Role == AccountRole.Resident && ra.Status == ReportStatus.Pending && ra.RepairReportId == repairReportId
+                    );
+                if (residentApproval == null)
+                {
+                    throw new AppValidationException(
+                        "Không tìm thấy resident approval pending của bạn cho báo cáo này.",
+                        StatusCodes.Status404NotFound);
+                }
+                var isValidResident = await _unitOfWork.GetRepository<UserApartment>().AnyAsync(
+                    predicate: p => p.ApartmentId == repairReport.Appointment.RepairRequest.ApartmentId && 
+                                    p.UserId == userId && p.Status == ActiveStatus.Active
+                    );
+                if (!isValidResident)
+                {
+                    throw new AppValidationException($"Cư dân không thuộc căn hộ của yêu cầu sửa chữa này.");
+                }
+
+                residentApproval.Status = ReportStatus.ResidentApproved;
+                repairRepo.UpdateAsync(repairReport);
+                await _unitOfWork.CommitAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xử lý resident approval. ReportId: {ReportId}", repairReportId);
+                throw new AppValidationException(ex.Message);
+            }
+        }
+
+        public async Task<bool> CheckResidentApproveRepairReportAsync(int repairReportId)
+        {
+            try
+            {
+                var userId = _userContext.CurrentUserId;
+                var reportApprovalRepo = _unitOfWork.GetRepository<ReportApproval>();
+                var repairRepo = _unitOfWork.GetRepository<RepairReport>();
+
+                var repairReport = await repairRepo.SingleOrDefaultAsync(
+                    predicate: rr => rr.RepairReportId == repairReportId,
+                    include: i => i.Include(rr => rr.Appointment)
+                                       .ThenInclude(a => a.RepairRequest)
+                                  );
+                if (repairReport == null)
+                {
+                    throw new AppValidationException(
+                        $"Không tìm thấy báo cáo sửa chữa. ReportId: {repairReportId}",
+                        StatusCodes.Status404NotFound);
+                }
+
+                var residentApproval = await reportApprovalRepo.SingleOrDefaultAsync(
+                    predicate: ra => ra.Role == AccountRole.Resident && ra.RepairReportId == repairReportId
+                    );
+                if (residentApproval == null)
+                {
+                    throw new AppValidationException(
+                        "Không tìm thấy resident approval pending của bạn cho báo cáo này.",
+                        StatusCodes.Status404NotFound);
+                }
+                if (residentApproval.Status == ReportStatus.Pending)
+                {
+                    return false;
+                }
+                if (residentApproval.Status == ReportStatus.ResidentApproved)
+                {
+                    return true;
+                }
+
+                throw new AppValidationException("Something went wrong");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xử lý resident approval. ReportId: {ReportId}", repairReportId);
+                throw new AppValidationException(ex.Message);
+            }
+        }
     }
 }

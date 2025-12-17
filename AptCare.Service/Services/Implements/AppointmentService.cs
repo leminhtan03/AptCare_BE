@@ -543,13 +543,16 @@ namespace AptCare.Service.Services.Implements
                                .Include(x => x.AppointmentAssigns)
                                .Include(x => x.InspectionReports)
                                     .ThenInclude(x => x.ReportApprovals)
+                                .Include(x => x.RepairReport)
+                                    .ThenInclude(x => x.ReportApprovals)
                                .Include(x => x.RepairReport)
+                               .Include(x => x.RepairRequest)
             );
 
             if (appointment == null)
             {
                 throw new AppValidationException("Lịch hẹn không tồn tại.", StatusCodes.Status404NotFound);
-            }
+            }          
 
             var latestTracking = appointment.AppointmentTrackings
                                             .OrderByDescending(at => at.UpdatedAt)
@@ -587,6 +590,21 @@ namespace AptCare.Service.Services.Implements
                         throw new AppValidationException("Báo cáo khảo sát chưa được trưởng kĩ thuật viên chấp thuận.");
                     }
                 }
+            }
+
+            if (appointment.RepairRequest.ApartmentId != null)
+            {
+                if (appointment.RepairReport != null)
+                {
+                    var residentApproval = appointment.RepairReport.ReportApprovals.Any(
+                    predicate: ra => ra.Role == AccountRole.Resident && ra.Status == ReportStatus.ResidentApproved
+                    );
+                    if (!residentApproval)
+                    {
+                        throw new AppValidationException("Báo cáo kiểm tra chưa được cư dân xác nhận.");
+                    }
+                }
+                
             }
 
             var userId = _userContext.CurrentUserId;

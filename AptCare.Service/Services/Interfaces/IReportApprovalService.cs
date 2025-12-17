@@ -14,5 +14,7 @@ namespace AptCare.Service.Services.Interfaces
         /// </summary>
         Task<bool> CreateApproveReportAsync(ApproveReportCreateDto dto);
         Task<bool> ApproveReportAsync(ApproveReportCreateDto dto);
+        Task<bool> ResidentApproveRepairReportAsync(int repairReportId);
+        Task<bool> CheckResidentApproveRepairReportAsync(int repairReportId);
     }
 }
