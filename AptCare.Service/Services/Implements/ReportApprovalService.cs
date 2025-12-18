@@ -613,7 +613,7 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 residentApproval.Status = ReportStatus.ResidentApproved;
-                repairRepo.UpdateAsync(repairReport);
+                reportApprovalRepo.UpdateAsync(residentApproval);
                 await _unitOfWork.CommitAsync();
 
                 return true;
