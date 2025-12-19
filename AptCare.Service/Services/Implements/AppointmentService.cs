@@ -482,6 +482,18 @@ namespace AptCare.Service.Services.Implements
                     });
                 }
 
+                if (appointment.RepairRequest.MaintenanceScheduleId != null)
+                {
+                    var commonAreaObject = await _unitOfWork.GetRepository<CommonAreaObject>().SingleOrDefaultAsync(
+                    predicate: x => x.MaintenanceSchedule.MaintenanceScheduleId == appointment.RepairRequest.MaintenanceScheduleId,
+                    include: i => i.Include(x => x.MaintenanceSchedule)
+                    );
+
+                    commonAreaObject.Status = ActiveStatus.UnderMaintenance;
+                    _unitOfWork.GetRepository<CommonAreaObject>().UpdateAsync(commonAreaObject);
+                    await _unitOfWork.CommitAsync();
+                }
+
                 var latestTracking = appointment.AppointmentTrackings
                                                 .OrderByDescending(at => at.UpdatedAt)
                                                 .FirstOrDefault();
@@ -777,6 +789,16 @@ namespace AptCare.Service.Services.Implements
                     UpdatedAt = DateTime.Now
                 });
 
+                if (repairRequest.MaintenanceScheduleId != null)
+                {
+                    var commonAreaObject = await _unitOfWork.GetRepository<CommonAreaObject>().SingleOrDefaultAsync(
+                    predicate: x => x.MaintenanceSchedule.MaintenanceScheduleId == repairRequest.MaintenanceScheduleId,
+                    include: i => i.Include(x => x.MaintenanceSchedule)
+                    );
+
+                    commonAreaObject.Status = ActiveStatus.Active;
+                    _unitOfWork.GetRepository<CommonAreaObject>().UpdateAsync(commonAreaObject);
+                }
             }
             await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
 

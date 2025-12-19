@@ -10,6 +10,7 @@ namespace AptCare.Repository.Enum
     {
         Active = 1,
         Inactive = 2,
-        Darft = 3
+        Darft = 3,
+        UnderMaintenance = 4
     }
 }
