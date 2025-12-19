@@ -80,7 +80,6 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.");
             }
 
-            // Lấy lịch hẹn cũ đầu tiên của yêu cầu sửa chữa
             var oldAppointment = await _unitOfWork.GetRepository<Appointment>().SingleOrDefaultAsync(
                 predicate: x => x.RepairRequestId == dto.RepairRequestId,
                 include: i => i.Include(x => x.AppointmentAssigns)
@@ -93,7 +92,37 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException("Không tìm thấy lịch hẹn cũ hoặc lịch hẹn cũ chưa được phân công kỹ thuật viên.");
             }
 
-            // Lấy danh sách kỹ thuật viên từ lịch hẹn cũ (không bao gồm những người đã hủy)
+            var slots = await _unitOfWork.GetRepository<Slot>().GetListAsync(
+                predicate: p => p.Status == ActiveStatus.Active
+            );
+
+            var oldAppointmentSlot = slots.FirstOrDefault(s =>
+                s.FromTime <= oldAppointment.StartTime.TimeOfDay &&
+                s.ToTime > oldAppointment.StartTime.TimeOfDay);
+
+            if (oldAppointmentSlot == null)
+            {
+                throw new AppValidationException("Không tìm thấy slot cho lịch hẹn cũ.");
+            }
+
+            var newAppointmentSlot = slots.FirstOrDefault(s =>
+                s.FromTime <= dto.StartTime.TimeOfDay &&
+                s.ToTime > dto.StartTime.TimeOfDay);
+
+            if (newAppointmentSlot == null)
+            {
+                throw new AppValidationException("Thời gian lịch hẹn mới không nằm trong bất kỳ slot làm việc nào.");
+            }
+
+            if (oldAppointmentSlot.SlotId != newAppointmentSlot.SlotId)
+            {
+                throw new AppValidationException(
+                    $"Lịch hẹn mới phải cùng slot làm việc với lịch hẹn cũ. " +
+                    $"Slot cũ: {oldAppointmentSlot.SlotName} ({oldAppointmentSlot.FromTime:hh\\:mm} - {oldAppointmentSlot.ToTime:hh\\:mm}), " +
+                    $"Slot mới: {newAppointmentSlot.SlotName} ({newAppointmentSlot.FromTime:hh\\:mm} - {newAppointmentSlot.ToTime:hh\\:mm})."
+                );
+            }
+
             var oldTechnicianIds = oldAppointment.AppointmentAssigns
                 .Where(aa => aa.Status != WorkOrderStatus.Cancel)
                 .Select(aa => aa.TechnicianId)
@@ -104,9 +133,41 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException("Không có kỹ thuật viên hợp lệ từ lịch hẹn cũ.");
             }
 
-            // Kiểm tra xung đột lịch cho từng kỹ thuật viên
+            var newAppointmentDate = DateOnly.FromDateTime(dto.StartTime);
+
             foreach (var technicianId in oldTechnicianIds)
             {
+                var workSlot = await _unitOfWork.GetRepository<WorkSlot>().SingleOrDefaultAsync(
+                    predicate: x => x.TechnicianId == technicianId &&
+                                   x.Date == newAppointmentDate &&
+                                   x.SlotId == newAppointmentSlot.SlotId,
+                    include: i => i.Include(x => x.Technician)
+                                    .Include(x => x.Slot)
+                );
+
+                if (workSlot == null)
+                {
+                    var technician = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
+                        selector: s => new { s.FirstName, s.LastName },
+                        predicate: p => p.UserId == technicianId
+                    );
+                    var technicianName = technician != null ? $"{technician.FirstName} {technician.LastName}" : technicianId.ToString();
+
+                    throw new AppValidationException(
+                        $"Kỹ thuật viên {technicianName} (ID: {technicianId}) không có lịch làm việc vào " +
+                        $"{newAppointmentSlot.SlotName} ({newAppointmentSlot.FromTime:hh\\:mm} - {newAppointmentSlot.ToTime:hh\\:mm}) " +
+                        $"ngày {newAppointmentDate:dd/MM/yyyy}."
+                    );
+                }
+
+                if (workSlot.Status == WorkSlotStatus.Off)
+                {
+                    var technicianName = $"{workSlot.Technician.FirstName} {workSlot.Technician.LastName}";
+                    throw new AppValidationException(
+                        $"Kỹ thuật viên {technicianName} (ID: {technicianId}) đã đánh dấu nghỉ vào " +
+                        $"{workSlot.Slot.SlotName} ngày {newAppointmentDate:dd/MM/yyyy}."
+                    );
+                }
                 var conflictingAssign = await _unitOfWork.GetRepository<AppointmentAssign>().SingleOrDefaultAsync(
                     predicate: x => x.TechnicianId == technicianId &&
                                    DateOnly.FromDateTime(x.EstimatedStartTime) == DateOnly.FromDateTime(dto.StartTime) &&
@@ -137,7 +198,6 @@ namespace AptCare.Service.Services.Implements
 
             try
             {
-                // Tạo lịch hẹn mới
                 var appointment = _mapper.Map<Appointment>(dto);
                 appointment.AppointmentTrackings.Add(new AppointmentTracking
                 {
@@ -149,7 +209,6 @@ namespace AptCare.Service.Services.Implements
                 await _unitOfWork.GetRepository<Appointment>().InsertAsync(appointment);
                 await _unitOfWork.CommitAsync();
 
-                // Phân công kỹ thuật viên từ lịch hẹn cũ
                 foreach (var technicianId in oldTechnicianIds)
                 {
                     await _unitOfWork.GetRepository<AppointmentAssign>().InsertAsync(new AppointmentAssign
@@ -163,7 +222,6 @@ namespace AptCare.Service.Services.Implements
                     });
                 }
 
-                // Cập nhật trạng thái lịch hẹn sang Assigned
                 await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(new AppointmentTracking
                 {
                     AppointmentId = appointment.AppointmentId,
