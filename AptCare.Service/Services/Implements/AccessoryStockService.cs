@@ -197,6 +197,7 @@ namespace AptCare.Service.Services.Implements
                         throw new AppValidationException("Không đủ số lượng vật tư trong kho.");
                     }
 
+                    // Trừ kho ngay khi approve
                     accessory.Quantity -= stockOut.Quantity;
                     accessoryRepo.UpdateAsync(accessory);
                     stockOut.Status = StockTransactionStatus.Approved;
@@ -218,7 +219,6 @@ namespace AptCare.Service.Services.Implements
                 throw;
             }
         }
-
 
         public async Task<bool> ConfirmStockInAsync(ConfirmStockInDto dto)
         {
@@ -471,6 +471,150 @@ namespace AptCare.Service.Services.Implements
         public Task<List<string>> EnsureStockForInvoiceAsync(int invoiceId)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task<bool> ConfirmStockOutAsync(ConfirmStockOutDto dto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var repo = _unitOfWork.GetRepository<AccessoryStockTransaction>();
+                var stockOut = await repo.SingleOrDefaultAsync(
+                    predicate: x => x.StockTransactionId == dto.StockTransactionId && x.Type == StockTransactionType.Export,
+                    include: s => s.Include(a => a.Invoice)
+                                       .ThenInclude(i => i.RepairRequest)
+                                   .Include(a => a.Accessory)
+                );
+
+                if (stockOut == null)
+                    throw new AppValidationException("Yêu cầu xuất kho không tồn tại.");
+
+                if (stockOut.Status != StockTransactionStatus.Approved)
+                    throw new AppValidationException("Yêu cầu xuất kho chưa được phê duyệt hoặc đã được xử lý.");
+
+                var accessory = stockOut.Accessory;
+                if (accessory == null)
+                    throw new AppValidationException("Vật tư không tồn tại.");
+
+                if (dto.IsConfirm)
+                {
+                    if (dto.VerificationFile != null && dto.VerificationFile.Length > 0)
+                    {
+                        string? filePath = null;
+                        var contentType = dto.VerificationFile.ContentType.ToLower();
+
+                        if (contentType.Contains("application/pdf"))
+                        {
+                            filePath = await _s3FileService.UploadFileAsync(
+                                dto.VerificationFile,
+                                $"stock-out/{stockOut.StockTransactionId}/"
+                            );
+                        }
+                        else if (contentType.Contains("image/jpeg") ||
+                                 contentType.Contains("image/png") ||
+                                 contentType.Contains("image/jpg"))
+                        {
+                            filePath = await _cloudinaryService.UploadImageAsync(dto.VerificationFile);
+                        }
+
+                        if (!string.IsNullOrEmpty(filePath))
+                        {
+                            await _unitOfWork.GetRepository<Media>().InsertAsync(new Media
+                            {
+                                Entity = nameof(AccessoryStockTransaction),
+                                EntityId = stockOut.StockTransactionId,
+                                FileName = dto.VerificationFile.FileName,
+                                FilePath = filePath,
+                                ContentType = dto.VerificationFile.ContentType,
+                                CreatedAt = DateTime.Now,
+                                Status = ActiveStatus.Active
+                            });
+                        }
+                    }
+
+                    stockOut.Status = StockTransactionStatus.Completed;
+                    if (!string.IsNullOrWhiteSpace(dto.Note))
+                        stockOut.Note += $"\n[Confirmed at {DateTime.Now:dd/MM/yyyy HH:mm}] {dto.Note}";
+
+                    _logger.LogInformation(
+                        "Xuất kho #{StockTransactionId} đã được xác nhận. Đã xuất {Quantity} {AccessoryName}.",
+                        stockOut.StockTransactionId,
+                        stockOut.Quantity,
+                        accessory.Name
+                    );
+                }
+                else
+                {
+                    if (stockOut.Invoice != null)
+                    {
+                        var invoice = stockOut.Invoice;
+
+                        if (invoice.Status == InvoiceStatus.Approved ||
+                            invoice.Status == InvoiceStatus.AwaitingPayment ||
+                            invoice.Status == InvoiceStatus.Paid)
+                        {
+                            _logger.LogWarning(
+                                "Không thể từ chối xuất kho #{StockTransactionId} vì vật tư đã được sử dụng cho yêu cầu sửa chữa #{RepairRequestId}. Invoice Status: {InvoiceStatus}",
+                                stockOut.StockTransactionId,
+                                invoice.RepairRequestId,
+                                invoice.Status
+                            );
+                            throw new AppValidationException(
+                                $"Không thể từ chối xuất kho vì vật tư đã được sử dụng cho yêu cầu sửa chữa #{invoice.RepairRequestId}. " +
+                                $"Vui lòng hủy hoặc điều chỉnh hóa đơn trước khi từ chối xuất kho."
+                            );
+                        }
+
+                        if (invoice.Status == InvoiceStatus.Cancelled || invoice.Status == InvoiceStatus.Rejected)
+                        {
+                            _logger.LogInformation(
+                                "Xuất kho #{StockTransactionId} có thể từ chối vì Invoice #{InvoiceId} đã bị {Status}.",
+                                stockOut.StockTransactionId,
+                                invoice.InvoiceId,
+                                invoice.Status
+                            );
+                        }
+
+                        if (invoice.Status == InvoiceStatus.Draft)
+                        {
+                            _logger.LogWarning(
+                                "Xuất kho #{StockTransactionId} đang liên quan đến Invoice #{InvoiceId} ở trạng thái Draft. " +
+                                "Vui lòng kiểm tra lại sau khi từ chối.",
+                                stockOut.StockTransactionId,
+                                invoice.InvoiceId
+                            );
+                        }
+                    }
+
+                    accessory.Quantity += stockOut.Quantity;
+                    _unitOfWork.GetRepository<Accessory>().UpdateAsync(accessory);
+
+                    stockOut.Status = StockTransactionStatus.Rejected;
+                    if (!string.IsNullOrWhiteSpace(dto.Note))
+                        stockOut.Note += $"\n[Rejected at {DateTime.Now:dd/MM/yyyy HH:mm}] {dto.Note}";
+
+                    _logger.LogInformation(
+                        "Xuất kho #{StockTransactionId} bị từ chối. Hoàn lại {Quantity} {AccessoryName} vào kho. Số lượng hiện tại: {CurrentQuantity}",
+                        stockOut.StockTransactionId,
+                        stockOut.Quantity,
+                        accessory.Name,
+                        accessory.Quantity
+                    );
+                }
+
+                repo.UpdateAsync(stockOut);
+                await _unitOfWork.CommitAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _logger.LogError(ex, "Error confirming/rejecting stock-out transaction {StockTransactionId}", dto.StockTransactionId);
+                throw;
+            }
         }
     }
 }

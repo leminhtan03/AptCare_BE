@@ -316,28 +316,109 @@ namespace AptCare.Api.Controllers
             return Ok(result);
         }
         /// <summary>
-        /// 
+        /// Tạo yêu cầu xuất kho vật tư.
         /// </summary>
-        /// <param name="accessoryId"></param>
-        /// <param name="dto"></param>
-        /// <returns></returns>
+        /// <remarks>
+        /// <b>Chức năng:</b> Tạo yêu cầu xuất kho vật tư từ kho.<br/>
+        /// <b>Yêu cầu quyền:</b> Manager, TechnicianLead.<br/>
+        /// <b>Thuộc tính <see cref="StockOutAccessoryDto"/>:</b>
+        /// <ul>
+        ///   <li><b>Quantity</b> (int, required): Số lượng cần xuất kho.</li>
+        ///   <li><b>Note</b> (string, optional): Ghi chú cho yêu cầu xuất kho.</li>
+        /// </ul>
+        /// <b>Kết quả:</b> Trả về thông báo tạo yêu cầu xuất kho thành công.
+        /// </remarks>
+        /// <param name="accessoryId">ID của vật tư cần xuất kho.</param>
+        /// <param name="dto">Thông tin yêu cầu xuất kho.</param>
+        /// <response code="201">Tạo yêu cầu xuất kho thành công.</response>
+        /// <response code="400">Dữ liệu không hợp lệ.</response>
+        /// <response code="404">Vật tư không tồn tại.</response>
         [HttpPost("stock-out/{accessoryId:int}")]
         [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
-        [ProducesResponseType(typeof(int), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(string), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateStockOutRequest(int accessoryId, [FromBody] StockOutAccessoryDto dto)
         {
-            var result = await _stockService.CreateStockOutRequestAsync(accessoryId,
-                dto);
-
-            return Ok(result);
+            var result = await _stockService.CreateStockOutRequestAsync(accessoryId, dto);
+            return Created(string.Empty, result);
         }
 
+        /// <summary>
+        /// Phê duyệt hoặc từ chối yêu cầu xuất kho.
+        /// </summary>
+        /// <remarks>
+        /// <b>Chức năng:</b> Phê duyệt hoặc từ chối một yêu cầu xuất kho vật tư.<br/>
+        /// <b>Yêu cầu quyền:</b> Manager, TechnicianLead.<br/>
+        /// <b>Tham số:</b>
+        /// <ul>
+        ///   <li><b>stockTransactionId</b> (int): ID giao dịch xuất kho.</li>
+        ///   <li><b>isApprove</b> (bool): true = phê duyệt, false = từ chối.</li>
+        ///   <li><b>note</b> (string, optional): Ghi chú khi phê duyệt/từ chối.</li>
+        /// </ul>
+        /// <b>Logic xử lý khi phê duyệt:</b>
+        /// <ul>
+        ///   <li>Kiểm tra số lượng vật tư trong kho có đủ không.</li>
+        ///   <li>Trừ số lượng vật tư khỏi kho.</li>
+        ///   <li>Chuyển trạng thái sang Approved.</li>
+        /// </ul>
+        /// <b>Kết quả:</b> Trả về true nếu thao tác thành công.
+        /// </remarks>
+        /// <param name="stockTransactionId">ID giao dịch xuất kho.</param>
+        /// <param name="isApprove">true = phê duyệt, false = từ chối.</param>
+        /// <param name="note">Ghi chú (tùy chọn).</param>
+        /// <response code="200">Phê duyệt/từ chối thành công.</response>
+        /// <response code="400">Yêu cầu không hợp lệ hoặc không đủ số lượng.</response>
         [HttpPatch("stock-out/approve/{stockTransactionId:int}")]
         [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
         [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ApproveStockOutRequest(int stockTransactionId, [FromQuery] bool isApprove, [FromQuery] string? note)
         {
             var result = await _stockService.ApproveStockOutRequestAsync(stockTransactionId, isApprove, note);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Xác nhận hoặc từ chối xuất kho (kèm file xác thực nếu có).
+        /// </summary>
+        /// <remarks>
+        /// <b>Chức năng:</b> Xác nhận hoặc từ chối xuất kho thực tế, có thể đính kèm file xác thực (PDF hoặc ảnh).<br/>
+        /// <b>Yêu cầu quyền:</b> Manager, TechnicianLead.<br/>
+        /// <b>Thuộc tính <see cref="ConfirmStockOutDto"/>:</b>
+        /// <ul>
+        ///   <li><b>StockTransactionId</b> (int): ID giao dịch xuất kho cần xử lý.</li>
+        ///   <li><b>IsConfirm</b> (bool): true = xác nhận xuất kho, false = từ chối.</li>
+        ///   <li><b>VerificationFile</b> (IFormFile, optional): File xác thực (PDF hoặc ảnh).</li>
+        ///   <li><b>Note</b> (string, optional): Ghi chú xác nhận/từ chối.</li>
+        /// </ul>
+        /// <b>Logic xử lý:</b>
+        /// <ul>
+        ///   <li><b>Confirm (IsConfirm = true):</b>
+        ///     <ul>
+        ///       <li>Đánh dấu giao dịch = Completed</li>
+        ///       <li>Lưu file xác thực (nếu có)</li>
+        ///     </ul>
+        ///   </li>
+        ///   <li><b>Reject (IsConfirm = false):</b>
+        ///     <ul>
+        ///       <li>Hoàn trả số lượng vật tư vào kho (đã trừ lúc approve)</li>
+        ///       <li>Đánh dấu giao dịch = Rejected</li>
+        ///     </ul>
+        ///   </li>
+        /// </ul>
+        /// <b>Kết quả:</b> Trả về true nếu xử lý thành công.
+        /// </remarks>
+        /// <param name="dto">Thông tin xác nhận xuất kho.</param>
+        /// <response code="200">Xác nhận/từ chối thành công.</response>
+        /// <response code="400">Yêu cầu không hợp lệ.</response>
+        [HttpPost("stock-out/confirm")]
+        [Authorize(Roles = $"{nameof(AccountRole.Manager)}, {nameof(AccountRole.TechnicianLead)}")]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ConfirmOrRejectStockOut([FromForm] ConfirmStockOutDto dto)
+        {
+            var result = await _stockService.ConfirmStockOutAsync(dto);
             return Ok(result);
         }
     }
