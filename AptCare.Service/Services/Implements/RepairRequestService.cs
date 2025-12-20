@@ -68,12 +68,20 @@ namespace AptCare.Service.Services.Implements
 
                 if (dto.ParentRequestId != null)
                 {
-                    var isExistingParentRequest = await _unitOfWork.GetRepository<RepairRequest>().AnyAsync(
+                    var parentRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
                         predicate: x => x.RepairRequestId == dto.ParentRequestId
                         );
-                    if (!isExistingParentRequest)
+                    if (parentRequest == null)
                     {
                         throw new AppValidationException("Yêu cầu sửa chữa cũ không tồn tại.", StatusCodes.Status404NotFound);
+                    }
+                    if (parentRequest.AcceptanceTime == null)
+                    {
+                        throw new AppValidationException("Yêu cầu sửa chữa cũ không có thời gian nghiệm thu.");
+                    }
+                    if (parentRequest.AcceptanceTime < DateOnly.FromDateTime(DateTime.Now))
+                    {
+                        throw new AppValidationException("Đã quá thời gian nghiệm thu.");
                     }
                 }
 

@@ -781,7 +781,7 @@ namespace AptCare.Service.Services.Implements
                                                      .FirstOrDefault().ReportApprovals.Any(ra =>
                                                             ra.Role == AccountRole.TechnicianLead && ra.Status == ReportStatus.Approved))
                     {
-                        throw new AppValidationException("Báo cáo khảo sát chưa được trưởng kĩ thuật viên chấp thuận.");
+                        throw new AppValidationException("Báo cáo khảo sát chưa được trưởng kĩ thuật viên trưởng chấp thuận.");
                     }
                 }
             }
@@ -824,28 +824,9 @@ namespace AptCare.Service.Services.Implements
             }
             else
             {
-                if (!acceptanceTime.HasValue)
-                {
-                    throw new AppValidationException("Hoàn thành luôn yêu cầu sửa chữa phải có thời gian nghiệm thu.");
-                }
-                if (acceptanceTime.Value <= DateOnly.FromDateTime(DateTime.Now))
-                {
-                    throw new AppValidationException("Thời gian nghiệm thu không hợp lệ.");
-                }
-
                 var repairRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
                     predicate: x => x.RepairRequestId == appointment.RepairRequestId
                 );
-                repairRequest.AcceptanceTime = acceptanceTime;
-                _unitOfWork.GetRepository<RepairRequest>().UpdateAsync(repairRequest);
-
-                await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
-                {
-                    RepairRequestId = appointment.RepairRequestId,
-                    Status = RequestStatus.AcceptancePendingVerify,
-                    UpdatedBy = userId,
-                    UpdatedAt = DateTime.Now
-                });
 
                 if (repairRequest.MaintenanceScheduleId != null)
                 {
@@ -856,6 +837,35 @@ namespace AptCare.Service.Services.Implements
 
                     commonAreaObject.Status = ActiveStatus.Active;
                     _unitOfWork.GetRepository<CommonAreaObject>().UpdateAsync(commonAreaObject);
+                    await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
+                    {
+                        RepairRequestId = appointment.RepairRequestId,
+                        Status = RequestStatus.Completed,
+                        UpdatedBy = userId,
+                        UpdatedAt = DateTime.Now
+                    });
+                }
+                else
+                {
+                    if (!acceptanceTime.HasValue)
+                    {
+                        throw new AppValidationException("Hoàn thành luôn yêu cầu sửa chữa phải có thời gian nghiệm thu.");
+                    }
+                    if (acceptanceTime.Value <= DateOnly.FromDateTime(DateTime.Now))
+                    {
+                        throw new AppValidationException("Thời gian nghiệm thu không hợp lệ.");
+                    }
+
+                    repairRequest.AcceptanceTime = acceptanceTime;
+                    _unitOfWork.GetRepository<RepairRequest>().UpdateAsync(repairRequest);
+
+                    await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
+                    {
+                        RepairRequestId = appointment.RepairRequestId,
+                        Status = RequestStatus.AcceptancePendingVerify,
+                        UpdatedBy = userId,
+                        UpdatedAt = DateTime.Now
+                    });
                 }
             }
             await _unitOfWork.GetRepository<AppointmentTracking>().InsertAsync(appointmentTracking);
