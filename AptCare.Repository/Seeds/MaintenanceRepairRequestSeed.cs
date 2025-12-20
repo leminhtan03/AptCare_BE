@@ -95,7 +95,7 @@ namespace AptCare.Repository.Seeds
         {
             return new List<MaintenanceScenarioConfig>
             {
-                // ========== THÁNG 1-3/2025 - Completed ==========
+                // ========== THANG 1-3/2025 - Completed ==========
                 new MaintenanceScenarioConfig
                 {
                     Scenario = MaintenanceScenario.Completed_AllTasksOK,
@@ -105,7 +105,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì ??nh k? tháng 1 - T?t c? OK"
+                    Description = "Bao tri dinh ky thang 1 - Tat ca OK"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -116,7 +116,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì ??nh k? tháng 2 - Có phát sinh s?a ch?a"
+                    Description = "Bao tri dinh ky thang 2 - Co phat sinh sua chua"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -127,10 +127,10 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì ??nh k? tháng 3"
+                    Description = "Bao tri dinh ky thang 3"
                 },
 
-                // ========== THÁNG 4-6/2025 ==========
+                // ========== THANG 4-6/2025 ==========
                 new MaintenanceScenarioConfig
                 {
                     Scenario = MaintenanceScenario.Completed_AllTasksOK,
@@ -140,7 +140,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì ??nh k? tháng 4"
+                    Description = "Bao tri dinh ky thang 4"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -151,7 +151,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì tháng 5 - Phát sinh thay th? linh ki?n"
+                    Description = "Bao tri thang 5 - Phat sinh thay the linh kien"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -162,7 +162,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì ??nh k? tháng 6"
+                    Description = "Bao tri dinh ky thang 6"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -172,10 +172,10 @@ namespace AptCare.Repository.Seeds
                     FinalStatus = RequestStatus.Cancelled,
                     HasInspectionReport = false,
                     HasRepairReport = false,
-                    Description = "B?o trì b? h?y do l?ch trình"
+                    Description = "Bao tri bi huy do lich trinh"
                 },
 
-                // ========== THÁNG 7-9/2025 ==========
+                // ========== THANG 7-9/2025 ==========
                 new MaintenanceScenarioConfig
                 {
                     Scenario = MaintenanceScenario.Completed_AllTasksOK,
@@ -185,7 +185,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì ??nh k? tháng 7"
+                    Description = "Bao tri dinh ky thang 7"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -196,7 +196,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì tháng 8 - Thay th? thi?t b? c?"
+                    Description = "Bao tri thang 8 - Thay the thiet bi cu"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -207,10 +207,10 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì ??nh k? tháng 9"
+                    Description = "Bao tri dinh ky thang 9"
                 },
 
-                // ========== THÁNG 10-11/2025 ==========
+                // ========== THANG 10-11/2025 ==========
                 new MaintenanceScenarioConfig
                 {
                     Scenario = MaintenanceScenario.Completed_AllTasksOK,
@@ -220,7 +220,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì ??nh k? tháng 10"
+                    Description = "Bao tri dinh ky thang 10"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -231,7 +231,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì tháng 10 - Phát sinh v?n ??"
+                    Description = "Bao tri thang 10 - Phat sinh van de"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -242,7 +242,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì ??nh k? tháng 11"
+                    Description = "Bao tri dinh ky thang 11"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -252,10 +252,10 @@ namespace AptCare.Repository.Seeds
                     FinalStatus = RequestStatus.Rejected,
                     HasInspectionReport = false,
                     HasRepairReport = false,
-                    Description = "B?o trì b? t? ch?i do ngân sách"
+                    Description = "Bao tri bi tu choi do ngan sach"
                 },
 
-                // ========== THÁNG 12/2025 - Mix tr?ng thái ==========
+                // ========== THANG 12/2025 - Mix trang thai ==========
                 new MaintenanceScenarioConfig
                 {
                     Scenario = MaintenanceScenario.Completed_AllTasksOK,
@@ -265,7 +265,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = true,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì hoàn thành tháng 12"
+                    Description = "Bao tri hoan thanh thang 12"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -276,7 +276,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = true,
                     HasRepairReport = false,
                     TaskStatus = TaskCompletionStatus.Completed,
-                    Description = "B?o trì ?ang th?c hi?n"
+                    Description = "Bao tri dang thuc hien"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -287,7 +287,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = false,
                     HasRepairReport = false,
                     TaskStatus = TaskCompletionStatus.Pending,
-                    Description = "B?o trì ?ã duy?t ch? b?t ??u"
+                    Description = "Bao tri da duyet cho bat dau"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -298,7 +298,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = false,
                     HasRepairReport = false,
                     TaskStatus = TaskCompletionStatus.Pending,
-                    Description = "B?o trì ch? Manager duy?t"
+                    Description = "Bao tri cho Manager duyet"
                 },
                 new MaintenanceScenarioConfig
                 {
@@ -309,7 +309,7 @@ namespace AptCare.Repository.Seeds
                     HasInspectionReport = false,
                     HasRepairReport = false,
                     TaskStatus = TaskCompletionStatus.Pending,
-                    Description = "B?o trì m?i t?o"
+                    Description = "Bao tri moi tao"
                 }
             };
         }
@@ -392,15 +392,15 @@ namespace AptCare.Repository.Seeds
         {
             int currentRequestId = counter.RequestId;
 
-            // 1. T?o RepairRequest t? MaintenanceSchedule
+            // 1. Tao RepairRequest tu MaintenanceSchedule
             var request = new RepairRequest
             {
-                UserId = seedData.ManagerUser!.UserId, // Manager t?o request b?o trì
+                UserId = seedData.ManagerUser!.UserId,
                 MaintenanceScheduleId = schedule.MaintenanceScheduleId,
                 Object = schedule.CommonAreaObject.Name,
-                Description = $"[{config.Scenario}] B?o trì ??nh k?: {schedule.Description}. " +
-                              $"Khu v?c: {schedule.CommonAreaObject.CommonArea.Name}. " +
-                              $"Chu k?: {schedule.FrequencyInDays} ngày.",
+                Description = $"[{config.Scenario}] Bao tri dinh ky: {schedule.Description}. " +
+                              $"Khu vuc: {schedule.CommonAreaObject.CommonArea.Name}. " +
+                              $"Chu ky: {schedule.FrequencyInDays} ngay.",
                 IsEmergency = false,
                 CreatedAt = createdAt
             };
@@ -412,7 +412,7 @@ namespace AptCare.Repository.Seeds
 
             data.RepairRequests.Add(request);
 
-            // 2. T?o RequestTrackings
+            // 2. Tao RequestTrackings
             var trackings = GenerateMaintenanceRequestTrackings(
                 currentRequestId,
                 config.FinalStatus,
@@ -422,7 +422,7 @@ namespace AptCare.Repository.Seeds
             );
             data.RequestTrackings.AddRange(trackings);
 
-            // 3. T?o RepairRequestTasks t? MaintenanceTasks
+            // 3. Tao RepairRequestTasks tu MaintenanceTasks
             var tasks = schedule.CommonAreaObject.CommonAreaObjectType.MaintenanceTasks ?? new List<MaintenanceTask>();
             foreach (var task in tasks)
             {
@@ -451,7 +451,7 @@ namespace AptCare.Repository.Seeds
                 counter.TaskId++;
             }
 
-            // 4. T?o Appointment n?u không ph?i Pending
+            // 4. Tao Appointment neu khong phai Pending
             if (config.FinalStatus != RequestStatus.Pending)
             {
                 var startTime = schedule.NextScheduledDate
@@ -464,7 +464,7 @@ namespace AptCare.Repository.Seeds
                     RepairRequestId = currentRequestId,
                     StartTime = startTime,
                     EndTime = endTime,
-                    Note = $"L?ch b?o trì ??nh k?: {config.Description}",
+                    Note = $"Lich bao tri dinh ky: {config.Description}",
                     CreatedAt = createdAt.AddMinutes(30)
                 };
                 data.Appointments.Add(appointment);
@@ -516,7 +516,7 @@ namespace AptCare.Repository.Seeds
                     }
                 }
 
-                // 5. T?o InspectionReport cho maintenance
+                // 5. Tao InspectionReport cho maintenance
                 if (config.HasInspectionReport && assignedTechnician != null)
                 {
                     CreateMaintenanceInspectionReport(
@@ -531,7 +531,7 @@ namespace AptCare.Repository.Seeds
                     );
                 }
 
-                // 6. T?o RepairReport cho maintenance
+                // 6. Tao RepairReport cho maintenance
                 if (config.HasRepairReport && assignedTechnician != null)
                 {
                     CreateMaintenanceRepairReport(

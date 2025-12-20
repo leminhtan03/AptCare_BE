@@ -25,98 +25,122 @@ namespace AptCare.Repository.Seeds
             var random = new Random(42);
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            // Map ObjectType -> Technique phù h?p
+            // Map ObjectType -> Technique phu hop
             var typeToTechnique = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                { "Thang máy", "C? khí - C?a - Khóa" },
-                { "?èn chi?u sáng", "?i?n" },
-                { "Camera an ninh", "Internet - H? th?ng m?ng" },
-                { "C?m bi?n báo cháy", "?i?n" },
-                { "T? ?i?n", "?i?n" },
-                { "Qu?t thông gió", "?i?u hòa - Thông gió" },
-                { "B?n n??c", "N??c" },
-                { "Máy l?c n??c", "N??c" },
-                { "C?m bi?n CO", "Môi tr??ng - V? sinh" }
+                { "Thang may", "Co khi - Cua - Khoa" },
+                { "Den chieu sang", "Dien" },
+                { "Camera an ninh", "Internet - He thong mang" },
+                { "Cam bien bao chay", "Dien" },
+                { "Tu dien", "Dien" },
+                { "Quat thong gio", "Dieu hoa - Thong gio" },
+                { "Bon nuoc", "Nuoc" },
+                { "May loc nuoc", "Nuoc" },
+                { "Cam bien CO", "Moi truong - Ve sinh" }
             };
 
-            // Chu k? b?o trì theo lo?i thi?t b? (ngày)
+            // Chu ky bao tri theo loai thiet bi (ngay)
             var typeToFrequency = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
             {
-                { "Thang máy", 30 },           // Hàng tháng
-                { "?èn chi?u sáng", 90 },      // 3 tháng
-                { "Camera an ninh", 60 },       // 2 tháng
-                { "C?m bi?n báo cháy", 180 },  // 6 tháng
-                { "T? ?i?n", 90 },             // 3 tháng
-                { "Qu?t thông gió", 60 },      // 2 tháng
-                { "B?n n??c", 180 },           // 6 tháng
-                { "Máy l?c n??c", 30 },        // Hàng tháng
-                { "C?m bi?n CO", 90 }          // 3 tháng
+                { "Thang may", 30 },
+                { "Den chieu sang", 90 },
+                { "Camera an ninh", 60 },
+                { "Cam bien bao chay", 180 },
+                { "Tu dien", 90 },
+                { "Quat thong gio", 60 },
+                { "Bon nuoc", 180 },
+                { "May loc nuoc", 30 },
+                { "Cam bien CO", 90 }
             };
 
-            // S? k? thu?t viên c?n theo lo?i
+            // So ky thuat vien can theo loai
             var typeToTechnicians = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
             {
-                { "Thang máy", 2 },
-                { "?èn chi?u sáng", 1 },
+                { "Thang may", 2 },
+                { "Den chieu sang", 1 },
                 { "Camera an ninh", 1 },
-                { "C?m bi?n báo cháy", 1 },
-                { "T? ?i?n", 2 },
-                { "Qu?t thông gió", 1 },
-                { "B?n n??c", 2 },
-                { "Máy l?c n??c", 1 },
-                { "C?m bi?n CO", 1 }
+                { "Cam bien bao chay", 1 },
+                { "Tu dien", 2 },
+                { "Quat thong gio", 1 },
+                { "Bon nuoc", 2 },
+                { "May loc nuoc", 1 },
+                { "Cam bien CO", 1 }
             };
 
-            // Th?i gian ?u tiên b?o trì (sáng s?m ho?c t?i ?? ít ?nh h??ng c? dân)
+            // Thoi gian uu tien bao tri
             var preferredTimes = new[]
             {
-                new TimeSpan(7, 0, 0),   // 7:00
-                new TimeSpan(8, 0, 0),   // 8:00
-                new TimeSpan(9, 0, 0),   // 9:00
-                new TimeSpan(14, 0, 0),  // 14:00
-                new TimeSpan(15, 0, 0),  // 15:00
+                new TimeSpan(7, 0, 0),
+                new TimeSpan(8, 0, 0),
+                new TimeSpan(9, 0, 0),
+                new TimeSpan(14, 0, 0),
+                new TimeSpan(15, 0, 0),
             };
 
             foreach (var cao in commonAreaObjects)
             {
                 var typeName = cao.CommonAreaObjectType.TypeName;
 
-                // Tính EstimatedDuration t? MaintenanceTasks
+                // Tinh EstimatedDuration tu MaintenanceTasks
                 var tasks = cao.CommonAreaObjectType.MaintenanceTasks ?? new List<MaintenanceTask>();
                 var estimatedDurationHours = tasks.Any()
                     ? tasks.Sum(t => t.EstimatedDurationMinutes) / 60.0
                     : 1.0;
 
-                // L?y technique phù h?p
+                // Lay technique phu hop
                 Technique? requiredTechnique = null;
-                if (typeToTechnique.TryGetValue(typeName, out var techniqueName))
+                foreach (var kvp in typeToTechnique)
                 {
-                    requiredTechnique = techniques.FirstOrDefault(t =>
-                        t.Name.Contains(techniqueName, StringComparison.OrdinalIgnoreCase));
+                    if (typeName.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase) ||
+                        RemoveDiacritics(typeName).Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        requiredTechnique = techniques.FirstOrDefault(t =>
+                            t.Name.Contains(kvp.Value, StringComparison.OrdinalIgnoreCase) ||
+                            RemoveDiacritics(t.Name).Contains(kvp.Value, StringComparison.OrdinalIgnoreCase));
+                        break;
+                    }
                 }
 
-                // L?y frequency
-                var frequency = typeToFrequency.TryGetValue(typeName, out var freq) ? freq : 60;
+                // Lay frequency
+                int frequency = 60;
+                foreach (var kvp in typeToFrequency)
+                {
+                    if (typeName.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase) ||
+                        RemoveDiacritics(typeName).Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        frequency = kvp.Value;
+                        break;
+                    }
+                }
 
-                // L?y s? k? thu?t viên
-                var requiredTechs = typeToTechnicians.TryGetValue(typeName, out var techs) ? techs : 1;
+                // Lay so ky thuat vien
+                int requiredTechs = 1;
+                foreach (var kvp in typeToTechnicians)
+                {
+                    if (typeName.Contains(kvp.Key, StringComparison.OrdinalIgnoreCase) ||
+                        RemoveDiacritics(typeName).Contains(kvp.Key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        requiredTechs = kvp.Value;
+                        break;
+                    }
+                }
 
-                // Tính ngày b?o trì ti?p theo (random trong 1-frequency ngày t?i)
+                // Tinh ngay bao tri tiep theo
                 var daysUntilNext = random.Next(1, frequency + 1);
                 var nextScheduledDate = today.AddDays(daysUntilNext);
 
-                // Tính ngày b?o trì g?n nh?t (n?u có - gi? l?p ?ã b?o trì trong quá kh?)
+                // Tinh ngay bao tri gan nhat
                 DateOnly? lastMaintenanceDate = null;
-                if (random.Next(100) < 70) // 70% ?ã có l?n b?o trì tr??c
+                if (random.Next(100) < 70)
                 {
                     var daysSinceLast = random.Next(frequency / 2, frequency * 2);
                     lastMaintenanceDate = today.AddDays(-daysSinceLast);
                 }
 
-                // Ch?n th?i gian ?u tiên
+                // Chon thoi gian uu tien
                 var timePreference = preferredTimes[random.Next(preferredTimes.Length)];
 
-                // T?o description
+                // Tao description (khong dau)
                 var description = GenerateDescription(typeName, cao.Name, frequency);
 
                 schedules.Add(new MaintenanceSchedule
@@ -130,7 +154,7 @@ namespace AptCare.Repository.Seeds
                     RequiredTechniqueId = requiredTechnique?.TechniqueId,
                     RequiredTechnicians = requiredTechs,
                     EstimatedDuration = estimatedDurationHours,
-                    CreatedAt = DateTime.Now.AddMonths(-random.Next(1, 6)), // T?o trong 1-6 tháng tr??c
+                    CreatedAt = DateTime.Now.AddMonths(-random.Next(1, 6)),
                     Status = ActiveStatus.Active
                 });
             }
@@ -139,31 +163,67 @@ namespace AptCare.Repository.Seeds
             await context.SaveChangesAsync();
         }
 
+        private static string RemoveDiacritics(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            
+            var normalizedString = text.Normalize(System.Text.NormalizationForm.FormD);
+            var stringBuilder = new System.Text.StringBuilder();
+
+            foreach (var c in normalizedString)
+            {
+                var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            return stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+        }
+
         private static string GenerateDescription(string typeName, string objectName, int frequency)
         {
             var frequencyText = frequency switch
             {
-                30 => "hàng tháng",
-                60 => "2 tháng/l?n",
-                90 => "3 tháng/l?n",
-                180 => "6 tháng/l?n",
-                365 => "hàng n?m",
-                _ => $"{frequency} ngày/l?n"
+                30 => "hang thang",
+                60 => "2 thang/lan",
+                90 => "3 thang/lan",
+                180 => "6 thang/lan",
+                365 => "hang nam",
+                _ => $"{frequency} ngay/lan"
             };
 
-            return typeName switch
-            {
-                "Thang máy" => $"B?o trì ??nh k? {frequencyText} cho {objectName}. Ki?m tra dây cáp, phanh, c?a cabin và tra d?u ??ng c?.",
-                "?èn chi?u sáng" => $"Ki?m tra và b?o trì h? th?ng chi?u sáng {frequencyText}. Thay bóng h?ng, v? sinh ch?p ?èn.",
-                "Camera an ninh" => $"B?o trì camera {frequencyText}. Ki?m tra góc quay, v? sinh ?ng kính, test k?t n?i m?ng.",
-                "C?m bi?n báo cháy" => $"Ki?m tra h? th?ng PCCC {frequencyText}. Test c?m bi?n khói, v? sinh, ki?m tra pin backup.",
-                "T? ?i?n" => $"B?o trì t? ?i?n {frequencyText}. Ki?m tra CB, si?t ??u n?i, ?o nhi?t ?? phát hi?n ?i?m nóng.",
-                "Qu?t thông gió" => $"B?o trì qu?t thông gió {frequencyText}. V? sinh cánh qu?t, ki?m tra motor, tra d?u ? tr?c.",
-                "B?n n??c" => $"V? sinh và b?o trì b?n n??c {frequencyText}. C? r?a, kh? trùng, ki?m tra phao n??c.",
-                "Máy l?c n??c" => $"B?o trì máy l?c n??c {frequencyText}. Thay lõi l?c, ki?m tra áp su?t, v? sinh b?m.",
-                "C?m bi?n CO" => $"Ki?m tra c?m bi?n CO {frequencyText}. Test ?? nh?y, hi?u chu?n ng??ng báo ??ng.",
-                _ => $"B?o trì ??nh k? {frequencyText} cho {objectName}."
-            };
+            var typeNameNormalized = RemoveDiacritics(typeName).ToLower();
+
+            if (typeNameNormalized.Contains("thang may"))
+                return $"Bao tri dinh ky {frequencyText} cho {objectName}. Kiem tra day cap, phanh, cua cabin va tra dau dong co.";
+            
+            if (typeNameNormalized.Contains("den") || typeNameNormalized.Contains("chieu sang"))
+                return $"Kiem tra va bao tri he thong chieu sang {frequencyText}. Thay bong hong, ve sinh chup den.";
+            
+            if (typeNameNormalized.Contains("camera"))
+                return $"Bao tri camera {frequencyText}. Kiem tra goc quay, ve sinh ong kinh, test ket noi mang.";
+            
+            if (typeNameNormalized.Contains("cam bien") && typeNameNormalized.Contains("chay"))
+                return $"Kiem tra he thong PCCC {frequencyText}. Test cam bien khoi, ve sinh, kiem tra pin backup.";
+            
+            if (typeNameNormalized.Contains("tu dien"))
+                return $"Bao tri tu dien {frequencyText}. Kiem tra CB, siet dau noi, do nhiet do phat hien diem nong.";
+            
+            if (typeNameNormalized.Contains("quat") || typeNameNormalized.Contains("thong gio"))
+                return $"Bao tri quat thong gio {frequencyText}. Ve sinh canh quat, kiem tra motor, tra dau o truc.";
+            
+            if (typeNameNormalized.Contains("bon nuoc"))
+                return $"Ve sinh va bao tri bon nuoc {frequencyText}. Co rua, khu trung, kiem tra phao nuoc.";
+            
+            if (typeNameNormalized.Contains("may loc") || typeNameNormalized.Contains("loc nuoc"))
+                return $"Bao tri may loc nuoc {frequencyText}. Thay loi loc, kiem tra ap suat, ve sinh bom.";
+            
+            if (typeNameNormalized.Contains("cam bien") && typeNameNormalized.Contains("co"))
+                return $"Kiem tra cam bien CO {frequencyText}. Test do nhay, hieu chuan nguong bao dong.";
+            
+            return $"Bao tri dinh ky {frequencyText} cho {objectName}.";
         }
     }
 }
