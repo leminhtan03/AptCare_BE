@@ -368,7 +368,7 @@ namespace AptCare.Service.Services.Implements
                     var n = new AppointmentTracking
                     {
                         AppointmentId = appointmentId,
-                        Status = AppointmentStatus.Pending,
+                        Status = AppointmentStatus.Cancelled,
                         UpdatedAt = DateTime.Now,
                         UpdatedBy = _userContext.CurrentUserId,
                         Note = "Kỹ thuật viên trưởng đã hủy phân công Kỹ thuật viên."
