@@ -178,89 +178,85 @@ namespace AptCare.Service.Services.Implements
 
         private async Task PushMessageNotificationAsync(Message message, Conversation conversation)
         {
-            var receiverIds = await _unitOfWork.GetRepository<ConversationParticipant>().GetListAsync(
-                selector: s => s.ParticipantId,
+            var receivers = await _unitOfWork.GetRepository<ConversationParticipant>().GetListAsync(
                 predicate: p => p.ConversationId == message.ConversationId && p.ParticipantId != message.SenderId
                 );
 
-            var senderName = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
-                selector: s => string.Concat(s.FirstName, " ", s.LastName),
-                predicate: p => p.UserId == message.SenderId
-                );
-
-            var descrption = string.Empty;
-            var title = string.Empty;
-
-            if (receiverIds.Count > 1)
+            var receiverIds = receivers.Where(x => !x.IsMuted).Select(x => x.ParticipantId);
+            if (receiverIds.Any())
             {
-                title = $"Nhóm: {conversation.Title}";
-                descrption = $"{senderName}: ";
-            }
-            else
-            {
-                title = senderName;
-            }
+                var senderName = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
+                    selector: s => string.Concat(s.FirstName, " ", s.LastName),
+                    predicate: p => p.UserId == message.SenderId
+                    );
 
-            var avatar = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
-                selector: s => s.FilePath,
-                predicate: p => p.Entity == nameof(User) && p.EntityId == message.SenderId && p.Status == ActiveStatus.Active
-                );
+                var descrption = string.Empty;
+                var title = string.Empty;
 
-            var image = string.IsNullOrEmpty(avatar) ? Constant.AVATAR_DEFAULT_IMAGE : avatar;
+                if (receivers.Count > 1)
+                {
+                    title = $"Nhóm: {conversation.Title}";
+                    descrption = $"{senderName}: ";
+                }
+                else
+                {
+                    title = senderName;
+                }
 
-            switch (message.Type)
-            {
-                case MessageType.Text:
-                    descrption = message.Content;
-                    break;
+                var avatar = await _unitOfWork.GetRepository<Media>().SingleOrDefaultAsync(
+                    selector: s => s.FilePath,
+                    predicate: p => p.Entity == nameof(User) && p.EntityId == message.SenderId && p.Status == ActiveStatus.Active
+                    );
 
-                case MessageType.Image:
-                    descrption = "Đã gửi một hình ảnh";
-                    break;
+                var image = string.IsNullOrEmpty(avatar) ? Constant.AVATAR_DEFAULT_IMAGE : avatar;
 
-                case MessageType.File:
-                    descrption = "Đã gửi một tệp tin";
-                    break;
+                switch (message.Type)
+                {
+                    case MessageType.Text:
+                        descrption = message.Content;
+                        break;
 
-                case MessageType.Video:
-                    descrption = "Đã gửi một video";
-                    break;
+                    case MessageType.Image:
+                        descrption = "Đã gửi một hình ảnh";
+                        break;
 
-                case MessageType.Audio:
-                    descrption = "Đã gửi một tin nhắn thoại";
-                    break;
+                    case MessageType.File:
+                        descrption = "Đã gửi một tệp tin";
+                        break;
 
-                case MessageType.System:
-                    descrption = "[Thông báo hệ thống]";
-                    break;
+                    case MessageType.Video:
+                        descrption = "Đã gửi một video";
+                        break;
 
-                case MessageType.Emoji:
-                    descrption = "Đã gửi một biểu tượng cảm xúc";
-                    break;
+                    case MessageType.Audio:
+                        descrption = "Đã gửi một tin nhắn thoại";
+                        break;
 
-                case MessageType.Location:
-                    descrption = "Đã chia sẻ vị trí";
-                    break;
+                    case MessageType.System:
+                        descrption = "[Thông báo hệ thống]";
+                        break;
 
-                default:
-                    descrption = "Tin nhắn không xác định";
-                    break;
-            }
+                    case MessageType.Emoji:
+                        descrption = "Đã gửi một biểu tượng cảm xúc";
+                        break;
 
-            //await _notificationService.PushNotificationAsync(new NotificationPushRequestDto
-            //{
-            //    Title = title,
-            //    Description = descrption,
-            //    UserIds = receiverIds,
-            //    Image = image
-            //});
-            await _rabbitMQService.PushNotificationAsync(new NotificationPushRequestDto
-            {
-                Title = title,
-                Description = descrption,
-                UserIds = receiverIds,
-                Image = image
-            });
+                    case MessageType.Location:
+                        descrption = "Đã chia sẻ vị trí";
+                        break;
+
+                    default:
+                        descrption = "Tin nhắn không xác định";
+                        break;
+                }
+
+                await _rabbitMQService.PushNotificationAsync(new NotificationPushRequestDto
+                {
+                    Title = title,
+                    Description = descrption,
+                    UserIds = receiverIds,
+                    Image = image
+                });
+            }                    
         }
 
         public async Task<IPaginate<MessageDto>> GetPaginateMessagesAsync(int conversationId, DateTime? before, int pageSize)
