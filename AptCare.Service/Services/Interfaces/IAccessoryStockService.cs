@@ -14,6 +14,7 @@ namespace AptCare.Service.Services.Interfaces
 
         Task<string> CreateStockOutRequestAsync(int id, StockOutAccessoryDto dto);
         Task<bool> ApproveStockOutRequestAsync(int stockTransactionId, bool isApprove, string? note);
+        Task<bool> ConfirmStockOutAsync(ConfirmStockOutDto dto);
 
         Task RevertStockForCancelledInvoiceAsync(int invoiceId);
         Task<List<string>> EnsureStockForInvoiceAsync(int invoiceId);

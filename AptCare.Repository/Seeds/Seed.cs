@@ -31,6 +31,21 @@ namespace AptCare.Repository.Seeds
             await SeedAccessoryMedias(context);
             await SeedBudget(context);
             await SeedMonthlyManagementFeeTransactions(context);
+            
+            // ⭐ Sử dụng file seed riêng
+            await WorkSlotSeed.SeedAsync(context);
+            await MaintenanceScheduleSeed.SeedAsync(context);
+            await RepairRequestSeed.SeedAsync(context);
+            
+            // ⭐ Seed RepairRequest từ MaintenanceSchedule (bảo trì định kỳ)
+            // Lấy ID tiếp theo sau RepairRequestSeed
+            var lastRequestId = context.RepairRequests.Any() 
+                ? context.RepairRequests.Max(r => r.RepairRequestId) + 1 
+                : 1;
+            var lastAppointmentId = context.Appointments.Any() 
+                ? context.Appointments.Max(a => a.AppointmentId) + 1 
+                : 1;
+            await MaintenanceRepairRequestSeed.SeedAsync(context, lastRequestId, lastAppointmentId);
         }
 
         private static async Task SeedFloors(AptCareSystemDBContext context)
@@ -1311,5 +1326,6 @@ namespace AptCare.Repository.Seeds
                 await context.SaveChangesAsync();
             }
         }
+
     }
 }
