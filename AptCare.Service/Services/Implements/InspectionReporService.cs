@@ -69,7 +69,7 @@ namespace AptCare.Service.Services.Implements
                 if (existingReport != null && existingReport.ReportApprovals.Any(s => s.Status == ReportStatus.Pending))
                     throw new AppValidationException("Báo cáo kiểm tra cho cuộc hẹn này đang chờ phê duyệt. Vui lòng không tạo báo cáo mới."
                         , StatusCodes.Status400BadRequest);
-               
+
                 List<string> uploadedFilePaths = new List<string>();
                 if (dto.Files != null && dto.Files.Any())
                 {
@@ -387,37 +387,32 @@ namespace AptCare.Service.Services.Implements
                 string solutionTypeFilter = filterDto.SolutionType?.ToLower() ?? string.Empty;
 
                 ReportStatus? filterStatus = null;
-                if (!string.IsNullOrEmpty(filter))
+                if (!string.IsNullOrEmpty(filter) && Enum.TryParse<ReportStatus>(filter, true, out var parsedStatus))
                 {
-                    if (Enum.TryParse<ReportStatus>(filter, true, out var parsedStatus))
-                    {
-                        filterStatus = parsedStatus;
-                    }
+                    filterStatus = parsedStatus;
                 }
 
                 Expression<Func<InspectionReport, bool>> predicate = p =>
                     (string.IsNullOrEmpty(search) ||
-                    p.Description.ToLower().Contains(search) ||
-                    (p.Appointment != null &&
-                     ((p.Appointment.RepairRequest.Apartment != null &&
-                     p.Appointment.RepairRequest.Apartment.Room.ToLower().Contains(search)) ||
-                     (p.Appointment.RepairRequest.MaintenanceSchedule != null &&
-                     p.Appointment.RepairRequest.MaintenanceSchedule.CommonAreaObject != null &&
-                     p.Appointment.RepairRequest.MaintenanceSchedule.CommonAreaObject.Name.ToLower().Contains(search))
-                     )) ||
-                    (!string.IsNullOrEmpty(p.Solution) && p.Solution.ToLower().Contains(search))) &&
+                        p.Description.ToLower().Contains(search) ||
+                        (p.Appointment != null &&
+                            ((p.Appointment.RepairRequest.Apartment != null &&
+                                p.Appointment.RepairRequest.Apartment.Room.ToLower().Contains(search)) ||
+                            (p.Appointment.RepairRequest.MaintenanceSchedule != null &&
+                                p.Appointment.RepairRequest.MaintenanceSchedule.CommonAreaObject != null &&
+                                p.Appointment.RepairRequest.MaintenanceSchedule.CommonAreaObject.Name.ToLower().Contains(search)))) ||
+                        (!string.IsNullOrEmpty(p.Solution) && p.Solution.ToLower().Contains(search))) &&
                     (p.ReportApprovals != null && p.ReportApprovals.Any(ra => ra.UserId == userId) ||
-                     p.Appointment.AppointmentAssigns.Any(s => s.TechnicianId == userId)) &&
-                    (string.IsNullOrEmpty(filter) ||
-                    p.Status == filterStatus) &&
+                        p.Appointment.AppointmentAssigns.Any(s => s.TechnicianId == userId)) &&
+                    (!filterStatus.HasValue || p.Status == filterStatus) &&
                     (string.IsNullOrEmpty(faultTypeFilter) ||
-                    p.FaultOwner.ToString().ToLower().Contains(faultTypeFilter)) &&
+                        p.FaultOwner.ToString().ToLower().Contains(faultTypeFilter)) &&
                     (string.IsNullOrEmpty(solutionTypeFilter) ||
-                    p.SolutionType.ToString().ToLower().Contains(solutionTypeFilter)) &&
+                        p.SolutionType.ToString().ToLower().Contains(solutionTypeFilter)) &&
                     (!filterDto.Fromdate.HasValue ||
-                    DateOnly.FromDateTime(p.CreatedAt) >= filterDto.Fromdate.Value) &&
+                        DateOnly.FromDateTime(p.CreatedAt) >= filterDto.Fromdate.Value) &&
                     (!filterDto.Todate.HasValue ||
-                    DateOnly.FromDateTime(p.CreatedAt) <= filterDto.Todate.Value);
+                        DateOnly.FromDateTime(p.CreatedAt) <= filterDto.Todate.Value);
 
                 var InspecRepo = _unitOfWork.GetRepository<InspectionReport>();
 
@@ -425,57 +420,93 @@ namespace AptCare.Service.Services.Implements
                     page: page,
                     size: size,
                     predicate: predicate,
-                    include: q => q.Include(i => i.User)
-                                    .ThenInclude(u => u.TechnicianTechniques)
-                                        .ThenInclude(tt => tt.Technique)
-                                    .Include(i => i.User)
-                                        .ThenInclude(u => u.WorkSlots)
-                                    .Include(ws => ws.Appointment)
-                                        .ThenInclude(a => a.RepairRequest)
-                                            .ThenInclude(rr => rr.Apartment)
-                                    .Include(ws => ws.Appointment)
-                                        .ThenInclude(a => a.RepairRequest)
-                                            .ThenInclude(rr => rr.RepairRequestTasks)
-                                    .Include(ws => ws.Appointment)
-                                        .ThenInclude(a => a.RepairRequest)
-                                            .ThenInclude(rr => rr.MaintenanceSchedule)
-                                                .ThenInclude(mr => mr.CommonAreaObject)
-                                    .Include(ra => ra.ReportApprovals)
-                                        .ThenInclude(ra => ra.User)
-                                            .ThenInclude(u => u.Account),
+                    include: q => q
+                        .Include(i => i.User)
+                        .Include(ws => ws.Appointment)
+                            .ThenInclude(a => a.RepairRequest)
+                                .ThenInclude(rr => rr.Apartment)
+                        .Include(ws => ws.Appointment)
+                            .ThenInclude(a => a.RepairRequest)
+                                .ThenInclude(rr => rr.RepairRequestTasks)
+                        .Include(ws => ws.Appointment)
+                            .ThenInclude(a => a.RepairRequest)
+                                .ThenInclude(rr => rr.MaintenanceSchedule)
+                                    .ThenInclude(mr => mr.CommonAreaObject)
+                        .Include(ra => ra.ReportApprovals)
+                            .ThenInclude(ra => ra.User)
+                                .ThenInclude(u => u.Account),
                     orderBy: BuildOrderBy(filterDto.sortBy ?? string.Empty),
                     selector: s => _mapper.Map<InspectionReportDetailDto>(s)
                 );
 
+                if (!paginateEntityResult.Items.Any())
+                    return paginateEntityResult;
+
+                var reportIds = paginateEntityResult.Items.Select(x => x.InspectionReportId).ToList();
+                var allMedias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                    selector: s => new { s.EntityId, Media = _mapper.Map<MediaDto>(s) },
+                    predicate: p => p.Entity == nameof(InspectionReport) &&
+                                    reportIds.Contains(p.EntityId) &&
+                                    p.Status == ActiveStatus.Active
+                );
+                var mediasByReportId = allMedias.GroupBy(m => m.EntityId)
+                                                .ToDictionary(g => g.Key, g => g.Select(x => x.Media).ToList());
+
+                var repairRequestIds = paginateEntityResult.Items
+                    .Where(x => x.Appointment?.RepairRequest != null)
+                    .Select(x => x.Appointment.RepairRequest.RepairRequestId)
+                    .Distinct()
+                    .ToList();
+
+                var reportTimeRanges = paginateEntityResult.Items
+                    .ToDictionary(
+                        x => x.InspectionReportId,
+                        x => (MinTime: x.CreatedAt.AddSeconds(-TIME_TOLERANCE_SECONDS),
+                              MaxTime: x.CreatedAt.AddSeconds(TIME_TOLERANCE_SECONDS),
+                              CreatedAt: x.CreatedAt,
+                              RepairRequestId: x.Appointment?.RepairRequest?.RepairRequestId ?? 0)
+                    );
+
+                var minTimeOverall = reportTimeRanges.Values.Min(x => x.MinTime);
+                var maxTimeOverall = reportTimeRanges.Values.Max(x => x.MaxTime);
+
+                var allInvoices = await _unitOfWork.GetRepository<Invoice>().GetListAsync(
+                    selector: s => _mapper.Map<InvoiceDto>(s),
+                    predicate: x => repairRequestIds.Contains(x.RepairRequestId) &&
+                                    x.CreatedAt >= minTimeOverall &&
+                                    x.CreatedAt <= maxTimeOverall,
+                    include: i => i.Include(x => x.InvoiceAccessories)
+                                   .Include(x => x.InvoiceServices),
+                    orderBy: o => o.OrderByDescending(x => x.CreatedAt)
+                );
+
                 foreach (var item in paginateEntityResult.Items)
                 {
-                    var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
-                        selector: s => _mapper.Map<MediaDto>(s),
-                        predicate: p => p.Entity == nameof(InspectionReport) && p.EntityId == item.InspectionReportId && p.Status == ActiveStatus.Active
-                    );
-                    item.Medias = medias.ToList();
+                    item.Medias = mediasByReportId.TryGetValue(item.InspectionReportId, out var medias)
+                        ? medias
+                        : new List<MediaDto>();
 
-                    var reportCreatedAt = item.CreatedAt;
-                    var minTime = reportCreatedAt.AddSeconds(-TIME_TOLERANCE_SECONDS);
-                    var maxTime = reportCreatedAt.AddSeconds(TIME_TOLERANCE_SECONDS);
-
-                    var invoice = await _unitOfWork.GetRepository<Invoice>().GetListAsync(
-                        selector: s => _mapper.Map<InvoiceDto>(s),
-                        predicate: x => x.RepairRequestId == item.Appointment.RepairRequest.RepairRequestId &&
-                                        x.CreatedAt >= minTime &&
-                                        x.CreatedAt <= maxTime &&
-                                        x.CreatedAt < item.CreatedAt,
-                        include: i => i.Include(x => x.InvoiceAccessories)
-                                       .Include(x => x.InvoiceServices),
-                        orderBy: o => o.OrderByDescending(x => x.CreatedAt)
-                        );
-                    item.Invoice = invoice;
+                    if (reportTimeRanges.TryGetValue(item.InspectionReportId, out var timeRange) && timeRange.RepairRequestId > 0)
+                    {
+                        item.Invoice = allInvoices
+                            .Where(inv => inv.RepairRequestId == timeRange.RepairRequestId &&
+                                          inv.CreatedAt >= timeRange.MinTime &&
+                                          inv.CreatedAt <= timeRange.MaxTime &&
+                                          inv.CreatedAt < timeRange.CreatedAt)
+                            .ToList();
+                    }
+                    else
+                    {
+                        item.Invoice = new List<InvoiceDto>();
+                    }
                 }
+
                 return paginateEntityResult;
             }
             catch (Exception ex)
             {
-                throw new Exception("GetPaginateInspectionReportsAsync", ex);
+                _logger.LogError(ex, "Error in GetPaginateInspectionReportsAsync");
+                throw new AppValidationException($"GetPaginateInspectionReportsAsync: {ex.Message}");
             }
         }
         public async Task<string> UpdateInspectionReportAsync(int id, UpdateInspectionReporDto dto)
