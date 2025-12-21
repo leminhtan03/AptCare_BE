@@ -52,7 +52,7 @@ namespace AptCare.Service.Services.Implements
                 }
 
                 var slot = await _unitOfWork.GetRepository<Slot>().SingleOrDefaultAsync(
-                    predicate: x => x.SlotId == dto.SlotId 
+                    predicate: x => x.SlotId == dto.SlotId
                     );
                 if (slot == null)
                 {
@@ -154,8 +154,8 @@ namespace AptCare.Service.Services.Implements
                     }
 
                     var isContinueSlot = await _unitOfWork.GetRepository<WorkSlot>().AnyAsync(
-                        predicate: x => x.TechnicianId == dto.TechnicianId && 
-                                        ((x.Date.AddDays(1) ==  dateSlot.Date && slot.FromTime == x.Slot.ToTime) ||
+                        predicate: x => x.TechnicianId == dto.TechnicianId &&
+                                        ((x.Date.AddDays(1) == dateSlot.Date && slot.FromTime == x.Slot.ToTime) ||
                                          (x.Date.AddDays(-1) == dateSlot.Date && slot.ToTime == x.Slot.FromTime)),
                         include: i => i.Include(x => x.Slot)
                         );
@@ -262,75 +262,100 @@ namespace AptCare.Service.Services.Implements
                 var isExistingTechnician = await _unitOfWork.GetRepository<User>().AnyAsync(
                     predicate: x => x.UserId == technicianId && x.Account.Role == AccountRole.Technician,
                     include: i => i.Include(x => x.Account)
-                    );
+                );
                 if (!isExistingTechnician)
                 {
-                    throw new AppValidationException("Kĩ thuật viên không tồn tại.", StatusCodes.Status404NotFound);
+                    throw new AppValidationException("Ki thuat vien khong ton tai.", StatusCodes.Status404NotFound);
                 }
             }
 
             if (fromDate > toDate)
             {
-                throw new AppValidationException("'Từ ngày' phải nhỏ hơn hoặc bằng 'Đến ngày'.");
+                throw new AppValidationException("'Tu ngay' phai nho hon hoac bang 'Den ngay'.");
             }
-
             var workSlots = await _unitOfWork.GetRepository<WorkSlot>().GetListAsync(
                 predicate: x => x.Date >= fromDate && x.Date <= toDate
                                 && (!status.HasValue || x.Status == status)
                                 && (!technicianId.HasValue || x.TechnicianId == technicianId),
                 include: i => i.Include(x => x.Technician)
-                                    .ThenInclude(x => x.AppointmentAssigns)
-                                        .ThenInclude(x => x.Appointment)
-                                            .ThenInclude(x => x.RepairRequest)
-                                                .ThenInclude(x => x.Apartment)
                                .Include(x => x.Slot)
-                               .Include(x => x.Technician)
-                                    .ThenInclude(x => x.AppointmentAssigns)
-                                        .ThenInclude(x => x.Appointment)
-                                            .ThenInclude(x => x.AppointmentTrackings)
             );
 
             if (workSlots == null || !workSlots.Any())
                 return Enumerable.Empty<WorkSlotDto>();
 
+            var technicianIds = workSlots.Select(w => w.TechnicianId).Distinct().ToList();
+            var startDateTime = fromDate.ToDateTime(TimeOnly.MinValue);
+            var endDateTime = toDate.ToDateTime(TimeOnly.MaxValue);
+
+            var excludedStatuses = new[]
+            {
+                AppointmentStatus.Pending,
+                AppointmentStatus.Assigned,
+                AppointmentStatus.Cancelled
+            };
+
+            var appointmentAssigns = await _unitOfWork.GetRepository<AppointmentAssign>().GetListAsync(
+                predicate: aa => technicianIds.Contains(aa.TechnicianId) &&
+                                 aa.EstimatedStartTime >= startDateTime &&
+                                 aa.EstimatedStartTime <= endDateTime,
+                include: i => i.Include(aa => aa.Appointment)
+                                   .ThenInclude(a => a.RepairRequest)
+                                       .ThenInclude(rr => rr.Apartment)
+                               .Include(aa => aa.Appointment)
+                                   .ThenInclude(a => a.AppointmentTrackings)
+            );
+
+            var appointmentsByTechAndDate = appointmentAssigns
+                .Where(aa =>
+                {
+                    var latestStatus = aa.Appointment.AppointmentTrackings
+                        .OrderByDescending(at => at.UpdatedAt)
+                        .Select(at => at.Status)
+                        .FirstOrDefault();
+                    return !excludedStatuses.Contains(latestStatus);
+                })
+                .GroupBy(aa => new
+                {
+                    aa.TechnicianId,
+                    Date = DateOnly.FromDateTime(aa.EstimatedStartTime)
+                })
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(aa => _mapper.Map<AppointmentDto>(aa.Appointment)).ToList()
+                );
+
             var result = workSlots
-                            .GroupBy(w => w.Date)
-                            .Select(dateGroup => new WorkSlotDto
-                            {
-                                Date = dateGroup.Key,
-                                Slots = dateGroup
-                                    .GroupBy(s => s.SlotId)
-                                    .Select(slotGroup => new SlotWorkDto
-                                    {
-                                        SlotId = slotGroup.Key,
-                                        TechnicianWorkSlots = slotGroup
-                                            .Select(ws => new TechnicianWorkSlotDto
-                                            {
-                                                WorkSlotId = ws.WorkSlotId,
-                                                Status = ws.Status.ToString(),
-                                                Technician = _mapper.Map<UserBasicDto>(ws.Technician),
-                                                Appointments = ws.Technician.AppointmentAssigns.Where(aa => DateOnly.FromDateTime(aa.EstimatedStartTime) == dateGroup.Key &&
-                                                                        !new[]
-                                                                        {
-                                                                            AppointmentStatus.Pending,
-                                                                            AppointmentStatus.Assigned,
-                                                                            AppointmentStatus.Cancelled
-                                                                        }.Contains(
-                                                                            aa.Appointment.AppointmentTrackings
-                                                                                .OrderByDescending(at => at.UpdatedAt)
-                                                                                .Select(at => at.Status)
-                                                                                .FirstOrDefault()
-                                                                        )).Select(aa => _mapper.Map<AppointmentDto>(aa.Appointment)).ToList()
-                                            })
-                                            .ToList()
-                                    })
-                                    .ToList()
-                            })
-                            .OrderBy(x => x.Date)
-                            .ToList();
+                .GroupBy(w => w.Date)
+                .Select(dateGroup => new WorkSlotDto
+                {
+                    Date = dateGroup.Key,
+                    Slots = dateGroup
+                        .GroupBy(s => s.SlotId)
+                        .Select(slotGroup => new SlotWorkDto
+                        {
+                            SlotId = slotGroup.Key,
+                            TechnicianWorkSlots = slotGroup
+                                .Select(ws => new TechnicianWorkSlotDto
+                                {
+                                    WorkSlotId = ws.WorkSlotId,
+                                    Status = ws.Status.ToString(),
+                                    Technician = _mapper.Map<UserBasicDto>(ws.Technician),
+                                    Appointments = appointmentsByTechAndDate.TryGetValue(
+                                        new { ws.TechnicianId, Date = ws.Date },
+                                        out var appointments)
+                                            ? appointments
+                                            : new List<AppointmentDto>()
+                                })
+                                .ToList()
+                        })
+                        .ToList()
+                })
+                .OrderBy(x => x.Date)
+                .ToList();
+
             return result;
         }
-
         public async Task<IEnumerable<WorkSlotDto>> GetMyScheduleAsync(DateOnly fromDate, DateOnly toDate, WorkSlotStatus? status)
         {
             int technicianId = _userContext.CurrentUserId;
@@ -341,7 +366,7 @@ namespace AptCare.Service.Services.Implements
         {
             var userId = _userContext.CurrentUserId;
             var workSlot = await _unitOfWork.GetRepository<WorkSlot>().SingleOrDefaultAsync(
-                predicate: x => x.Date == date && x.SlotId == slotId && x.TechnicianId == userId                
+                predicate: x => x.Date == date && x.SlotId == slotId && x.TechnicianId == userId
             );
             if (workSlot == null)
             {

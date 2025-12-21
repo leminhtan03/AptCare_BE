@@ -468,76 +468,82 @@ namespace AptCare.Service.Services.Implements
             string search = dto.search?.ToLower() ?? string.Empty;
             string filter = dto.filter?.ToLower() ?? string.Empty;
 
-            // Parse filter to RequestStatus enum if provided
             RequestStatus? filterStatus = null;
-            if (!string.IsNullOrEmpty(filter))
+            if (!string.IsNullOrEmpty(filter) && Enum.TryParse<RequestStatus>(filter, true, out var parsedStatus))
             {
-                if (Enum.TryParse<RequestStatus>(filter, true, out var parsedStatus))
-                {
-                    filterStatus = parsedStatus;
-                }
+                filterStatus = parsedStatus;
             }
 
             Expression<Func<RepairRequest, bool>> predicate = p =>
-                (string.IsNullOrEmpty(search) || p.Object.Contains(search) ||
-                                         p.Description.Contains(search)) &&
-                (filterStatus == null || p.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status == filterStatus) &&
-                (isEmergency == null || p.IsEmergency == isEmergency) &&
-                (residentId == null || p.Apartment.UserApartments.Any(x => x.UserId == residentId)) &&
-                (technicianId == null ||
-                    (p.IsEmergency == false && p.Appointments.Any(a => !new[]
-                                                                        {
-                                                                            AppointmentStatus.Pending,
-                                                                            AppointmentStatus.Assigned,
-                                                                            AppointmentStatus.Cancelled
-                                                                        }.Contains(
-                                                                            a.AppointmentTrackings
-                                                                                .OrderByDescending(at => at.UpdatedAt)
-                                                                                .Select(at => at.Status)
-                                                                                .FirstOrDefault()
-                                                                        )
-                                                                        && a.AppointmentAssigns.Any(aa => aa.TechnicianId == technicianId)
-                                                                    ) ||
-                    (p.IsEmergency == true && p.Appointments.Any(a => a.AppointmentTrackings.OrderByDescending(at => at.UpdatedAt).First().Status != AppointmentStatus.Cancelled &&
-                                                                       a.AppointmentAssigns.Any(aa => aa.TechnicianId == technicianId))))) &&
-                (apartmentId == null || p.ApartmentId == apartmentId) &&
-                (issueId == null || p.IssueId == issueId) &&
-                (isMaintain == null ||
-                    isMaintain == true && p.MaintenanceScheduleId != null ||
-                    isMaintain == false && p.MaintenanceScheduleId == null);
+                (string.IsNullOrEmpty(search) ||
+                    p.Object.ToLower().Contains(search) ||
+                    p.Description.ToLower().Contains(search)) &&
+                (!filterStatus.HasValue ||
+                p.RequestTrackings.OrderByDescending(x => x.UpdatedAt).First().Status == filterStatus) &&
+                (!isEmergency.HasValue || p.IsEmergency == isEmergency) && (!residentId.HasValue ||
+                p.Apartment.UserApartments.Any(x => x.UserId == residentId)) &&
+                (!technicianId.HasValue ||
+                (p.IsEmergency == false && p.Appointments.Any(a =>
+                !new[] { AppointmentStatus.Pending, AppointmentStatus.Assigned, AppointmentStatus.Cancelled }
+                .Contains(a.AppointmentTrackings.OrderByDescending(at => at.UpdatedAt).Select(at => at.Status).FirstOrDefault()) &&
+                a.AppointmentAssigns.Any(aa => aa.TechnicianId == technicianId))) ||
+                (p.IsEmergency == true && p.Appointments.Any(a =>
+                a.AppointmentTrackings.OrderByDescending(at => at.UpdatedAt).First().Status != AppointmentStatus.Cancelled &&
+                a.AppointmentAssigns.Any(aa => aa.TechnicianId == technicianId)))) &&
+                (!apartmentId.HasValue || p.ApartmentId == apartmentId) &&
+                (!issueId.HasValue || p.IssueId == issueId) &&
+                (!isMaintain.HasValue ||
+                    (isMaintain == true && p.MaintenanceScheduleId != null) ||
+                    (isMaintain == false && p.MaintenanceScheduleId == null));
 
             var result = await _unitOfWork.GetRepository<RepairRequest>().GetPagingListAsync(
                 selector: x => _mapper.Map<RepairRequestDto>(x),
                 predicate: predicate,
-                include: i => i.Include(x => x.RequestTrackings)
-                               .Include(x => x.ChildRequests)
-                               .Include(x => x.Appointments)
-                                    .ThenInclude(x => x.AppointmentAssigns)
-                                .Include(x => x.Appointments)
-                                    .ThenInclude(x => x.AppointmentTrackings)
-                               .Include(x => x.Apartment)
-                                    .ThenInclude(x => x.Floor)
-                                .Include(x => x.Apartment)
-                                    .ThenInclude(x => x.UserApartments)
-                               .Include(x => x.MaintenanceSchedule)
-                                    .ThenInclude(x => x.CommonAreaObject)
-                                        .ThenInclude(x => x.CommonArea)
-                                            .ThenInclude(x => x.Floor)
-                               .Include(x => x.Issue)
-                                    .ThenInclude(x => x.Technique),
+                include: i => i
+                    .Include(x => x.RequestTrackings)
+                    .Include(x => x.ChildRequests)
+                    .Include(x => x.Appointments)
+                        .ThenInclude(a => a.AppointmentAssigns)
+                    .Include(x => x.Appointments)
+                        .ThenInclude(a => a.AppointmentTrackings)
+                    .Include(x => x.Apartment)
+                        .ThenInclude(a => a.Floor)
+                    .Include(x => x.Apartment)
+                        .ThenInclude(a => a.UserApartments)
+                    .Include(x => x.MaintenanceSchedule)
+                        .ThenInclude(ms => ms.CommonAreaObject)
+                            .ThenInclude(cao => cao.CommonArea)
+                                .ThenInclude(ca => ca.Floor)
+                    .Include(x => x.Issue)
+                        .ThenInclude(iss => iss.Technique),
                 orderBy: BuildOrderBy(dto.sortBy),
-                    page: page,
-                    size: size
-                );
+                page: page,
+                size: size
+            );
+
+            if (!result.Items.Any())
+                return result;
+
+            var requestIds = result.Items.Select(x => x.RepairRequestId).ToList();
+
+            var allMedias = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                selector: s => new { s.EntityId, Media = _mapper.Map<MediaDto>(s) },
+                predicate: p => p.Entity == nameof(RepairRequest) &&
+                               requestIds.Contains(p.EntityId) &&
+                               p.Status == ActiveStatus.Active
+            );
+
+            var mediasByRequestId = allMedias
+                .GroupBy(m => m.EntityId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.Media).ToList());
 
             foreach (var request in result.Items)
             {
-                var medias = await _unitOfWork.GetRepository<Media>().GetListAsync(
-                    selector: s => _mapper.Map<MediaDto>(s),
-                    predicate: p => p.Entity == nameof(RepairRequest) && p.EntityId == request.RepairRequestId && p.Status == ActiveStatus.Active
-                    );
-                request.Medias = medias.ToList();
+                request.Medias = mediasByRequestId.TryGetValue(request.RepairRequestId, out var medias)
+                    ? medias
+                    : new List<MediaDto>();
             }
+
             return result;
         }
 
