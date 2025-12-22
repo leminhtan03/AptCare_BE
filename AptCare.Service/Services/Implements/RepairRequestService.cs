@@ -1368,6 +1368,7 @@ namespace AptCare.Service.Services.Implements
                             MaintenanceTaskTemplateId = task.MaintenanceTaskId,
                             TaskName = task.TaskName,
                             TaskDescription = task.TaskDescription,
+                            DisplayOrder = task.DisplayOrder,
                             Status = TaskCompletionStatus.Pending
                         };
 

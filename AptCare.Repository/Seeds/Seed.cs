@@ -1154,6 +1154,22 @@ namespace AptCare.Repository.Seeds
                         Price = 12000,
                         Quantity = 500,
                         Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Dây tín hiệu XLR Canare L-4E6S (5m)",
+                        Descrption = "Dây tín hiệu XLR Canare L-4E6S có kích thước 5m dùng trong loa.",
+                        Price = 50000,
+                        Quantity = 20,
+                        Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Ampli Yamaha PX5 500W",
+                        Descrption = "Bộ khuếch đại chuyên nghiệp cho mức âm thanh.",
+                        Price = 12000000,
+                        Quantity = 5,
+                        Status = ActiveStatus.Active
                     }
                 };
 
