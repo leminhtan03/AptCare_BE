@@ -635,7 +635,16 @@ namespace AptCare.UT.Services
                     new AppointmentAssign { Status = WorkOrderStatus.Working }
                 },
                 InspectionReports = new List<InspectionReport>(),
-                RepairReport = new RepairReport { Status = ReportStatus.Approved }
+                RepairReport = new RepairReport
+                {
+                    Status = ReportStatus.Approved,
+                    ReportApprovals = new List<ReportApproval>()
+                },
+                RepairRequest = new RepairRequest
+                {
+                    RepairRequestId = 1,
+                    ApartmentId = null 
+                }
             };
 
             _apptRepo.Setup(r => r.SingleOrDefaultAsync(
@@ -671,7 +680,17 @@ namespace AptCare.UT.Services
                 {
                     new AppointmentAssign { Status = WorkOrderStatus.Working }
                 },
-                RepairReport = new RepairReport { Status = ReportStatus.Approved }
+                InspectionReports = new List<InspectionReport>(),            
+                RepairReport = new RepairReport 
+                { 
+                    Status = ReportStatus.Approved,
+                    ReportApprovals = new List<ReportApproval>()
+                },
+                RepairRequest = new RepairRequest
+                {
+                    RepairRequestId = 1,
+                    ApartmentId = null
+                }
             };
 
             _apptRepo.Setup(r => r.SingleOrDefaultAsync(

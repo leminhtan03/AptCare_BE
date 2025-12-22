@@ -98,12 +98,17 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<IQueryable<Media>, IIncludableQueryable<Media, object>>>()
             )).ReturnsAsync(new Media { FilePath = "avatar.jpg" });
 
+            // Mock ConversationParticipant GetListAsync (for PushMessageNotificationAsync)
+            var participants = new List<ConversationParticipant>
+            {
+                new ConversationParticipant { ParticipantId = 2, IsMuted = false },
+                new ConversationParticipant { ParticipantId = 3, IsMuted = false }
+            };
             _participantRepo.Setup(r => r.GetListAsync(
-                It.IsAny<Expression<Func<ConversationParticipant, int>>>(),
                 It.IsAny<Expression<Func<ConversationParticipant, bool>>>(),
                 It.IsAny<Func<IQueryable<ConversationParticipant>, IOrderedQueryable<ConversationParticipant>>>(),
                 It.IsAny<Func<IQueryable<ConversationParticipant>, IIncludableQueryable<ConversationParticipant, object>>>()
-            )).ReturnsAsync(new List<int> { 2 });
+            )).ReturnsAsync(participants);
 
             _userRepo.Setup(r => r.SingleOrDefaultAsync(
                 It.IsAny<Expression<Func<User, string>>>(),
@@ -209,12 +214,17 @@ namespace AptCare.UT.Services
                 It.IsAny<Func<IQueryable<Media>, IIncludableQueryable<Media, object>>>()
             )).ReturnsAsync(new Media { FilePath = "avatar.jpg" });
 
+            // Mock ConversationParticipant GetListAsync (for PushMessageNotificationAsync)
+            var participants = new List<ConversationParticipant>
+            {
+                new ConversationParticipant { ParticipantId = 2, IsMuted = false },
+                new ConversationParticipant { ParticipantId = 3, IsMuted = false }
+            };
             _participantRepo.Setup(r => r.GetListAsync(
-                It.IsAny<Expression<Func<ConversationParticipant, int>>>(),
                 It.IsAny<Expression<Func<ConversationParticipant, bool>>>(),
                 It.IsAny<Func<IQueryable<ConversationParticipant>, IOrderedQueryable<ConversationParticipant>>>(),
                 It.IsAny<Func<IQueryable<ConversationParticipant>, IIncludableQueryable<ConversationParticipant, object>>>()
-            )).ReturnsAsync(new List<int> { 2 });
+            )).ReturnsAsync(participants);
 
             _userRepo.Setup(r => r.SingleOrDefaultAsync(
                 It.IsAny<Expression<Func<User, string>>>(),
