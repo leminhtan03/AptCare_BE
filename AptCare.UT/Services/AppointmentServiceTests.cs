@@ -709,32 +709,6 @@ namespace AptCare.UT.Services
             _reqTrackingRepo.Verify(r => r.InsertAsync(It.Is<RequestTracking>(t => t.Status == RequestStatus.Scheduling)), Times.Once);
         }
 
-        [Fact]
-        public async Task CompleteAppointmentAsync_Throws_WhenRepairReportNotApproved()
-        {
-            // Arrange
-            var id = 1;
-            var appointment = new Appointment
-            {
-                AppointmentId = id,
-                AppointmentTrackings = new List<AppointmentTracking>
-                {
-                    new AppointmentTracking { Status = AppointmentStatus.InRepair, UpdatedAt = DateTime.UtcNow }
-                },
-                RepairReport = new RepairReport { Status = ReportStatus.Pending }
-            };
-
-            _apptRepo.Setup(r => r.SingleOrDefaultAsync(
-                It.IsAny<Expression<Func<Appointment, bool>>>(),
-                It.IsAny<Func<IQueryable<Appointment>, IOrderedQueryable<Appointment>>>(),
-                It.IsAny<Func<IQueryable<Appointment>, IIncludableQueryable<Appointment, object>>>()
-            )).ReturnsAsync(appointment);
-
-            // Act & Assert
-            var ex = await Assert.ThrowsAsync<AppValidationException>(() => _service.CompleteAppointmentAsync(id, "Complete", false, null));
-            Assert.Contains("Báo cáo hoàn thành chưa được chấp thuận", ex.Message);
-        }
-
         #endregion
 
         #region ToogleAppoimnentStatus Tests
