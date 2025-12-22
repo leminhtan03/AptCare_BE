@@ -10,6 +10,7 @@ namespace AptCare.Repository.Enum
     {
         Repair = 1,
         Replacement = 2,
-        Outsource = 3
+        Outsource = 3,
+        Ok = 4
     }
 }
