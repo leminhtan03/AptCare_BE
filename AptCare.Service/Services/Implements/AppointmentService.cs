@@ -824,14 +824,14 @@ namespace AptCare.Service.Services.Implements
             }
             else
             {
-                var repairRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
-                    predicate: x => x.RepairRequestId == appointment.RepairRequestId
-                );
+                //var repairRequest = await _unitOfWork.GetRepository<RepairRequest>().SingleOrDefaultAsync(
+                //    predicate: x => x.RepairRequestId == appointment.RepairRequestId
+                //);
 
-                if (repairRequest.MaintenanceScheduleId != null)
+                if (appointment.RepairRequest.MaintenanceScheduleId != null)
                 {
                     var commonAreaObject = await _unitOfWork.GetRepository<CommonAreaObject>().SingleOrDefaultAsync(
-                    predicate: x => x.MaintenanceSchedule.MaintenanceScheduleId == repairRequest.MaintenanceScheduleId,
+                    predicate: x => x.MaintenanceSchedule.MaintenanceScheduleId == appointment.RepairRequest.MaintenanceScheduleId,
                     include: i => i.Include(x => x.MaintenanceSchedule)
                     );
 
@@ -856,8 +856,8 @@ namespace AptCare.Service.Services.Implements
                         throw new AppValidationException("Thời gian nghiệm thu không hợp lệ.");
                     }
 
-                    repairRequest.AcceptanceTime = acceptanceTime;
-                    _unitOfWork.GetRepository<RepairRequest>().UpdateAsync(repairRequest);
+                    appointment.RepairRequest.AcceptanceTime = acceptanceTime;
+                    _unitOfWork.GetRepository<RepairRequest>().UpdateAsync(appointment.RepairRequest);
 
                     await _unitOfWork.GetRepository<RequestTracking>().InsertAsync(new RequestTracking
                     {
