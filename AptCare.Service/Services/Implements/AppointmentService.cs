@@ -768,10 +768,10 @@ namespace AptCare.Service.Services.Implements
                     throw new AppValidationException("Chưa có báo cáo hoàn thành.");
                 }
 
-                if (appointment.RepairReport.Status != ReportStatus.Approved)
-                {
-                    throw new AppValidationException("Báo cáo hoàn thành chưa được chấp thuận.");
-                }
+                //if (appointment.RepairReport.Status != ReportStatus.Approved)
+                //{
+                //    throw new AppValidationException("Báo cáo hoàn thành chưa được chấp thuận.");
+                //}
             }
             if (currentStatus == AppointmentStatus.AwaitingIRApproval)
             {
