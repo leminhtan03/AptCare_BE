@@ -316,6 +316,7 @@ namespace AptCare.UT.Services
             var appointment = new Appointment
             {
                 AppointmentId = apptId,
+                RepairRequestId = 1,
                 StartTime = DateTime.UtcNow.Date.AddHours(8),
                 AppointmentTrackings = new List<AppointmentTracking>
                 {
@@ -332,6 +333,15 @@ namespace AptCare.UT.Services
                     It.IsAny<Func<IQueryable<Appointment>, IOrderedQueryable<Appointment>>>(),
                     It.IsAny<Func<IQueryable<Appointment>, IIncludableQueryable<Appointment, object>>>()
                 )).ReturnsAsync(appointment);
+
+            var requestTracking = new RequestTracking { RepairRequestId = 1, Status = RequestStatus.InProgress, UpdatedAt = DateTime.Now };
+            _uow.Setup(u => u.GetRepository<RequestTracking>()).Returns(Mock.Of<IGenericRepository<RequestTracking>>(r =>
+                r.SingleOrDefaultAsync(
+                    It.IsAny<Expression<Func<RequestTracking, bool>>>(),
+                    It.IsAny<Func<IQueryable<RequestTracking>, IOrderedQueryable<RequestTracking>>>(),
+                    It.IsAny<Func<IQueryable<RequestTracking>, IIncludableQueryable<RequestTracking, object>>>()
+                ) == Task.FromResult(requestTracking)
+            ));
 
             _trackingRepo.Setup(r => r.InsertAsync(It.IsAny<AppointmentTracking>())).Returns(Task.CompletedTask);
             _notification.Setup(n => n.SendNotificationForTechnicianInAppointment(apptId, It.IsAny<NotificationPushRequestDto>())).Returns(Task.CompletedTask);
@@ -357,6 +367,7 @@ namespace AptCare.UT.Services
             var appointment = new Appointment
             {
                 AppointmentId = apptId,
+                RepairRequestId = 1,
                 AppointmentTrackings = new List<AppointmentTracking>(),
                 AppointmentAssigns = new List<AppointmentAssign> { assign }
             };
@@ -367,7 +378,16 @@ namespace AptCare.UT.Services
                     It.IsAny<Func<IQueryable<Appointment>, IIncludableQueryable<Appointment, object>>>()
                 )).ReturnsAsync(appointment);
 
+            var requestTracking = new RequestTracking { RepairRequestId = 1, Status = RequestStatus.InProgress, UpdatedAt = DateTime.Now };
+            _uow.Setup(u => u.GetRepository<RequestTracking>()).Returns(Mock.Of<IGenericRepository<RequestTracking>>(r =>
+                r.SingleOrDefaultAsync(
+                    It.IsAny<Expression<Func<RequestTracking, bool>>>(),
+                    It.IsAny<Func<IQueryable<RequestTracking>, IOrderedQueryable<RequestTracking>>>(),
+                    It.IsAny<Func<IQueryable<RequestTracking>, IIncludableQueryable<RequestTracking, object>>>()
+                ) == Task.FromResult(requestTracking)
+            ));
             _trackingRepo.Setup(r => r.InsertAsync(It.IsAny<AppointmentTracking>())).Returns(Task.CompletedTask);
+            _userContext.SetupGet(u => u.CurrentUserId).Returns(777);
 
             // Act
             var result = await _service.ConfirmAssignmentAsync(apptId, false);

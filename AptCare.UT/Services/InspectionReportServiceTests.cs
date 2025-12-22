@@ -458,24 +458,25 @@ namespace AptCare.UT.Services
                 filter = "Pending"
             };
 
-            var reportDetail = new InspectionReportDetailDto
+            var createdAt = DateTime.Now;
+
+            var reportDetailDto = new InspectionReportDetailDto
             {
                 InspectionReportId = 1,
+                Description = "Test report",
+                CreatedAt = createdAt,
                 Appointment = new AppointmentDto
                 {
                     RepairRequest = new RepairRequestBasicDto
                     {
                         RepairRequestId = 1
                     }
-                },
-                CreatedAt = DateTime.Now
+                }
             };
-
-            var reports = new List<InspectionReportDetailDto> { reportDetail };
 
             var paginate = new Paginate<InspectionReportDetailDto>
             {
-                Items = reports,
+                Items = new List<InspectionReportDetailDto> { reportDetailDto },
                 Page = 1,
                 Size = 10,
                 Total = 1
@@ -483,7 +484,6 @@ namespace AptCare.UT.Services
 
             _userContext.SetupGet(u => u.CurrentUserId).Returns(userId);
 
-            // Fix: Match the actual method signature with selector first
             _inspectionReportRepo.Setup(r => r.GetPagingListAsync(
                 It.IsAny<Expression<Func<InspectionReport, InspectionReportDetailDto>>>(),
                 It.IsAny<Expression<Func<InspectionReport, bool>>>(),
@@ -493,19 +493,50 @@ namespace AptCare.UT.Services
                 It.IsAny<int>()
             )).ReturnsAsync(paginate);
 
+            // ✅ FIX: Mock Media repository để trả về entities (không dùng selector)
+            var mediaEntities = new List<Media>
+    {
+        new Media
+        {
+            MediaId = 1,
+            EntityId = 1,
+            Entity = "InspectionReport",
+            FilePath = "test.jpg",
+            Status = ActiveStatus.Active
+        }
+    };
+
             _mediaRepo.Setup(r => r.GetListAsync(
-                It.IsAny<Expression<Func<Media, MediaDto>>>(),
                 It.IsAny<Expression<Func<Media, bool>>>(),
                 It.IsAny<Func<IQueryable<Media>, IOrderedQueryable<Media>>>(),
                 It.IsAny<Func<IQueryable<Media>, IIncludableQueryable<Media, object>>>()
-            )).ReturnsAsync(new List<MediaDto>());
+            )).ReturnsAsync(mediaEntities);
 
-            _invoiceRepo.Setup(r => r.SingleOrDefaultAsync(
+            // Mock mapper for Media entities
+            _mapper.Setup(m => m.Map<MediaDto>(It.IsAny<Media>()))
+                .Returns((Media m) => new MediaDto
+                {
+                    MediaId = m.MediaId,
+                    FilePath = m.FilePath
+                });
+
+            // Mock Invoice repository
+            var invoices = new List<InvoiceDto>
+    {
+        new InvoiceDto
+        {
+            InvoiceId = 1,
+            RepairRequestId = 1,
+            CreatedAt = createdAt.AddSeconds(-1)
+        }
+    };
+
+            _invoiceRepo.Setup(r => r.GetListAsync(
                 It.IsAny<Expression<Func<Invoice, InvoiceDto>>>(),
                 It.IsAny<Expression<Func<Invoice, bool>>>(),
                 It.IsAny<Func<IQueryable<Invoice>, IOrderedQueryable<Invoice>>>(),
                 It.IsAny<Func<IQueryable<Invoice>, IIncludableQueryable<Invoice, object>>>()
-            )).ReturnsAsync((InvoiceDto)null);
+            )).ReturnsAsync(invoices);
 
             // Act
             var result = await _service.GetPaginateInspectionReportsAsync(filterDto);
@@ -514,6 +545,40 @@ namespace AptCare.UT.Services
             Assert.NotNull(result);
             Assert.Single(result.Items);
             Assert.Equal(1, result.Total);
+            Assert.Equal(1, result.Page);
+            Assert.Equal(10, result.Size);
+
+            var firstItem = result.Items.First();
+            Assert.Equal(1, firstItem.InspectionReportId);
+            Assert.NotNull(firstItem.Medias);
+            Assert.Single(firstItem.Medias);
+            Assert.NotNull(firstItem.Invoice);
+            Assert.Single(firstItem.Invoice);
+
+            // Verify calls
+            _inspectionReportRepo.Verify(r => r.GetPagingListAsync(
+                It.IsAny<Expression<Func<InspectionReport, InspectionReportDetailDto>>>(),
+                It.IsAny<Expression<Func<InspectionReport, bool>>>(),
+                It.IsAny<Func<IQueryable<InspectionReport>, IOrderedQueryable<InspectionReport>>>(),
+                It.IsAny<Func<IQueryable<InspectionReport>, IIncludableQueryable<InspectionReport, object>>>(),
+                It.IsAny<int>(),
+                It.IsAny<int>()
+            ), Times.Once);
+
+            _mediaRepo.Verify(r => r.GetListAsync(
+                It.IsAny<Expression<Func<Media, bool>>>(),
+                It.IsAny<Func<IQueryable<Media>, IOrderedQueryable<Media>>>(),
+                It.IsAny<Func<IQueryable<Media>, IIncludableQueryable<Media, object>>>()
+            ), Times.Once);
+
+            _invoiceRepo.Verify(r => r.GetListAsync(
+                It.IsAny<Expression<Func<Invoice, InvoiceDto>>>(),
+                It.IsAny<Expression<Func<Invoice, bool>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IOrderedQueryable<Invoice>>>(),
+                It.IsAny<Func<IQueryable<Invoice>, IIncludableQueryable<Invoice, object>>>()
+            ), Times.Once);
+
+            _mapper.Verify(m => m.Map<MediaDto>(It.IsAny<Media>()), Times.Once);
         }
 
         #endregion

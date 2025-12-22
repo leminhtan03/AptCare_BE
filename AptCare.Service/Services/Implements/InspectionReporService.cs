@@ -443,14 +443,18 @@ namespace AptCare.Service.Services.Implements
                     return paginateEntityResult;
 
                 var reportIds = paginateEntityResult.Items.Select(x => x.InspectionReportId).ToList();
-                var allMedias = await _unitOfWork.GetRepository<Media>().GetListAsync(
-                    selector: s => new { s.EntityId, Media = _mapper.Map<MediaDto>(s) },
-                    predicate: p => p.Entity == nameof(InspectionReport) &&
-                                    reportIds.Contains(p.EntityId) &&
-                                    p.Status == ActiveStatus.Active
-                );
-                var mediasByReportId = allMedias.GroupBy(m => m.EntityId)
-                                                .ToDictionary(g => g.Key, g => g.Select(x => x.Media).ToList());
+                var allMediaEntities = await _unitOfWork.GetRepository<Media>().GetListAsync(
+                        predicate: p => p.Entity == nameof(InspectionReport) &&
+                                        reportIds.Contains(p.EntityId) &&
+                                        p.Status == ActiveStatus.Active
+                    );
+
+                var mediasByReportId = allMediaEntities
+                    .GroupBy(m => m.EntityId)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(media => _mapper.Map<MediaDto>(media)).ToList()
+                    );
 
                 var repairRequestIds = paginateEntityResult.Items
                     .Where(x => x.Appointment?.RepairRequest != null)

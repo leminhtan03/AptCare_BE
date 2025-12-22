@@ -11,7 +11,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AptCare.Api.Controllers
 {
-    [Authorize(Roles = nameof(AccountRole.Manager))]
     public class UserManagementController : BaseApiController
     {
         private readonly IUserService _userService;
@@ -34,6 +33,7 @@ namespace AptCare.Api.Controllers
         /// - 500 Internal Server Error if an exception occurs
         /// </returns>
         [HttpGet("{id}")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -88,6 +88,7 @@ namespace AptCare.Api.Controllers
         /// <exception cref="ArgumentException">Ném khi ID không hợp lệ</exception>
         /// <exception cref="ValidationException">Ném khi dữ liệu đầu vào vi phạm validation rules</exception>
         [HttpPut("{id}")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -139,6 +140,7 @@ namespace AptCare.Api.Controllers
         /// <exception cref="ArgumentException">Ném khi các tham số phân trang không hợp lệ</exception>
         /// <exception cref="InvalidOperationException">Ném khi có lỗi trong quá trình truy vấn dữ liệu</exception>
         [HttpGet("profile_data")]
+        [Authorize(Roles = $"{nameof(AccountRole.TechnicianLead)},{nameof(AccountRole.Manager)}")]
         [ProducesResponseType(typeof(IPaginate<UserGetAllDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -183,6 +185,7 @@ namespace AptCare.Api.Controllers
         /// <exception cref="InvalidDataException">Ném khi cấu trúc dữ liệu trong Excel không đúng</exception>
         /// <exception cref="IOException">Ném khi có lỗi đọc file</exception>
         [HttpPost("import-residents")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
         [ProducesResponseType(typeof(ImportResultDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -267,6 +270,7 @@ namespace AptCare.Api.Controllers
         /// </code>
         /// </remarks>
         [HttpPost("create-user-data")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto createUserDto)
@@ -310,6 +314,7 @@ namespace AptCare.Api.Controllers
         /// <exception cref="InvalidOperationException">Ném khi không thể lưu trữ file ảnh</exception>
         /// <exception cref="IOException">Ném khi có lỗi đọc hoặc ghi file</exception>
         [HttpPut("update-user-profile-image")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -333,6 +338,7 @@ namespace AptCare.Api.Controllers
         /// - Hủy lịch hẹn Pending
         /// </remarks>
         [HttpPut("{userId}/inactivate")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
         public async Task<IActionResult> InactivateUser(int userId, [FromBody] InactivateUserDto dto)
         {
             var message = await _userService.InactivateUserAsync(userId, dto);
@@ -340,6 +346,7 @@ namespace AptCare.Api.Controllers
         }
 
         [HttpPut("{userId}/update-technique-technican")]
+        [Authorize(Roles = nameof(AccountRole.Manager))]
         public async Task<IActionResult> UpdateTechniqueTechnican(int userId, [FromBody] ICollection<int> newTechnique)
         {
             var message = await _userService.UpdateTechniqueTechnican(userId, newTechnique);
