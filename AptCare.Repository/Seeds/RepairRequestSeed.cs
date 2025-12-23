@@ -579,7 +579,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.InProgress_WithApprovedInvoice,
-                    BaseDate = today.AddDays(-3),
+                    BaseDate = today.AddDays(-5),
                     Count = 2,
                     FinalStatus = RequestStatus.InProgress,
                     FaultType = Enum.FaultType.BuildingFault,
@@ -595,7 +595,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.InProgress_WithDraftInvoice,
-                    BaseDate = today.AddDays(-2),
+                    BaseDate = today.AddDays(-4),
                     Count = 2,
                     FinalStatus = RequestStatus.InProgress,
                     FaultType = Enum.FaultType.ResidentFault,
@@ -611,7 +611,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.AcceptancePending_InvoicePaid,
-                    BaseDate = today.AddDays(-2),
+                    BaseDate = today.AddDays(-3),
                     Count = 2,
                     FinalStatus = RequestStatus.AcceptancePendingVerify,
                     FaultType = Enum.FaultType.BuildingFault,
@@ -627,7 +627,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.AcceptancePending_AwaitingPayment,
-                    BaseDate = today.AddDays(-1),
+                    BaseDate = today.AddDays(-2),
                     Count = 2,
                     FinalStatus = RequestStatus.AcceptancePendingVerify,
                     FaultType = Enum.FaultType.ResidentFault,
@@ -643,7 +643,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.Approved_WaitingStart,
-                    BaseDate = today.AddDays(-1),
+                    BaseDate = today.AddDays(-2),
                     Count = 3,
                     FinalStatus = RequestStatus.Approved,
                     HasInvoice = false,
@@ -652,7 +652,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.Pending_New,
-                    BaseDate = today,
+                    BaseDate = today.AddDays(-1),
                     Count = 3,
                     FinalStatus = RequestStatus.Pending,
                     HasInvoice = false,
@@ -661,7 +661,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.WaitingManagerApproval,
-                    BaseDate = today.AddDays(1),
+                    BaseDate = today.AddDays(-1),
                     Count = 3,
                     FinalStatus = RequestStatus.WaitingManagerApproval,
                     HasInvoice = false,
