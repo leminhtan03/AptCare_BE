@@ -26,17 +26,18 @@ namespace AptCare.Repository.Seeds
             if (morningSlot == null || eveningSlot == null || nightSlot == null) return;
 
             var workSlots = new List<WorkSlot>();
-            var random = new Random(42); // Fixed seed for reproducibility
+            var random = new Random(42);
 
-            // ⭐ Bắt đầu từ tháng 1/2025 đến cuối tháng 3/2026
-            var startDate = new DateOnly(2025, 1, 1);
-            var endDate = new DateOnly(2026, 3, 31);
             var today = DateOnly.FromDateTime(DateTime.Now);
+
+            var sixMonthsAgo = today.AddMonths(-6);
+            var jan2025 = new DateOnly(2025, 1, 1);
+            var startDate = sixMonthsAgo > jan2025 ? sixMonthsAgo : jan2025;
+
+            var endDate = today.AddMonths(3);
 
             var previousDaySlots = new Dictionary<int, int>();
 
-            // Quy tắc: Ca đêm hôm trước không được làm ca sáng hôm sau
-            // Ca tối hôm trước không được làm ca đêm hôm sau
             var incompatibleNextSlots = new Dictionary<int, int>
             {
                 { nightSlot.SlotId, morningSlot.SlotId },
@@ -45,7 +46,6 @@ namespace AptCare.Repository.Seeds
 
             for (var date = startDate; date <= endDate; date = date.AddDays(1))
             {
-                // Số lượng kỹ thuật viên mỗi ca (đảm bảo luôn có người trực)
                 int morningCount = GetSlotCount(date, "morning", random);
                 int eveningCount = GetSlotCount(date, "evening", random);
                 int nightCount = GetSlotCount(date, "night", random);
@@ -53,14 +53,11 @@ namespace AptCare.Repository.Seeds
                 var availableTechs = technicians.OrderBy(_ => random.Next()).ToList();
                 var todayAssignments = new Dictionary<int, int>();
 
-                // Helper kiểm tra có thể assign slot không
                 bool CanAssignSlot(User tech, int slotId)
                 {
-                    // Không làm 2 ca cùng ngày
                     if (todayAssignments.ContainsKey(tech.UserId))
                         return false;
 
-                    // Kiểm tra ca liên tiếp
                     if (previousDaySlots.TryGetValue(tech.UserId, out var yesterdaySlotId))
                     {
                         if (incompatibleNextSlots.TryGetValue(yesterdaySlotId, out var incompatibleSlotId))
@@ -73,7 +70,6 @@ namespace AptCare.Repository.Seeds
                     return true;
                 }
 
-                // Xác định status dựa trên ngày
                 WorkSlotStatus GetStatus(DateOnly workDate)
                 {
                     if (workDate < today)
@@ -84,7 +80,6 @@ namespace AptCare.Repository.Seeds
                         return WorkSlotStatus.NotStarted;
                 }
 
-                // Assign ca sáng
                 var assignedMorning = 0;
                 foreach (var tech in availableTechs.Where(t => CanAssignSlot(t, morningSlot.SlotId)))
                 {
@@ -101,7 +96,6 @@ namespace AptCare.Repository.Seeds
                     assignedMorning++;
                 }
 
-                // Assign ca tối
                 var assignedEvening = 0;
                 foreach (var tech in availableTechs.Where(t => CanAssignSlot(t, eveningSlot.SlotId)))
                 {
@@ -118,7 +112,6 @@ namespace AptCare.Repository.Seeds
                     assignedEvening++;
                 }
 
-                // Assign ca đêm
                 var assignedNight = 0;
                 foreach (var tech in availableTechs.Where(t => CanAssignSlot(t, nightSlot.SlotId)))
                 {
@@ -142,9 +135,6 @@ namespace AptCare.Repository.Seeds
             await context.SaveChangesAsync();
         }
 
-        /// <summary>
-        /// Xác định số lượng kỹ thuật viên cho mỗi ca dựa trên ngày trong tuần
-        /// </summary>
         private static int GetSlotCount(DateOnly date, string slotType, Random random)
         {
             var dayOfWeek = date.DayOfWeek;

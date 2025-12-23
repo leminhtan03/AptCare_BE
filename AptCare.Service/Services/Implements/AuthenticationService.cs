@@ -151,9 +151,9 @@ namespace AptCare.Service.Services.Implements
                 throw new AppValidationException("Thiếu thông tin đăng nhập.");
             var accRepo = _unitOfWork.GetRepository<Account>();
             var userRepo = _unitOfWork.GetRepository<User>();
-            Account account = await accRepo.SingleOrDefaultAsync(predicate: a => a.Username == dto.UsernameOrEmail,
-                                include: q => q.Include(x => x.User));
-            if (account == null)
+            Account account = await accRepo.SingleOrDefaultAsync(predicate: a => a.Username == dto.UsernameOrEmail, include: q => q.Include(x => x.User));
+            var pwdResult = _pwdHasher.VerifyHashedPassword(account, account.PasswordHash, dto.Password);
+            if (account == null || pwdResult == PasswordVerificationResult.Failed)
                 throw new AppValidationException("Tài khoản hoặc mật khẩu không đúng.");
             if (account.LockoutEnabled)
                 throw new AppValidationException("Tài khoản đã bị vô hiệu hoá.");
@@ -161,7 +161,6 @@ namespace AptCare.Service.Services.Implements
                 throw new PasswordChangeRequiredException(account.AccountId);
             if (!account.EmailConfirmed)
                 throw new AppValidationException("Email chưa xác minh. Vui lòng xác minh trước khi đăng nhập.");
-            var pwdResult = _pwdHasher.VerifyHashedPassword(account, account.PasswordHash, dto.Password);
             if (pwdResult == PasswordVerificationResult.Failed)
                 throw new AppValidationException("Tài khoản hoặc mật khẩu không đúng.");
 

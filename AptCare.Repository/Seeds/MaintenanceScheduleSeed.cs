@@ -77,6 +77,7 @@ namespace AptCare.Repository.Seeds
                 new TimeSpan(15, 0, 0),
             };
 
+            int objectIndex = 0;
             foreach (var cao in commonAreaObjects)
             {
                 var typeName = cao.CommonAreaObjectType.TypeName;
@@ -125,22 +126,18 @@ namespace AptCare.Repository.Seeds
                     }
                 }
 
-                // Tinh ngay bao tri tiep theo
-                var daysUntilNext = random.Next(1, frequency + 1);
+                var daysUntilNext = 4 + (objectIndex * 3) + random.Next(1, 5);
                 var nextScheduledDate = today.AddDays(daysUntilNext);
 
-                // Tinh ngay bao tri gan nhat
                 DateOnly? lastMaintenanceDate = null;
                 if (random.Next(100) < 70)
                 {
-                    var daysSinceLast = random.Next(frequency / 2, frequency * 2);
+                    var daysSinceLast = random.Next(frequency / 2, frequency);
                     lastMaintenanceDate = today.AddDays(-daysSinceLast);
                 }
 
-                // Chon thoi gian uu tien
-                var timePreference = preferredTimes[random.Next(preferredTimes.Length)];
+                var timePreference = preferredTimes[objectIndex % preferredTimes.Length];
 
-                // Tao description (khong dau)
                 var description = GenerateDescription(typeName, cao.Name, frequency);
 
                 schedules.Add(new MaintenanceSchedule
@@ -157,6 +154,8 @@ namespace AptCare.Repository.Seeds
                     CreatedAt = DateTime.Now.AddMonths(-random.Next(1, 6)),
                     Status = ActiveStatus.Active
                 });
+
+                objectIndex++;
             }
 
             context.MaintenanceSchedules.AddRange(schedules);
@@ -166,7 +165,7 @@ namespace AptCare.Repository.Seeds
         private static string RemoveDiacritics(string text)
         {
             if (string.IsNullOrEmpty(text)) return text;
-            
+
             var normalizedString = text.Normalize(System.Text.NormalizationForm.FormD);
             var stringBuilder = new System.Text.StringBuilder();
 
@@ -198,31 +197,31 @@ namespace AptCare.Repository.Seeds
 
             if (typeNameNormalized.Contains("thang may"))
                 return $"Bao tri dinh ky {frequencyText} cho {objectName}. Kiem tra day cap, phanh, cua cabin va tra dau dong co.";
-            
+
             if (typeNameNormalized.Contains("den") || typeNameNormalized.Contains("chieu sang"))
                 return $"Kiem tra va bao tri he thong chieu sang {frequencyText}. Thay bong hong, ve sinh chup den.";
-            
+
             if (typeNameNormalized.Contains("camera"))
                 return $"Bao tri camera {frequencyText}. Kiem tra goc quay, ve sinh ong kinh, test ket noi mang.";
-            
+
             if (typeNameNormalized.Contains("cam bien") && typeNameNormalized.Contains("chay"))
                 return $"Kiem tra he thong PCCC {frequencyText}. Test cam bien khoi, ve sinh, kiem tra pin backup.";
-            
+
             if (typeNameNormalized.Contains("tu dien"))
                 return $"Bao tri tu dien {frequencyText}. Kiem tra CB, siet dau noi, do nhiet do phat hien diem nong.";
-            
+
             if (typeNameNormalized.Contains("quat") || typeNameNormalized.Contains("thong gio"))
                 return $"Bao tri quat thong gio {frequencyText}. Ve sinh canh quat, kiem tra motor, tra dau o truc.";
-            
+
             if (typeNameNormalized.Contains("bon nuoc"))
                 return $"Ve sinh va bao tri bon nuoc {frequencyText}. Co rua, khu trung, kiem tra phao nuoc.";
-            
+
             if (typeNameNormalized.Contains("may loc") || typeNameNormalized.Contains("loc nuoc"))
                 return $"Bao tri may loc nuoc {frequencyText}. Thay loi loc, kiem tra ap suat, ve sinh bom.";
-            
+
             if (typeNameNormalized.Contains("cam bien") && typeNameNormalized.Contains("co"))
                 return $"Kiem tra cam bien CO {frequencyText}. Test do nhay, hieu chuan nguong bao dong.";
-            
+
             return $"Bao tri dinh ky {frequencyText} cho {objectName}.";
         }
     }
