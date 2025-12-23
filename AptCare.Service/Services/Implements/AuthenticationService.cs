@@ -152,6 +152,8 @@ namespace AptCare.Service.Services.Implements
             var accRepo = _unitOfWork.GetRepository<Account>();
             var userRepo = _unitOfWork.GetRepository<User>();
             Account account = await accRepo.SingleOrDefaultAsync(predicate: a => a.Username == dto.UsernameOrEmail, include: q => q.Include(x => x.User));
+            if (account == null)
+                throw new AppValidationException("Tài khoản không tồn tại.");
             var pwdResult = _pwdHasher.VerifyHashedPassword(account, account.PasswordHash, dto.Password);
             if (account == null || pwdResult == PasswordVerificationResult.Failed)
                 throw new AppValidationException("Tài khoản hoặc mật khẩu không đúng.");
