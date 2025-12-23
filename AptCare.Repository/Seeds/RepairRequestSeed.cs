@@ -74,6 +74,11 @@ namespace AptCare.Repository.Seeds
                 {
                     var createdAt = scenario.BaseDate.AddDays(i).AddHours(8 + (i % 8));
 
+                    if (IsBlockedDate(createdAt))
+                    {
+                        continue;
+                    }
+
                     CreateRepairRequestByScenario(
                         scenario,
                         seedData,
@@ -574,14 +579,16 @@ namespace AptCare.Repository.Seeds
             }
 
             // DU LIEU HIEN TAI - Cac trang thai dang xu ly
+            // Chi tao cac yeu cau co lich hen trong tuong lai hoac gan day
             if (today.Year >= 2025 && today.Month >= 7)
             {
+                // Cac yeu cau da hoan thanh gan day (lich hen da qua)
                 configs.Add(new ScenarioConfig
                 {
-                    Scenario = RepairScenario.InProgress_WithApprovedInvoice,
-                    BaseDate = today.AddDays(-5),
-                    Count = 2,
-                    FinalStatus = RequestStatus.InProgress,
+                    Scenario = RepairScenario.Completed_BuildingFault_Free_FromStock,
+                    BaseDate = new DateTime(today.Year, today.Month, 1),
+                    Count = 3,
+                    FinalStatus = RequestStatus.Completed,
                     FaultType = Enum.FaultType.BuildingFault,
                     SolutionType = Enum.SolutionType.Repair,
                     InvoiceType = Enum.InvoiceType.InternalRepair,
@@ -590,28 +597,46 @@ namespace AptCare.Repository.Seeds
                     UseFromStock = true,
                     HasInvoice = true,
                     HasStockTransaction = true,
-                    Description = "Dang xu ly - Hoa don da duyet"
+                    Description = "Hoan thanh dau thang - Loi toa nha"
                 });
                 configs.Add(new ScenarioConfig
                 {
-                    Scenario = RepairScenario.InProgress_WithDraftInvoice,
-                    BaseDate = today.AddDays(-4),
+                    Scenario = RepairScenario.Completed_ResidentFault_Chargeable_FromStock,
+                    BaseDate = new DateTime(today.Year, today.Month, 5),
                     Count = 2,
-                    FinalStatus = RequestStatus.InProgress,
+                    FinalStatus = RequestStatus.Completed,
                     FaultType = Enum.FaultType.ResidentFault,
                     SolutionType = Enum.SolutionType.Repair,
                     InvoiceType = Enum.InvoiceType.InternalRepair,
-                    InvoiceStatus = Enum.InvoiceStatus.Draft,
+                    InvoiceStatus = Enum.InvoiceStatus.Paid,
                     IsChargeable = true,
                     UseFromStock = true,
                     HasInvoice = true,
-                    HasStockTransaction = false,
-                    Description = "Dang xu ly - Hoa don nhap"
+                    HasStockTransaction = true,
+                    Description = "Hoan thanh giua thang - Loi cu dan"
                 });
                 configs.Add(new ScenarioConfig
                 {
+                    Scenario = RepairScenario.Completed_BuildingFault_Free_FromStock,
+                    BaseDate = new DateTime(today.Year, today.Month, 10),
+                    Count = 2,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.BuildingFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Approved,
+                    IsChargeable = false,
+                    UseFromStock = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Hoan thanh giua thang - Loi toa nha"
+                });
+
+                // Cac yeu cau cho nghiem thu (lich hen da qua, da suas xong, cho cu dan xac nhan)
+                configs.Add(new ScenarioConfig
+                {
                     Scenario = RepairScenario.AcceptancePending_InvoicePaid,
-                    BaseDate = today.AddDays(-3),
+                    BaseDate = new DateTime(today.Year, today.Month, 15),
                     Count = 2,
                     FinalStatus = RequestStatus.AcceptancePendingVerify,
                     FaultType = Enum.FaultType.BuildingFault,
@@ -627,7 +652,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.AcceptancePending_AwaitingPayment,
-                    BaseDate = today.AddDays(-2),
+                    BaseDate = new DateTime(today.Year, today.Month, 17),
                     Count = 2,
                     FinalStatus = RequestStatus.AcceptancePendingVerify,
                     FaultType = Enum.FaultType.ResidentFault,
@@ -640,29 +665,58 @@ namespace AptCare.Repository.Seeds
                     HasStockTransaction = true,
                     Description = "Cho nghiem thu - Cho thanh toan"
                 });
+
+                // Cac yeu cau dang xu ly (lich hen la hom nay hoac hom qua)
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.InProgress_WithApprovedInvoice,
+                    BaseDate = new DateTime(today.Year, today.Month, 20),
+                    Count = 2,
+                    FinalStatus = RequestStatus.InProgress,
+                    FaultType = Enum.FaultType.BuildingFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Approved,
+                    IsChargeable = false,
+                    UseFromStock = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Dang xu ly - Hoa don da duyet"
+                });
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.InProgress_WithDraftInvoice,
+                    BaseDate = new DateTime(today.Year, today.Month, 20),
+                    Count = 2,
+                    FinalStatus = RequestStatus.InProgress,
+                    FaultType = Enum.FaultType.ResidentFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Draft,
+                    IsChargeable = true,
+                    UseFromStock = true,
+                    HasInvoice = true,
+                    HasStockTransaction = false,
+                    Description = "Dang xu ly - Hoa don nhap"
+                });
+
+                // Cac yeu cau da duyet, cho bat dau - chi tao 1 yeu cau ngay 22
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.Approved_WaitingStart,
-                    BaseDate = today.AddDays(-2),
+                    BaseDate = new DateTime(today.Year, today.Month, 19),
                     Count = 3,
                     FinalStatus = RequestStatus.Approved,
                     HasInvoice = false,
                     Description = "Da duyet - Cho bat dau"
                 });
-                configs.Add(new ScenarioConfig
-                {
-                    Scenario = RepairScenario.Pending_New,
-                    BaseDate = today.AddDays(-1),
-                    Count = 3,
-                    FinalStatus = RequestStatus.Pending,
-                    HasInvoice = false,
-                    Description = "Yeu cau moi cho duyet"
-                });
+                
+                // Cac yeu cau cho Manager phe duyet - chi tao 1 yeu cau ngay 22
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.WaitingManagerApproval,
-                    BaseDate = today.AddDays(-1),
-                    Count = 3,
+                    BaseDate = new DateTime(today.Year, today.Month, 22),
+                    Count = 1,
                     FinalStatus = RequestStatus.WaitingManagerApproval,
                     HasInvoice = false,
                     Description = "Cho Manager phe duyet"
@@ -781,7 +835,8 @@ namespace AptCare.Repository.Seeds
 
             if (config.FinalStatus != RequestStatus.Pending)
             {
-                var appointmentStart = createdAt.AddDays(1).Date.AddHours(9);
+                // Tinh toan ngay hen - tranh ngay 24 de khong anh huong demo
+                var appointmentStart = CalculateAppointmentStartDate(createdAt, issue.EstimatedDuration);
                 var appointmentEnd = appointmentStart.AddHours(issue.EstimatedDuration);
                 int currentAppointmentId = counter.AppointmentId;
 
@@ -805,10 +860,13 @@ namespace AptCare.Repository.Seeds
                 );
                 data.AppointmentTrackings.AddRange(apptTrackings);
 
-                // AppointmentAssign
+                // AppointmentAssign - Khong phan cong neu lich hen vao ngay 24
                 User? assignedTechnician = null;
-                if (config.FinalStatus != RequestStatus.Cancelled &&
-                    config.FinalStatus != RequestStatus.WaitingManagerApproval)
+                bool shouldAssignTechnician = config.FinalStatus != RequestStatus.Cancelled &&
+                    config.FinalStatus != RequestStatus.WaitingManagerApproval &&
+                    !IsBlockedAppointmentDate(appointmentStart);
+
+                if (shouldAssignTechnician)
                 {
                     var techIndex = index % seedData.Technicians.Count;
                     var assignedTechs = seedData.Technicians
@@ -915,6 +973,47 @@ namespace AptCare.Repository.Seeds
             }
 
             counter.RequestId++;
+        }
+
+        /// <summary>
+        /// Tinh toan ngay bat dau lich hen
+        /// Dam bao lich hen khong roi vao ngay 24 tro di
+        /// </summary>
+        private static DateTime CalculateAppointmentStartDate(DateTime createdAt, double estimatedDuration)
+        {
+            var today = DateTime.Now;
+            var proposedDate = createdAt.AddDays(1).Date.AddHours(9);
+
+            // Neu lich hen roi vao ngay 24 tro di trong thang hien tai, dat lai ngay 23
+            if (proposedDate.Month == today.Month && proposedDate.Year == today.Year && proposedDate.Day >= 24)
+            {
+                proposedDate = new DateTime(today.Year, today.Month, 23, 9, 0, 0);
+            }
+
+            return proposedDate;
+        }
+        /// <summary>
+        /// Kiem tra xem ngay co bi chan khong
+        /// Chi tao yeu cau cho ngay 23 va truoc do
+        /// Khong tao cho ngay 24 tro di (ngay hien tai va tuong lai)
+        /// </summary>
+        private static bool IsBlockedDate(DateTime date)
+        {
+            var today = DateTime.Now.Date;
+            // Chi tao yeu cau cho ngay 23 va truoc do
+            // Khong tao cho ngay 24 tro di (ngay hien tai va tuong lai)
+            return date.Date >= today;
+        }
+
+        /// <summary>
+        /// Kiem tra xem ngay lich hen co bi chan khong
+        /// Khong tao lich hen vao ngay 24 tro di
+        /// </summary>
+        private static bool IsBlockedAppointmentDate(DateTime date)
+        {
+            var today = DateTime.Now.Date;
+            // Khong tao lich hen vao ngay 24 tro di
+            return date.Date >= today;
         }
 
         #endregion
