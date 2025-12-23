@@ -30,20 +30,15 @@ namespace AptCare.Repository.Seeds
             await SeedAccessories(context);
             await SeedAccessoryMedias(context);
             await SeedBudget(context);
-            await SeedMonthlyManagementFeeTransactions(context);
-            
-            // ⭐ Sử dụng file seed riêng
             await WorkSlotSeed.SeedAsync(context);
             await MaintenanceScheduleSeed.SeedAsync(context);
             await RepairRequestSeed.SeedAsync(context);
-            
-            // ⭐ Seed RepairRequest từ MaintenanceSchedule (bảo trì định kỳ)
-            // Lấy ID tiếp theo sau RepairRequestSeed
-            var lastRequestId = context.RepairRequests.Any() 
-                ? context.RepairRequests.Max(r => r.RepairRequestId) + 1 
+
+            var lastRequestId = context.RepairRequests.Any()
+                ? context.RepairRequests.Max(r => r.RepairRequestId) + 1
                 : 1;
-            var lastAppointmentId = context.Appointments.Any() 
-                ? context.Appointments.Max(a => a.AppointmentId) + 1 
+            var lastAppointmentId = context.Appointments.Any()
+                ? context.Appointments.Max(a => a.AppointmentId) + 1
                 : 1;
             await MaintenanceRepairRequestSeed.SeedAsync(context, lastRequestId, lastAppointmentId);
         }
@@ -239,14 +234,14 @@ namespace AptCare.Repository.Seeds
                 {
                     FirstName = "Ban",
                     LastName = "Quản Lí",
-                    Email = "BanQuanLi@aptcare.vn",
+                    Email = "hduch05@gmail.com",
                     PhoneNumber = $"0{phoneManager:D9}",
                     CitizenshipIdentity = $"{cccdManager}",
                     Status = ActiveStatus.Active
                 };
                 var managerAccount = new Account
                 {
-                    Username = "BanQuanLi@aptcare.vn",
+                    Username = "hduch05@gmail.com",
                     Role = AccountRole.Manager,
                     EmailConfirmed = true,
                     LockoutEnabled = false,
@@ -1170,6 +1165,14 @@ namespace AptCare.Repository.Seeds
                         Price = 12000000,
                         Quantity = 5,
                         Status = ActiveStatus.Active
+                    },
+                    new Accessory
+                    {
+                        Name = "Gas lạnh R32",
+                        Descrption = "Gas lạnh thay thế cho máy lạnh.",
+                        Price = 100000,
+                        Quantity = 30,
+                        Status = ActiveStatus.Active
                     }
                 };
 
@@ -1180,14 +1183,11 @@ namespace AptCare.Repository.Seeds
 
         private static async Task SeedAccessoryMedias(AptCareSystemDBContext context)
         {
-            // Chỉ seed nếu chưa có media cho Accessory
             if (!context.Medias.Any(m => m.Entity == nameof(Accessory)))
             {
                 var accessories = context.Accessories.AsNoTracking().ToList();
                 if (!accessories.Any())
                     return;
-
-                // Các ảnh mẫu public (Unsplash) - mỗi accessory sẽ nhận một ảnh phù hợp
                 var urls = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["bulb"] = "https://tse3.mm.bing.net/th/id/OIP.im3DkrUPFL6P_LDh63hd9wHaFR?pid=Api&P=0&h=220",
@@ -1200,7 +1200,9 @@ namespace AptCare.Repository.Seeds
                     ["valve"] = "https://tse2.mm.bing.net/th/id/OIP.T5fLLXtJlW3ghk9udKWGvAHaIJ?pid=Api&P=0&h=220",
                     ["hinge"] = "https://tse1.mm.bing.net/th/id/OIP.NgxmBpUc4kYPcZo8XTbS_QHaEo?pid=Api&P=0&h=220",
                     ["wire"] = "https://tse1.mm.bing.net/th/id/OIP.N-fS3UF6DyyPFW5IQig3MAHaE7?pid=Api&P=0&h=220",
+                    ["gas"] = "https://dienmayhaianh.vn/data/upload/Ga-May-Lanh-R32-Floron-An-Do-Binh-9kg.jpg",
                     ["default"] = "https://tse1.mm.bing.net/th/id/OIP.qVV8kcLdcLysZ5OOCzhKLAHaF7?pid=Api&P=0&h=220"
+
                 };
 
                 var medias = new List<Media>();
@@ -1210,7 +1212,6 @@ namespace AptCare.Repository.Seeds
                     string name = acc.Name ?? string.Empty;
                     string key = "default";
 
-                    // Quy tắc chọn ảnh dựa vào tên (tiếng Việt/tiếng Anh cơ bản)
                     var lower = name.ToLowerInvariant();
                     if (lower.Contains("đèn") || lower.Contains("bóng đèn") || lower.Contains("led"))
                         key = "bulb";
@@ -1232,6 +1233,8 @@ namespace AptCare.Repository.Seeds
                         key = "hinge";
                     else if (lower.Contains("dây") || lower.Contains("dây điện") || lower.Contains("wire"))
                         key = "wire";
+                    else if (lower.Contains("gas") || lower.Contains("gas lạnh"))
+                        key = "gas";
 
                     var url = urls.ContainsKey(key) ? urls[key] : urls["default"];
 
@@ -1288,57 +1291,6 @@ namespace AptCare.Repository.Seeds
                 };
 
                 context.Budgets.AddRange(budget);
-                await context.SaveChangesAsync();
-            }
-        }
-
-        private static async Task SeedMonthlyManagementFeeTransactions(AptCareSystemDBContext context)
-        {
-            if (!context.Transactions.Any())
-            {
-                var apartments = context.Apartments
-                    .OrderBy(a => a.ApartmentId)
-                    .Take(10) // Seed cho 10 căn đầu tiên, có thể tăng nếu muốn
-                    .ToList();
-
-                var userApartments = context.UserApartments
-                    .Where(ua => ua.RoleInApartment == RoleInApartmentType.Owner)
-                    .ToList();
-
-                var transactions = new List<Transaction>();
-                var feeAmount = 1500000M; // Phí quản lý mẫu
-
-                // 3 tháng: 10, 11, 12/2025
-                var months = new[]
-                {
-            new DateTime(2025, 10, 1),
-            new DateTime(2025, 11, 1),
-            new DateTime(2025, 12, 1)
-        };
-
-                foreach (var apartment in apartments)
-                {
-                    var owner = userApartments.FirstOrDefault(ua => ua.ApartmentId == apartment.ApartmentId);
-                    if (owner == null) continue;
-
-                    foreach (var month in months)
-                    {
-                        transactions.Add(new Transaction
-                        {
-                            UserId = owner.UserId,
-                            TransactionType = TransactionType.Payment,
-                            Status = TransactionStatus.Success,
-                            Provider = PaymentProvider.UnKnow,
-                            Direction = TransactionDirection.Income,
-                            Amount = feeAmount,
-                            Description = $"Phí quản lý căn hộ {apartment.Room} tháng {month:MM/yyyy}",
-                            CreatedAt = month,
-                            PaidAt = month
-                        });
-                    }
-                }
-
-                context.Transactions.AddRange(transactions);
                 await context.SaveChangesAsync();
             }
         }

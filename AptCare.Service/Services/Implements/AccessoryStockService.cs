@@ -404,6 +404,7 @@ namespace AptCare.Service.Services.Implements
                 && (!filter.FromDate.HasValue || x.CreatedAt >= filter.FromDate.Value.ToDateTime(TimeOnly.MinValue))
                 && (!filter.ToDate.HasValue || x.CreatedAt <= filter.ToDate.Value.ToDateTime(TimeOnly.MaxValue));
 
+
             var result = await _unitOfWork
                 .GetRepository<AccessoryStockTransaction>()
                 .ProjectToPagingListAsync<AccessoryStockTransactionDto>(
@@ -413,12 +414,26 @@ namespace AptCare.Service.Services.Implements
                                    .Include(c => c.CreatedByUser)
                                    .Include(a => a.ApprovedByUser),
                     page: page,
-                    size: size
+                    size: size,
+                    orderBy: BuildOrderBy(filter.sortBy)
                 );
 
             return result;
         }
 
+        private Func<IQueryable<AccessoryStockTransaction>, IOrderedQueryable<AccessoryStockTransaction>> BuildOrderBy(string sortBy)
+        {
+            if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.CreatedAt);
+
+            return sortBy.ToLower() switch
+            {
+                "create" => q => q.OrderBy(p => p.CreatedAt),
+                "create_desc" => q => q.OrderByDescending(p => p.CreatedAt),
+                "id" => q => q.OrderBy(p => p.StockTransactionId),
+                "id_desc" => q => q.OrderByDescending(p => p.StockTransactionId),
+                _ => q => q.OrderByDescending(p => p.CreatedAt)
+            };
+        }
         public async Task<AccessoryStockTransactionDto> GetStockTransactionByIdAsync(int stockTransactionId)
         {
             var transaction = await _unitOfWork.GetRepository<AccessoryStockTransaction>()
