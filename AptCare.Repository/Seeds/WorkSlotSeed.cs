@@ -74,8 +74,6 @@ namespace AptCare.Repository.Seeds
                 {
                     if (workDate < today)
                         return WorkSlotStatus.Completed;
-                    else if (workDate == today)
-                        return WorkSlotStatus.Working;
                     else
                         return WorkSlotStatus.NotStarted;
                 }
