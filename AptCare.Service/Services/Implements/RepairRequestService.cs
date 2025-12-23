@@ -1267,7 +1267,7 @@ namespace AptCare.Service.Services.Implements
         }
         private Func<IQueryable<RepairRequest>, IOrderedQueryable<RepairRequest>> BuildOrderBy(string sortBy)
         {
-            if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.RepairRequestId);
+            if (string.IsNullOrEmpty(sortBy)) return q => q.OrderByDescending(p => p.CreatedAt);
 
             return sortBy.ToLower() switch
             {
@@ -1275,7 +1275,7 @@ namespace AptCare.Service.Services.Implements
                 "apartment_desc" => q => q.OrderByDescending(p => p.ApartmentId),
                 "issue" => q => q.OrderBy(p => p.IssueId),
                 "issue_desc" => q => q.OrderByDescending(p => p.IssueId),
-                _ => q => q.OrderByDescending(p => p.RepairRequestId)
+                _ => q => q.OrderByDescending(p => p.CreatedAt)
             };
         }
 

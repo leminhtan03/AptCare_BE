@@ -366,13 +366,220 @@ namespace AptCare.Repository.Seeds
                 });
             }
 
+            if (today.Year >= 2025 && today.Month >= 8)
+            {
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_BuildingFault_Free_FromStock,
+                    BaseDate = new DateTime(2025, 8, 1),
+                    Count = 5,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.BuildingFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Approved,
+                    IsChargeable = false,
+                    UseFromStock = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Sua chua noi bo thang 8 - Loi toa nha"
+                });
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_ResidentFault_Chargeable_FromStock,
+                    BaseDate = new DateTime(2025, 8, 10),
+                    Count = 4,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.ResidentFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Paid,
+                    IsChargeable = true,
+                    UseFromStock = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Sua chua tinh phi thang 8 - Loi cu dan"
+                });
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_ExternalContractor_BuildingFault,
+                    BaseDate = new DateTime(2025, 8, 20),
+                    Count = 2,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.BuildingFault,
+                    SolutionType = Enum.SolutionType.Outsource,
+                    InvoiceType = Enum.InvoiceType.ExternalContractor,
+                    InvoiceStatus = Enum.InvoiceStatus.Approved,
+                    IsChargeable = false,
+                    HasInvoice = true,
+                    HasStockTransaction = false,
+                    Description = "Thue ngoai thang 8 - Loi toa nha"
+                });
+            }
+
+            if (today.Year >= 2025 && today.Month >= 9)
+            {
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_BuildingFault_Free_FromStock,
+                    BaseDate = new DateTime(2025, 9, 2),
+                    Count = 5,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.BuildingFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Approved,
+                    IsChargeable = false,
+                    UseFromStock = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Sua chua noi bo thang 9 - Loi toa nha"
+                });
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_ResidentFault_Chargeable_Mixed,
+                    BaseDate = new DateTime(2025, 9, 10),
+                    Count = 3,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.ResidentFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Paid,
+                    IsChargeable = true,
+                    UseFromStock = true,
+                    UsePurchaseNew = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Ket hop vat tu kho va mua moi thang 9"
+                });
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_ExternalContractor_ResidentFault,
+                    BaseDate = new DateTime(2025, 9, 18),
+                    Count = 2,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.ResidentFault,
+                    SolutionType = Enum.SolutionType.Outsource,
+                    InvoiceType = Enum.InvoiceType.ExternalContractor,
+                    InvoiceStatus = Enum.InvoiceStatus.Paid,
+                    IsChargeable = true,
+                    HasInvoice = true,
+                    HasStockTransaction = false,
+                    Description = "Thue ngoai thang 9 - Loi cu dan"
+                });
+            }
+
+            if (today.Year >= 2025 && today.Month >= 10)
+            {
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_BuildingFault_Free_FromStock,
+                    BaseDate = new DateTime(2025, 10, 1),
+                    Count = 5,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.BuildingFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Approved,
+                    IsChargeable = false,
+                    UseFromStock = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Sua chua noi bo thang 10 - Loi toa nha"
+                });
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_ResidentFault_Chargeable_FromStock,
+                    BaseDate = new DateTime(2025, 10, 10),
+                    Count = 4,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.ResidentFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Paid,
+                    IsChargeable = true,
+                    UseFromStock = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Sua chua tinh phi thang 10 - Loi cu dan"
+                });
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_BuildingFault_Free_PurchaseNew,
+                    BaseDate = new DateTime(2025, 10, 20),
+                    Count = 2,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.BuildingFault,
+                    SolutionType = Enum.SolutionType.Replacement,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Approved,
+                    IsChargeable = false,
+                    UsePurchaseNew = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Thay the thiet bi moi thang 10 - Loi toa nha"
+                });
+            }
+
+            if (today.Year >= 2025 && today.Month >= 11)
+            {
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_BuildingFault_Free_FromStock,
+                    BaseDate = new DateTime(2025, 11, 1),
+                    Count = 5,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.BuildingFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Approved,
+                    IsChargeable = false,
+                    UseFromStock = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Sua chua noi bo thang 11 - Loi toa nha"
+                });
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_ResidentFault_Chargeable_Mixed,
+                    BaseDate = new DateTime(2025, 11, 10),
+                    Count = 3,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.ResidentFault,
+                    SolutionType = Enum.SolutionType.Repair,
+                    InvoiceType = Enum.InvoiceType.InternalRepair,
+                    InvoiceStatus = Enum.InvoiceStatus.Paid,
+                    IsChargeable = true,
+                    UseFromStock = true,
+                    UsePurchaseNew = true,
+                    HasInvoice = true,
+                    HasStockTransaction = true,
+                    Description = "Ket hop vat tu kho va mua moi thang 11"
+                });
+                configs.Add(new ScenarioConfig
+                {
+                    Scenario = RepairScenario.Completed_ExternalContractor_BuildingFault,
+                    BaseDate = new DateTime(2025, 11, 18),
+                    Count = 2,
+                    FinalStatus = RequestStatus.Completed,
+                    FaultType = Enum.FaultType.BuildingFault,
+                    SolutionType = Enum.SolutionType.Outsource,
+                    InvoiceType = Enum.InvoiceType.ExternalContractor,
+                    InvoiceStatus = Enum.InvoiceStatus.Approved,
+                    IsChargeable = false,
+                    HasInvoice = true,
+                    HasStockTransaction = false,
+                    Description = "Thue ngoai thang 11 - Loi toa nha"
+                });
+            }
+
             // DU LIEU HIEN TAI - Cac trang thai dang xu ly
             if (today.Year >= 2025 && today.Month >= 7)
             {
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.InProgress_WithApprovedInvoice,
-                    BaseDate = today.AddDays(-3),
+                    BaseDate = today.AddDays(-5),
                     Count = 2,
                     FinalStatus = RequestStatus.InProgress,
                     FaultType = Enum.FaultType.BuildingFault,
@@ -388,7 +595,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.InProgress_WithDraftInvoice,
-                    BaseDate = today.AddDays(-2),
+                    BaseDate = today.AddDays(-4),
                     Count = 2,
                     FinalStatus = RequestStatus.InProgress,
                     FaultType = Enum.FaultType.ResidentFault,
@@ -404,7 +611,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.AcceptancePending_InvoicePaid,
-                    BaseDate = today.AddDays(-2),
+                    BaseDate = today.AddDays(-3),
                     Count = 2,
                     FinalStatus = RequestStatus.AcceptancePendingVerify,
                     FaultType = Enum.FaultType.BuildingFault,
@@ -420,7 +627,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.AcceptancePending_AwaitingPayment,
-                    BaseDate = today.AddDays(-1),
+                    BaseDate = today.AddDays(-2),
                     Count = 2,
                     FinalStatus = RequestStatus.AcceptancePendingVerify,
                     FaultType = Enum.FaultType.ResidentFault,
@@ -436,7 +643,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.Approved_WaitingStart,
-                    BaseDate = today.AddDays(-1),
+                    BaseDate = today.AddDays(-2),
                     Count = 3,
                     FinalStatus = RequestStatus.Approved,
                     HasInvoice = false,
@@ -445,7 +652,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.Pending_New,
-                    BaseDate = today,
+                    BaseDate = today.AddDays(-1),
                     Count = 3,
                     FinalStatus = RequestStatus.Pending,
                     HasInvoice = false,
@@ -454,7 +661,7 @@ namespace AptCare.Repository.Seeds
                 configs.Add(new ScenarioConfig
                 {
                     Scenario = RepairScenario.WaitingManagerApproval,
-                    BaseDate = today.AddDays(1),
+                    BaseDate = today.AddDays(-1),
                     Count = 3,
                     FinalStatus = RequestStatus.WaitingManagerApproval,
                     HasInvoice = false,
