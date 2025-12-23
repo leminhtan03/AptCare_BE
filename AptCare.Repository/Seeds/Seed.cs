@@ -1162,7 +1162,7 @@ namespace AptCare.Repository.Seeds
                     {
                         Name = "Ampli Yamaha PX5 500W",
                         Descrption = "Bộ khuếch đại chuyên nghiệp cho mức âm thanh.",
-                        Price = 12000000,
+                        Price = 1200000,
                         Quantity = 5,
                         Status = ActiveStatus.Active
                     },
