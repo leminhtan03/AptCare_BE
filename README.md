@@ -128,7 +128,8 @@ dotnet test
 - Service request handling
 - Maintenance tracking
 - Payment processing
-- Real-time notifications
+- Chat real-time
+- Push notifications
 - Email notifications
 - File and image uploads
 - Excel import/export functionality
@@ -136,11 +137,6 @@ dotnet test
 ## 📄 License
 
 This project is currently unlicensed. 
-
-## 👤 Author
-
-**NguyenDucHuan**
-- GitHub: [@NguyenDucHuan](https://github.com/NguyenDucHuan)
 
 ## 🤝 Contributing
 
